@@ -1,4 +1,5 @@
 use std::ops::Add;
+use std::ops::Mul;
 use std::ops::Sub;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -17,6 +18,14 @@ impl<T: Sub> Sub for Vector2D<T> {
 
     fn sub(self, other: Vector2D<T>) -> Vector2D<T::Output> {
         Vector2D(self.0 - other.0, self.1 - other.1)
+    }
+}
+
+impl<T: Mul + Copy> Mul<T> for Vector2D<T> {
+    type Output = Vector2D<T::Output>;
+
+    fn mul(self, other: T) -> Vector2D<T::Output> {
+        Vector2D(self.0 * other, self.1 * other)
     }
 }
 
@@ -236,6 +245,69 @@ mod tests {
             assert!(r.0 == d.0 - c.0);
             assert!(r.1 == d.1 - c.1);
         }
+    }
+
+    #[test]
+    fn test_vector2_multiply_zeroes_yields_zeroes() {
+        let a = Vector2D(0.0, 0.0);
+        let b = 0.0;
+        let c = a * b;
+        assert!(c.0 == 0.0);
+        assert!(c.1 == 0.0);
+    }
+
+    #[test]
+    fn test_vector2_multiplication_by_zero_yields_zeroes() {
+        let a = Vector2D(1.0, 2.0);
+        let b = 0.0;
+        let c = a * b;
+        assert!(c.0 == 0.0);
+        assert!(c.1 == 0.0);
+    }
+
+    #[test]
+    fn test_vector2_multiplication_identity() {
+        let a = Vector2D(1.0, 2.0);
+        let b = 1.0;
+        let c = a * b;
+        assert!(c.0 == a.0);
+        assert!(c.1 == a.1);
+    }
+
+    #[test]
+    fn test_vector2_multiplication_by_positive_float() {
+        let a = Vector2D(1.0, 2.0);
+        let b = 2.0;
+        let c = a * b;
+        assert!(c.0 == a.0 * 2.0);
+        assert!(c.1 == a.1 * 2.0);
+    }
+
+    #[test]
+    fn test_vector2_multiplication_by_negative_float() {
+        let a = Vector2D(1.0, 2.0);
+        let b = -2.0;
+        let c = a * b;
+        assert!(c.0 == a.0 * -2.0);
+        assert!(c.1 == a.1 * -2.0);
+    }
+
+    #[test]
+    fn test_vector2_multiplication_by_positive_int() {
+        let a = Vector2D(1, 2);
+        let b = 2;
+        let c = a * b;
+        assert!(c.0 == a.0 * 2);
+        assert!(c.1 == a.1 * 2);
+    }
+
+    #[test]
+    fn test_vector2_multiplication_by_negative_int() {
+        let a = Vector2D(1, 2);
+        let b = -2;
+        let c = a * b;
+        assert!(c.0 == a.0 * -2);
+        assert!(c.1 == a.1 * -2);
     }
 
     #[test]
