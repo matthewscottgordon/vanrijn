@@ -56,6 +56,14 @@ impl<T: Sub> Sub for Vector3D<T> {
     }
 }
 
+impl<T: Mul + Copy> Mul<T> for Vector3D<T> {
+    type Output = Vector3D<T::Output>;
+
+    fn mul(self, other: T) -> Vector3D<T::Output> {
+        Vector3D(self.0 * other, self.1 * other, self.2 * other)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -587,5 +595,73 @@ mod tests {
             assert!(r.1 == d.1 - c.1);
             assert!(r.2 == d.2 - c.2);
         }
+    }
+
+    #[test]
+    fn test_vector3_multiply_zeroes_yields_zeroes() {
+        let a = Vector3D(0.0, 0.0, 0.0);
+        let b = 0.0;
+        let c = a * b;
+        assert!(c.0 == 0.0);
+        assert!(c.1 == 0.0);
+        assert!(c.2 == 0.0);
+    }
+
+    #[test]
+    fn test_vector3_multiplication_by_zero_yields_zeroes() {
+        let a = Vector3D(1.0, 2.0, 3.0);
+        let b = 0.0;
+        let c = a * b;
+        assert!(c.0 == 0.0);
+        assert!(c.1 == 0.0);
+        assert!(c.2 == 0.0);
+    }
+
+    #[test]
+    fn test_vector3_multiplication_identity() {
+        let a = Vector3D(1.0, 2.0, 3.0);
+        let b = 1.0;
+        let c = a * b;
+        assert!(c == a);
+    }
+
+    #[test]
+    fn test_vector3_multiplication_by_positive_float() {
+        let a = Vector3D(1.0, 2.0, 3.0);
+        let b = 2.0;
+        let c = a * b;
+        assert!(c.0 == a.0 * 2.0);
+        assert!(c.1 == a.1 * 2.0);
+        assert!(c.2 == a.2 * 2.0);
+    }
+
+    #[test]
+    fn test_vector3_multiplication_by_negative_float() {
+        let a = Vector3D(1.0, 2.0, 3.0);
+        let b = -2.0;
+        let c = a * b;
+        assert!(c.0 == a.0 * -2.0);
+        assert!(c.1 == a.1 * -2.0);
+        assert!(c.2 == a.2 * -2.0);
+    }
+
+    #[test]
+    fn test_vector3_multiplication_by_positive_int() {
+        let a = Vector3D(1, 2, 3);
+        let b = 2;
+        let c = a * b;
+        assert!(c.0 == a.0 * 2);
+        assert!(c.1 == a.1 * 2);
+        assert!(c.2 == a.2 * 2);
+    }
+
+    #[test]
+    fn test_vector3_multiplication_by_negative_int() {
+        let a = Vector3D(1, 2, 3);
+        let b = -2;
+        let c = a * b;
+        assert!(c.0 == a.0 * -2);
+        assert!(c.1 == a.1 * -2);
+        assert!(c.2 == a.2 * -2);
     }
 }
