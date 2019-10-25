@@ -72,6 +72,28 @@ impl Mul<Vector3D<f64>> for f64 {
     }
 }
 
+#[derive(Clone, Copy, Eq, PartialEq)]
+struct Point2D<T>(T, T);
+
+impl<T: Add> Add<Vector2D<T>> for Point2D<T> {
+    type Output = Point2D<T::Output>;
+
+    fn add(self, other: Vector2D<T>) -> Point2D<T::Output> {
+        Point2D(self.0 + other.0, self.1 + other.1)
+    }
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+struct Point3D<T>(T, T, T);
+
+impl<T: Add> Add<Vector3D<T>> for Point3D<T> {
+    type Output = Point3D<T::Output>;
+
+    fn add(self, other: Vector3D<T>) -> Point3D<T::Output> {
+        Point3D(self.0 + other.0, self.1 + other.1, self.2 + other.2)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -721,5 +743,43 @@ mod tests {
         assert!(c.0 == a.0 * -2.0);
         assert!(c.1 == a.1 * -2.0);
         assert!(c.2 == a.2 * -2.0);
+    }
+
+    #[test]
+    fn test_point2d_add_zero_vector2d() {
+        let a = Point2D(1.0, 2.3);
+        let b = Vector2D(0.0, 0.0);
+        let c = a + b;
+        assert!(c.0 == 1.0);
+        assert!(c.1 == 2.3);
+    }
+
+    #[test]
+    fn test_point2d_add_vector2d() {
+        let a = Point2D(1.0, 2.3);
+        let b = Vector2D(1.1, -1.0);
+        let c = a + b;
+        assert!(c.0 == a.0 + b.0);
+        assert!(c.1 == a.1 + b.1);
+    }
+
+    #[test]
+    fn test_point3d_add_zero_vector3d() {
+        let a = Point3D(1.0, 2.3, 4.5);
+        let b = Vector3D(0.0, 0.0, 0.0);
+        let c = a + b;
+        assert!(c.0 == 1.0);
+        assert!(c.1 == 2.3);
+        assert!(c.2 == 4.5);
+    }
+
+    #[test]
+    fn test_point3d_add_vector3d() {
+        let a = Point3D(1.0, 2.3, 4.5);
+        let b = Vector3D(1.1, -1.0, 0.5);
+        let c = a + b;
+        assert!(c.0 == a.0 + b.0);
+        assert!(c.1 == a.1 + b.1);
+        assert!(c.2 == a.2 + b.2);
     }
 }
