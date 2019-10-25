@@ -29,6 +29,14 @@ impl<T: Mul + Copy> Mul<T> for Vector2D<T> {
     }
 }
 
+impl Mul<Vector2D<f64>> for f64 {
+    type Output = Vector2D<f64>;
+
+    fn mul(self, other: Vector2D<f64>) -> Vector2D<f64> {
+        Vector2D(self * other.0, self * other.1)
+    }
+}
+
 #[derive(Clone, Copy, Eq, PartialEq)]
 struct Vector3D<T>(T, T, T);
 
@@ -308,6 +316,51 @@ mod tests {
         let c = a * b;
         assert!(c.0 == a.0 * -2);
         assert!(c.1 == a.1 * -2);
+    }
+
+    #[test]
+    fn test_vector2_multiply_zeroes_yields_zeroes_scalar_first() {
+        let a = Vector2D(0.0, 0.0);
+        let b = 0.0;
+        let c = b * a;
+        assert!(c.0 == 0.0);
+        assert!(c.1 == 0.0);
+    }
+
+    #[test]
+    fn test_vector2_multiply_zero_byvector2d_yields_zeroes() {
+        let a = Vector2D(1.0, 2.0);
+        let b = 0.0;
+        let c = b * a;
+        assert!(c.0 == 0.0);
+        assert!(c.1 == 0.0);
+    }
+
+    #[test]
+    fn test_vector2_multiplication_identity_scalar_first() {
+        let a = Vector2D(1.0, 2.0);
+        let b = 1.0;
+        let c = b * a;
+        assert!(c.0 == a.0);
+        assert!(c.1 == a.1);
+    }
+
+    #[test]
+    fn test_vector2_multiply_positive_float_by_vector2d() {
+        let a = Vector2D(1.0, 2.0);
+        let b = 2.0;
+        let c = b * a;
+        assert!(c.0 == a.0 * 2.0);
+        assert!(c.1 == a.1 * 2.0);
+    }
+
+    #[test]
+    fn test_vector2_multiply_negative_float_by_vector2d() {
+        let a = Vector2D(1.0, 2.0);
+        let b = -2.0;
+        let c = b * a;
+        assert!(c.0 == a.0 * -2.0);
+        assert!(c.1 == a.1 * -2.0);
     }
 
     #[test]
