@@ -64,6 +64,14 @@ impl<T: Mul + Copy> Mul<T> for Vector3D<T> {
     }
 }
 
+impl Mul<Vector3D<f64>> for f64 {
+    type Output = Vector3D<f64>;
+
+    fn mul(self, other: Vector3D<f64>) -> Vector3D<f64> {
+        Vector3D(self * other.0, self * other.1, self * other.2)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -663,5 +671,55 @@ mod tests {
         assert!(c.0 == a.0 * -2);
         assert!(c.1 == a.1 * -2);
         assert!(c.2 == a.2 * -2);
+    }
+
+    #[test]
+    fn test_vector3_multiply_zeroes_yields_zeroes_scalar_first() {
+        let a = Vector3D(0.0, 0.0, 0.0);
+        let b = 0.0;
+        let c = b * a;
+        assert!(c.0 == 0.0);
+        assert!(c.1 == 0.0);
+        assert!(c.2 == 0.0);
+    }
+
+    #[test]
+    fn test_vector3_multiply_zero_byvector2d_yields_zeroes() {
+        let a = Vector3D(1.0, 2.0, 3.0);
+        let b = 0.0;
+        let c = b * a;
+        assert!(c.0 == 0.0);
+        assert!(c.1 == 0.0);
+        assert!(c.2 == 0.0);
+    }
+
+    #[test]
+    fn test_vector3_multiplication_identity_scalar_first() {
+        let a = Vector3D(1.0, 2.0, 3.0);
+        let b = 1.0;
+        let c = b * a;
+        assert!(c.0 == a.0);
+        assert!(c.1 == a.1);
+        assert!(c.2 == a.2);
+    }
+
+    #[test]
+    fn test_vector3_multiply_positive_float_by_vector2d() {
+        let a = Vector3D(1.0, 2.0, 3.0);
+        let b = 2.0;
+        let c = b * a;
+        assert!(c.0 == a.0 * 2.0);
+        assert!(c.1 == a.1 * 2.0);
+        assert!(c.2 == a.2 * 2.0);
+    }
+
+    #[test]
+    fn test_vector3_multiply_negative_float_by_vector2d() {
+        let a = Vector3D(1.0, 2.0, 3.0);
+        let b = -2.0;
+        let c = b * a;
+        assert!(c.0 == a.0 * -2.0);
+        assert!(c.1 == a.1 * -2.0);
+        assert!(c.2 == a.2 * -2.0);
     }
 }
