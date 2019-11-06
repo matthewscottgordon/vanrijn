@@ -1,9 +1,18 @@
 use nalgebra::{RealField, Vector3};
 
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 struct Ray<T: RealField> {
     origin: Vector3<T>,
     direction: Vector3<T>,
+}
+
+impl<T: RealField> Ray<T> {
+    fn new(origin: Vector3<T>, direction: Vector3<T>) -> Ray<T> {
+        Ray {
+            origin,
+            direction: direction.normalize(),
+        }
+    }
 }
 
 impl<T: RealField> Ray<T> {
