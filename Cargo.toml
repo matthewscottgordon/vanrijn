@@ -8,3 +8,9 @@ edition = "2018"
 
 [dependencies]
 sdl2 = "0.32"
+quickcheck = "0.9"
+quickcheck_macros = "0.8"
+
+[dependencies.nalgebra]
+version = "0.19"
+features = ["arbitrary"]
