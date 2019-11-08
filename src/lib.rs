@@ -54,4 +54,9 @@ mod tests {
             .fold(0.0, |a, &b| a.max(b.abs())) * std::f64::EPSILON * 128.0;
         (p2 - p1).cross(&(p3 - p2)).norm() < epsilon
     }
+
+    #[quickcheck]
+    fn t_is_distance(ray: Ray<f64>, t: f64) -> bool {
+        (ray.point_at(t) - ray.origin).norm() - t.abs() < 0.0000000001
+    }
 }
