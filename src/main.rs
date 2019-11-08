@@ -5,47 +5,16 @@ use sdl2::render::{Canvas, Texture};
 use sdl2::Sdl;
 use std::time::Duration;
 
-struct OutputImage {
-    pixel_data: Vec<u8>,
-    width: u32,
-    height: u32,
-    channels: u32,
-}
+use vanrijn::image::OutputImage;
 
-impl OutputImage {
-    fn new(width: u32, height: u32) -> OutputImage {
-        OutputImage {
-            width: width,
-            height: height,
-            channels: 3,
-            pixel_data: vec![0; (width * height * 3) as usize],
-        }
-    }
-
-    fn clear(&mut self) -> &mut OutputImage {
-        for byte in self.pixel_data.iter_mut() {
-            *byte = 0u8;
-        }
-        self
-    }
-
-    fn set_color(&mut self, row: u32, column: u32, red: u8, green: u8, blue: u8) {
-        assert!(row < self.height && column < self.width);
-        let index = ((row * self.width + column) * self.channels) as usize;
-        self.pixel_data[index] = red;
-        self.pixel_data[index + 1] = green;
-        self.pixel_data[index + 2] = blue;
-    }
-
-    fn update_texture(&self, texture: &mut Texture) {
-        texture
-            .update(
-                None,
-                self.pixel_data.as_slice(),
-                (self.width * self.channels) as usize,
-            )
-            .expect("Couldn't update texture.");
-    }
+fn update_texture(image: &OutputImage, texture: &mut Texture) {
+    texture
+        .update(
+            None,
+            image.get_pixel_data().as_slice(),
+            (image.get_width() * image.get_num_channels()) as usize,
+        )
+        .expect("Couldn't update texture.");
 }
 
 fn init_canvas(
@@ -95,7 +64,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        output_image.update_texture(&mut rendered_image_texture);
+        update_texture(&output_image, &mut rendered_image_texture);
         for row in 0..image_height {
             for column in 0..image_width {
                 output_image.set_color(row, column, i, i, i);
