@@ -1,22 +1,20 @@
 use nalgebra::{RealField, Vector3};
 
 #[derive(Clone, Debug)]
-struct Ray<T: RealField> {
+pub struct Ray<T: RealField> {
     origin: Vector3<T>,
     direction: Vector3<T>,
 }
 
 impl<T: RealField> Ray<T> {
-    fn new(origin: Vector3<T>, direction: Vector3<T>) -> Ray<T> {
+    pub fn new(origin: Vector3<T>, direction: Vector3<T>) -> Ray<T> {
         Ray {
             origin,
             direction: direction.normalize(),
         }
     }
-}
 
-impl<T: RealField> Ray<T> {
-    fn point_at(&self, t: T) -> Vector3<T> {
+    pub fn point_at(&self, t: T) -> Vector3<T> {
         return self.origin + self.direction * t;
     }
 }
