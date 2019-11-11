@@ -46,9 +46,7 @@ impl<T: RealField + From<u32> + From<f64>> Iterator for ImageSampler<T> {
     type Item = Ray<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if (self.current_row >= self.image_height_pixels
-            && self.current_column >= self.image_width_pixels)
-        {
+        if self.current_row >= self.image_height_pixels {
             return None;
         }
 
