@@ -68,13 +68,21 @@ pub fn render_scene<T: RealField>(output_image: &mut OutputImage, scene: &Scene<
     for column in 0..output_image.get_width() {
         for row in 0..output_image.get_height() {
             let ray = image_sampler.ray_for_pixel(row, column);
-            for object in scene.objects.iter() {
-                let gray = match object.intersect(&ray) {
-                    None => 0,
-                    Some(_) => 255,
-                };
-                output_image.set_color(row, column, gray, gray, gray);
-            }
+            let hit = scene
+                .objects
+                .iter()
+                .flat_map(|object| object.intersect(&ray))
+                .min_by(
+                    |a, b| match PartialOrd::partial_cmp(&a.distance, &b.distance) {
+                        None => std::cmp::Ordering::Less,
+                        Some(ordering) => ordering,
+                    },
+                );
+            let gray = match hit {
+                None => 0,
+                Some(_) => 255,
+            };
+            output_image.set_color(row, column, gray, gray, gray);
         }
     }
 }
