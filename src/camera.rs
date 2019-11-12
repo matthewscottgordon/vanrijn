@@ -1,7 +1,7 @@
 use nalgebra::{convert, RealField, Vector3};
 
 use super::image::OutputImage;
-use super::raycasting::{Intersect, IntersectionInfo, Plane, Ray};
+use super::raycasting::Ray;
 use super::scene::Scene;
 
 struct ImageSampler<T: RealField> {
@@ -82,6 +82,7 @@ pub fn render_scene<T: RealField>(output_image: &mut OutputImage, scene: &Scene<
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::raycasting::{Intersect, IntersectionInfo, Plane};
     #[cfg(test)]
     mod imagesampler {
         use super::*;
