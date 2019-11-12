@@ -105,7 +105,10 @@ mod tests {
             let ray = target.ray_for_pixel(100, 200);
             let film_plane = Plane::new(Vector3::new(0.0, 0.0, 1.0), target.film_distance);
             let point_on_film_plane = match film_plane.intersect(&ray) {
-                Some(IntersectionInfo { location, distance }) => location,
+                Some(IntersectionInfo {
+                    location,
+                    distance: _,
+                }) => location,
                 None => panic!(),
             };
             let expected_x: f64 =
