@@ -2,6 +2,7 @@ use nalgebra::{convert, RealField, Vector3};
 
 use super::image::OutputImage;
 use super::raycasting::{Intersect, IntersectionInfo, Plane, Ray};
+use super::scene::Scene;
 
 struct ImageSampler<T: RealField> {
     image_height_pixels: u32,
@@ -55,6 +56,26 @@ impl<T: RealField> ImageSampler<T> {
                 self.film_distance,
             ),
         )
+    }
+}
+
+pub fn render_scene<T: RealField>(output_image: &mut OutputImage, scene: &Scene<T>) {
+    let image_sampler = ImageSampler::new(
+        output_image.get_width(),
+        output_image.get_height(),
+        scene.camera_location,
+    );
+    for column in 0..output_image.get_width() {
+        for row in 0..output_image.get_height() {
+            let ray = image_sampler.ray_for_pixel(row, column);
+            for object in scene.objects.iter() {
+                let gray = match object.intersect(&ray) {
+                    None => 0,
+                    Some(_) => 255,
+                };
+                output_image.set_color(row, column, gray, gray, gray);
+            }
+        }
     }
 }
 

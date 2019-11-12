@@ -5,7 +5,12 @@ use sdl2::render::{Canvas, Texture};
 use sdl2::Sdl;
 use std::time::Duration;
 
+use nalgebra::Vector3;
+
+use vanrijn::camera::render_scene;
 use vanrijn::image::OutputImage;
+use vanrijn::raycasting::{Plane, Sphere};
+use vanrijn::scene::Scene;
 
 fn update_texture(image: &OutputImage, texture: &mut Texture) {
     texture
@@ -47,7 +52,15 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         image_height as u32,
     )?;
     let mut output_image = OutputImage::new(image_width, image_height);
-    output_image.clear();
+
+    let scene = Scene {
+        camera_location: Vector3::new(0.0, 0.0, 0.0),
+        objects: vec![
+            Box::new(Plane::new(Vector3::new(0.0, 1.0, 0.0), -2.0)),
+            Box::new(Sphere::new(Vector3::new(0.0, 1.0, 5.0), 1.0)),
+        ],
+    };
+    render_scene(&mut output_image, &scene);
 
     let mut event_pump = sdl_context.event_pump()?;
     let mut i = 0;
@@ -65,11 +78,6 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         update_texture(&output_image, &mut rendered_image_texture);
-        for row in 0..image_height {
-            for column in 0..image_width {
-                output_image.set_color(row, column, i, i, i);
-            }
-        }
 
         canvas.copy(&rendered_image_texture, None, None)?;
         canvas.present();

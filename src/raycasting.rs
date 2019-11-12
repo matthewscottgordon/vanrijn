@@ -180,10 +180,11 @@ mod tests {
         let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(-1.0, 0.0, 1.0));
         let p = Plane::new(Vector3::new(1.0, 0.0, 0.0), -5.0);
         match p.intersect(&r) {
-            Some(IntersectionInfo { distance, location }) => {
-                assert!((location.x - (-5.0f64)).abs() < 0.0000000001)
-            }
-            None => panic!()
+            Some(IntersectionInfo {
+                distance: _,
+                location,
+            }) => assert!((location.x - (-5.0f64)).abs() < 0.0000000001),
+            None => panic!(),
         }
     }
 }
