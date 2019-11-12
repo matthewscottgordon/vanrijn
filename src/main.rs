@@ -61,6 +61,9 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         ],
     };
     render_scene(&mut output_image, &scene);
+    update_texture(&output_image, &mut rendered_image_texture);
+    canvas.copy(&rendered_image_texture, None, None)?;
+    canvas.present();
 
     let mut event_pump = sdl_context.event_pump()?;
     let mut i = 0;
@@ -77,10 +80,6 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        update_texture(&output_image, &mut rendered_image_texture);
-
-        canvas.copy(&rendered_image_texture, None, None)?;
-        canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
     Ok(())
