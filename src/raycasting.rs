@@ -1,4 +1,4 @@
-use nalgebra::{RealField, Vector3};
+use nalgebra::{convert, RealField, Vector3};
 
 #[derive(Clone, Debug)]
 pub struct Ray<T: RealField> {
@@ -53,6 +53,45 @@ impl<T: RealField> Intersect<T> for Sphere<T> {
         } else {
             None
         }
+    }
+}
+
+pub struct Plane<T: RealField> {
+    normal: Vector3<T>,
+    distance_from_origin: T,
+}
+
+impl<T: RealField> Plane<T> {
+    pub fn new(normal: Vector3<T>, distance_from_origin: T) -> Plane<T> {
+        normal.normalize();
+        Plane {
+            normal,
+            distance_from_origin,
+        }
+    }
+}
+
+impl<T: RealField> Intersect<T> for Plane<T> {
+    fn intersect(&self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
+        let ray_direction_dot_plane_normal = ray.direction.dot(&self.normal);
+        let point_on_plane = self.normal * self.distance_from_origin;
+        let point_on_plane_minus_ray_origin_dot_normal =
+            (point_on_plane - ray.origin).dot(&self.normal);
+        if ray_direction_dot_plane_normal == convert(0.0) {
+            //Ray is parallel to plane
+            if point_on_plane_minus_ray_origin_dot_normal != convert(0.0) {
+                //Ray is not in plane
+                return None;
+            }
+        }
+        let t = point_on_plane_minus_ray_origin_dot_normal / ray_direction_dot_plane_normal;
+        if t < convert(0.0) {
+            return None;
+        }
+        Some(IntersectionInfo {
+            distance: t,
+            location: ray.point_at(t),
+        })
     }
 }
 
@@ -120,5 +159,31 @@ mod tests {
         let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
         let s = Sphere::new(Vector3::new(-5.0, 1.5, 15.0), 5.0);
         assert_matches!(s.intersect(&r), None);
+    }
+
+    #[test]
+    fn ray_intersects_plane() {
+        let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(-1.0, 0.0, 1.0));
+        let p = Plane::new(Vector3::new(1.0, 0.0, 0.0), -5.0);
+        assert_matches!(p.intersect(&r), Some(_));
+    }
+
+    #[test]
+    fn ray_does_not_intersect_plane() {
+        let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(1.0, 0.0, 1.0));
+        let p = Plane::new(Vector3::new(1.0, 0.0, 0.0), -5.0);
+        assert_matches!(p.intersect(&r), None);
+    }
+
+    #[test]
+    fn intersection_point_is_on_plane() {
+        let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(-1.0, 0.0, 1.0));
+        let p = Plane::new(Vector3::new(1.0, 0.0, 0.0), -5.0);
+        match p.intersect(&r) {
+            Some(IntersectionInfo { distance, location }) => {
+                assert!((location.x - (-5.0f64)).abs() < 0.0000000001)
+            }
+            None => panic!()
+        }
     }
 }
