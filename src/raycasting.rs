@@ -175,9 +175,16 @@ mod tests {
     }
 
     #[test]
-    fn ray_does_not_intersect_sphere() {
+    fn ray_does_not_intersect_sphere_when_sphere_is_in_front() {
         let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
         let s = Sphere::new(Vector3::new(-5.0, 1.5, 15.0), 5.0);
+        assert_matches!(s.intersect(&r), None);
+    }
+
+    #[test]
+    fn ray_does_not_intersect_sphere_when_sphere_is_behind() {
+        let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
+        let s = Sphere::new(Vector3::new(1.5, 1.5, -15.0), 5.0);
         assert_matches!(s.intersect(&r), None);
     }
 
