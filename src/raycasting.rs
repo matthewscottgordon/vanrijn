@@ -24,6 +24,7 @@ pub struct IntersectionInfo<T: RealField> {
     pub distance: T,
     pub location: Vector3<T>,
     pub normal: Vector3<T>,
+    pub retro: Vector3<T>,
 }
 
 pub trait Intersect<T: RealField> {
@@ -69,10 +70,12 @@ impl<T: RealField> Intersect<T> for Sphere<T> {
         };
         let location = ray.point_at(distance);
         let normal = (location - self.centre).normalize();
+        let retro = -ray.direction;
         Some(IntersectionInfo {
             distance,
             location,
             normal,
+            retro,
         })
     }
 }
@@ -113,6 +116,7 @@ impl<T: RealField> Intersect<T> for Plane<T> {
             distance: t,
             location: ray.point_at(t),
             normal: self.normal,
+            retro: -ray.direction,
         })
     }
 }
@@ -220,6 +224,7 @@ mod tests {
                 distance: _,
                 location,
                 normal: _,
+                retro: _,
             }) => assert!((location.x - (-5.0f64)).abs() < 0.0000000001),
             None => panic!(),
         }

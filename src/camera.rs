@@ -129,6 +129,7 @@ mod tests {
                     location,
                     distance: _,
                     normal: _,
+                    retro: _,
                 }) => location,
                 None => panic!(),
             };
