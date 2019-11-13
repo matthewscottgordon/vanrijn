@@ -43,23 +43,25 @@ impl<T: RealField> Sphere<T> {
 
 impl<T: RealField> Intersect<T> for Sphere<T> {
     fn intersect(&self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
+        let ray_origin_to_sphere_centre = self.centre - ray.origin;
+        let radius_squared = self.radius * self.radius;
+        let is_inside_sphere = ray_origin_to_sphere_centre.norm_squared() <= radius_squared;
         // t0/p0 is the point on the ray that's closest to the centre of the sphere
-        let t0 = (self.centre - ray.origin).dot(&ray.direction);
-        if t0 < T::zero() {
+        let t0 = ray_origin_to_sphere_centre.dot(&ray.direction);
+        if !is_inside_sphere && t0 < T::zero() {
             // Sphere is behind ray origin
             return None;
         }
-        let radius_squared = self.radius*self.radius;
         // Squared distance between ray origin and sphere centre
         let d0_squared = (ray.origin - self.centre).norm_squared();
         // Squared distance petween p0 and sphere centre
-        let p0_dist_from_centre_squared = d0_squared - t0*t0;
+        let p0_dist_from_centre_squared = d0_squared - t0 * t0;
         if p0_dist_from_centre_squared > radius_squared {
             // Sphere is in front of ray but ray misses
             return None;
         }
         let delta = (radius_squared - p0_dist_from_centre_squared).sqrt();
-        let distance = if (self.centre - ray.origin).norm_squared() <= radius_squared {
+        let distance = if is_inside_sphere {
             // radius origin is inside sphere
             t0 + delta
         } else {
@@ -186,6 +188,13 @@ mod tests {
         let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
         let s = Sphere::new(Vector3::new(1.5, 1.5, -15.0), 5.0);
         assert_matches!(s.intersect(&r), None);
+    }
+
+    #[test]
+    fn ray_intersects_sphere_when_origin_is_inside() {
+        let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
+        let s = Sphere::new(Vector3::new(1.5, 1.5, 2.0), 5.0);
+        assert_matches!(s.intersect(&r), Some(_));
     }
 
     #[test]
