@@ -23,6 +23,7 @@ impl<T: RealField> Ray<T> {
 pub struct IntersectionInfo<T: RealField> {
     pub distance: T,
     pub location: Vector3<T>,
+    pub normal: Vector3<T>,
 }
 
 pub trait Intersect<T: RealField> {
@@ -44,15 +45,30 @@ impl<T: RealField> Intersect<T> for Sphere<T> {
     fn intersect(&self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
         // t0/p0 is the point on the ray that's closest to the centre of the sphere
         let t0 = (self.centre - ray.origin).dot(&ray.direction);
-        let p0 = ray.point_at(t0);
-        if (self.centre - p0).norm() <= self.radius {
-            Some(IntersectionInfo {
-                distance: t0,
-                location: p0,
-            })
-        } else {
-            None
+        let delta_squared =
+            t0 * t0 - ((ray.origin - self.centre).norm_squared() - self.radius * self.radius);
+        if delta_squared > self.radius {
+            //No initersection
+            return None;
         }
+        let delta = delta_squared.sqrt();
+        let distance = if (self.centre - ray.origin).norm() <= self.radius {
+            // radius origin is inside sphere
+            t0 + delta
+        } else {
+            t0 - delta
+        };
+        if distance < T::zero() {
+            // Sphere is behind ray origin
+            return None;
+        };
+        let location = ray.point_at(distance);
+        let normal = (location - self.centre).normalize();
+        Some(IntersectionInfo {
+            distance,
+            location,
+            normal,
+        })
     }
 }
 
@@ -91,6 +107,7 @@ impl<T: RealField> Intersect<T> for Plane<T> {
         Some(IntersectionInfo {
             distance: t,
             location: ray.point_at(t),
+            normal: self.normal,
         })
     }
 }

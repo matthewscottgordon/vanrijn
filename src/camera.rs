@@ -1,6 +1,7 @@
-use nalgebra::{convert, RealField, Vector3};
+use nalgebra::{clamp, convert, RealField, Vector3};
 
 use super::image::OutputImage;
+use super::integrators::{DirectionalLight, Integrator, PhongIntegrator};
 use super::raycasting::Ray;
 use super::scene::Scene;
 
@@ -59,12 +60,22 @@ impl<T: RealField> ImageSampler<T> {
     }
 }
 
-pub fn render_scene<T: RealField>(output_image: &mut OutputImage, scene: &Scene<T>) {
+pub fn render_scene<T: RealField>(output_image: &mut OutputImage, scene: &Scene<T>)
+where
+    f32: From<T>,
+{
     let image_sampler = ImageSampler::new(
         output_image.get_width(),
         output_image.get_height(),
         scene.camera_location,
     );
+    let integrator = PhongIntegrator::<T> {
+        ambient_light: convert(0.1),
+        lights: vec![DirectionalLight {
+            direction: Vector3::new(convert(1.0), convert(1.0), convert(-1.0)).normalize(),
+            intensity: convert(0.3),
+        }],
+    };
     for column in 0..output_image.get_width() {
         for row in 0..output_image.get_height() {
             let ray = image_sampler.ray_for_pixel(row, column);
@@ -79,9 +90,10 @@ pub fn render_scene<T: RealField>(output_image: &mut OutputImage, scene: &Scene<
                     },
                 );
             let gray = match hit {
-                None => 0,
-                Some(_) => 255,
+                None => convert(0.0),
+                Some(intersection_info) => integrator.integrate(&intersection_info),
             };
+            let gray = f32::from(clamp(gray * convert(255.0), convert(0.0), convert(255.0))) as u8;
             output_image.set_color(row, column, gray, gray, gray);
         }
     }
