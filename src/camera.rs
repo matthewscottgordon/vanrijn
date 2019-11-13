@@ -128,6 +128,7 @@ mod tests {
                 Some(IntersectionInfo {
                     location,
                     distance: _,
+                    normal: _,
                 }) => location,
                 None => panic!(),
             };

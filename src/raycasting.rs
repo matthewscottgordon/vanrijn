@@ -45,22 +45,25 @@ impl<T: RealField> Intersect<T> for Sphere<T> {
     fn intersect(&self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
         // t0/p0 is the point on the ray that's closest to the centre of the sphere
         let t0 = (self.centre - ray.origin).dot(&ray.direction);
-        let delta_squared =
-            t0 * t0 - ((ray.origin - self.centre).norm_squared() - self.radius * self.radius);
-        if delta_squared > self.radius {
-            //No initersection
+        if t0 < T::zero() {
+            // Sphere is behind ray origin
             return None;
         }
-        let delta = delta_squared.sqrt();
-        let distance = if (self.centre - ray.origin).norm() <= self.radius {
+        let radius_squared = self.radius*self.radius;
+        // Squared distance between ray origin and sphere centre
+        let d0_squared = (ray.origin - self.centre).norm_squared();
+        // Squared distance petween p0 and sphere centre
+        let p0_dist_from_centre_squared = d0_squared - t0*t0;
+        if p0_dist_from_centre_squared > radius_squared {
+            // Sphere is in front of ray but ray misses
+            return None;
+        }
+        let delta = (radius_squared - p0_dist_from_centre_squared).sqrt();
+        let distance = if (self.centre - ray.origin).norm_squared() <= radius_squared {
             // radius origin is inside sphere
             t0 + delta
         } else {
             t0 - delta
-        };
-        if distance < T::zero() {
-            // Sphere is behind ray origin
-            return None;
         };
         let location = ray.point_at(distance);
         let normal = (location - self.centre).normalize();
@@ -200,6 +203,7 @@ mod tests {
             Some(IntersectionInfo {
                 distance: _,
                 location,
+                normal: _,
             }) => assert!((location.x - (-5.0f64)).abs() < 0.0000000001),
             None => panic!(),
         }
