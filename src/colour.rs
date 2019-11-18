@@ -1,4 +1,4 @@
-use nalgebra::{clamp, RealField, Vector3};
+use nalgebra::{clamp, convert, RealField, Vector3};
 
 pub struct ColourRGB<T: RealField> {
     values: Vector3<T>,
@@ -62,6 +62,47 @@ impl<T: RealField + NormalizedAsByte> ToneMapper<T> for ClampingToneMapper {
                 Self::clamp(&colour_in.values[2]),
             ],
         }
+    }
+}
+
+pub enum NamedColour {
+    Black,
+    White,
+    Red,
+    Lime,
+    Blue,
+    Yellow,
+    Cyan,
+    Magenta,
+    Gray,
+    Maroon,
+    Olive,
+    Green,
+    Purple,
+    Teal,
+    Navy,
+}
+
+pub fn named_colour<T: RealField+NormalizedAsByte>(colour: NamedColour) -> ColourRGB<T> {
+    let zero: T = convert(0.0);
+    let half: T = convert(0.5);
+    let one: T = convert(1.0);
+    match colour {
+        NamedColour::Black => ColourRGB::new(zero, zero, zero),
+        NamedColour::White => ColourRGB::new(one, one, one),
+        NamedColour::Red => ColourRGB::new(one, zero, zero),
+        NamedColour::Lime => ColourRGB::new(zero, one, zero),
+        NamedColour::Blue => ColourRGB::new(zero, zero, one),
+        NamedColour::Yellow => ColourRGB::new(one, one, zero),
+        NamedColour::Cyan => ColourRGB::new(zero, one, one),
+        NamedColour::Magenta => ColourRGB::new(one, zero, one),
+        NamedColour::Gray => ColourRGB::new(half, half, half),
+        NamedColour::Maroon => ColourRGB::new(half, zero, zero),
+        NamedColour::Olive => ColourRGB::new(half, half, zero),
+        NamedColour::Green => ColourRGB::new(half, half, half),
+        NamedColour::Purple => ColourRGB::new(half, zero, half),
+        NamedColour::Teal => ColourRGB::new(zero, half, half),
+        NamedColour::Navy => ColourRGB::new(zero, zero, half),
     }
 }
 
