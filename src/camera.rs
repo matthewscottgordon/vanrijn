@@ -1,5 +1,6 @@
-use nalgebra::{clamp, convert, RealField, Vector3};
+use nalgebra::{convert, RealField, Vector3};
 
+use super::colour::{ClampingToneMapper, NamedColour, NormalizedAsByte, ToneMapper};
 use super::image::OutputImage;
 use super::integrators::{DirectionalLight, Integrator, PhongIntegrator};
 use super::raycasting::Ray;
@@ -60,8 +61,10 @@ impl<T: RealField> ImageSampler<T> {
     }
 }
 
-pub fn render_scene<T: RealField>(output_image: &mut OutputImage, scene: &Scene<T>)
-where
+pub fn render_scene<T: RealField + NormalizedAsByte>(
+    output_image: &mut OutputImage,
+    scene: &Scene<T>,
+) where
     f32: From<T>,
 {
     let image_sampler = ImageSampler::new(
@@ -76,6 +79,7 @@ where
             intensity: convert(0.3),
         }],
     };
+    let tone_mapper = ClampingToneMapper {};
     for column in 0..output_image.get_width() {
         for row in 0..output_image.get_height() {
             let ray = image_sampler.ray_for_pixel(row, column);
@@ -89,12 +93,12 @@ where
                         Some(ordering) => ordering,
                     },
                 );
-            let gray = match hit {
-                None => convert(0.0),
+            let colour = match hit {
+                None => NamedColour::Black.as_colourrgb(),
                 Some(intersection_info) => integrator.integrate(&intersection_info),
             };
-            let gray = f32::from(clamp(gray * convert(255.0), convert(0.0), convert(255.0))) as u8;
-            output_image.set_color(row, column, gray, gray, gray);
+            let colour = tone_mapper.apply_tone_mapping(&colour);
+            output_image.set_color(row, column, colour);
         }
     }
 }
@@ -102,7 +106,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::materials::Material;
     use crate::raycasting::{Intersect, IntersectionInfo, Plane};
+
     #[cfg(test)]
     mod imagesampler {
         use super::*;
@@ -123,13 +129,18 @@ mod tests {
         fn ray_for_pixel_returns_value_that_intersects_film_plane_at_expected_location() {
             let target = ImageSampler::new(800, 600, Vector3::new(0.0, 0.0, 0.0));
             let ray = target.ray_for_pixel(100, 200);
-            let film_plane = Plane::new(Vector3::new(0.0, 0.0, 1.0), target.film_distance);
+            let film_plane = Plane::new(
+                Vector3::new(0.0, 0.0, 1.0),
+                target.film_distance,
+                Material::<f64>::new_dummy(),
+            );
             let point_on_film_plane = match film_plane.intersect(&ray) {
                 Some(IntersectionInfo {
                     location,
                     distance: _,
                     normal: _,
                     retro: _,
+                    material: _,
                 }) => location,
                 None => panic!(),
             };

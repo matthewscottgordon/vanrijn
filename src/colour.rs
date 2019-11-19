@@ -1,5 +1,6 @@
 use nalgebra::{clamp, convert, RealField, Vector3};
 
+#[derive(Debug)]
 pub struct ColourRGB<T: RealField> {
     values: Vector3<T>,
 }
@@ -14,6 +15,10 @@ impl<T: RealField + NormalizedAsByte> ColourRGB<T> {
         ColourRGB {
             values: Vector3::new(red, green, blue),
         }
+    }
+
+    pub fn from_vector3(v: &Vector3<T>) -> ColourRGB<T> {
+        ColourRGB { values: *v }
     }
 
     pub fn red(&self) -> T {
@@ -83,26 +88,28 @@ pub enum NamedColour {
     Navy,
 }
 
-pub fn named_colour<T: RealField+NormalizedAsByte>(colour: NamedColour) -> ColourRGB<T> {
-    let zero: T = convert(0.0);
-    let half: T = convert(0.5);
-    let one: T = convert(1.0);
-    match colour {
-        NamedColour::Black => ColourRGB::new(zero, zero, zero),
-        NamedColour::White => ColourRGB::new(one, one, one),
-        NamedColour::Red => ColourRGB::new(one, zero, zero),
-        NamedColour::Lime => ColourRGB::new(zero, one, zero),
-        NamedColour::Blue => ColourRGB::new(zero, zero, one),
-        NamedColour::Yellow => ColourRGB::new(one, one, zero),
-        NamedColour::Cyan => ColourRGB::new(zero, one, one),
-        NamedColour::Magenta => ColourRGB::new(one, zero, one),
-        NamedColour::Gray => ColourRGB::new(half, half, half),
-        NamedColour::Maroon => ColourRGB::new(half, zero, zero),
-        NamedColour::Olive => ColourRGB::new(half, half, zero),
-        NamedColour::Green => ColourRGB::new(half, half, half),
-        NamedColour::Purple => ColourRGB::new(half, zero, half),
-        NamedColour::Teal => ColourRGB::new(zero, half, half),
-        NamedColour::Navy => ColourRGB::new(zero, zero, half),
+impl NamedColour {
+    pub fn as_colourrgb<T: RealField + NormalizedAsByte>(self) -> ColourRGB<T> {
+        let zero: T = convert(0.0);
+        let half: T = convert(0.5);
+        let one: T = convert(1.0);
+        match self {
+            NamedColour::Black => ColourRGB::new(zero, zero, zero),
+            NamedColour::White => ColourRGB::new(one, one, one),
+            NamedColour::Red => ColourRGB::new(one, zero, zero),
+            NamedColour::Lime => ColourRGB::new(zero, one, zero),
+            NamedColour::Blue => ColourRGB::new(zero, zero, one),
+            NamedColour::Yellow => ColourRGB::new(one, one, zero),
+            NamedColour::Cyan => ColourRGB::new(zero, one, one),
+            NamedColour::Magenta => ColourRGB::new(one, zero, one),
+            NamedColour::Gray => ColourRGB::new(half, half, half),
+            NamedColour::Maroon => ColourRGB::new(half, zero, zero),
+            NamedColour::Olive => ColourRGB::new(half, half, zero),
+            NamedColour::Green => ColourRGB::new(zero, half, zero),
+            NamedColour::Purple => ColourRGB::new(half, zero, half),
+            NamedColour::Teal => ColourRGB::new(zero, half, half),
+            NamedColour::Navy => ColourRGB::new(zero, zero, half),
+        }
     }
 }
 

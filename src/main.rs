@@ -7,7 +7,9 @@ use std::time::Duration;
 
 use nalgebra::Vector3;
 
+use vanrijn::materials::Material;
 use vanrijn::camera::render_scene;
+use vanrijn::colour::NamedColour;
 use vanrijn::image::OutputImage;
 use vanrijn::raycasting::{Plane, Sphere};
 use vanrijn::scene::Scene;
@@ -56,8 +58,22 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let scene = Scene {
         camera_location: Vector3::new(0.0, 0.0, 0.0),
         objects: vec![
-            Box::new(Plane::new(Vector3::new(0.0, 1.0, 0.0), -2.0)),
-            Box::new(Sphere::new(Vector3::new(0.0, 1.0, 5.0), 1.0)),
+            Box::new(Plane::new(
+                Vector3::new(0.0, 1.0, 0.0),
+                -2.0,
+                Material {
+                    colour: NamedColour::Green.as_colourrgb(),
+                    smoothness: 0.0,
+                },
+            )),
+            Box::new(Sphere::new(
+                Vector3::new(0.0, 1.0, 5.0),
+                1.0,
+                Material {
+                    colour: NamedColour::Blue.as_colourrgb(),
+                    smoothness: 0.7,
+                },
+            ))
         ],
     };
     render_scene(&mut output_image, &scene);

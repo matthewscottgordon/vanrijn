@@ -1,3 +1,5 @@
+use super::colour::ColourRGB24;
+
 pub struct OutputImage {
     pixel_data: Vec<u8>,
     width: u32,
@@ -22,12 +24,10 @@ impl OutputImage {
         self
     }
 
-    pub fn set_color(&mut self, row: u32, column: u32, red: u8, green: u8, blue: u8) {
+    pub fn set_color(&mut self, row: u32, column: u32, colour: ColourRGB24) {
         assert!(row < self.height && column < self.width);
         let index = (((self.height - (row + 1)) * self.width + column) * self.channels) as usize;
-        self.pixel_data[index] = red;
-        self.pixel_data[index + 1] = green;
-        self.pixel_data[index + 2] = blue;
+        self.pixel_data[index..index+3].copy_from_slice(&colour.values[..]);
     }
 
     pub fn get_pixel_data(&self) -> &Vec<u8> {
