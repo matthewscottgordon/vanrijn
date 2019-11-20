@@ -1,7 +1,7 @@
 use nalgebra::{convert, RealField, Vector3};
 
-use super::colour::{ClampingToneMapper, NamedColour, NormalizedAsByte, ToneMapper};
-use super::image::OutputImage;
+use super::colour::{ColourRgbF, NamedColour};
+use super::image::ImageRgbF;
 use super::integrators::{DirectionalLight, Integrator, PhongIntegrator};
 use super::raycasting::Ray;
 use super::scene::Scene;
@@ -61,11 +61,7 @@ impl<T: RealField> ImageSampler<T> {
     }
 }
 
-pub fn render_scene<T: RealField + NormalizedAsByte>(
-    output_image: &mut OutputImage,
-    scene: &Scene<T>,
-) where
-    f32: From<T>,
+pub fn render_scene<T: RealField>(output_image: &mut ImageRgbF<T>, scene: &Scene<T>)
 {
     let image_sampler = ImageSampler::new(
         output_image.get_width(),
@@ -79,7 +75,6 @@ pub fn render_scene<T: RealField + NormalizedAsByte>(
             intensity: convert(0.3),
         }],
     };
-    let tone_mapper = ClampingToneMapper {};
     for column in 0..output_image.get_width() {
         for row in 0..output_image.get_height() {
             let ray = image_sampler.ray_for_pixel(row, column);
@@ -94,11 +89,10 @@ pub fn render_scene<T: RealField + NormalizedAsByte>(
                     },
                 );
             let colour = match hit {
-                None => NamedColour::Black.as_colourrgb(),
+                None => ColourRgbF::from_named(NamedColour::Black),
                 Some(intersection_info) => integrator.integrate(&intersection_info),
             };
-            let colour = tone_mapper.apply_tone_mapping(&colour);
-            output_image.set_color(row, column, colour);
+            output_image.set_colour(row, column, colour);
         }
     }
 }

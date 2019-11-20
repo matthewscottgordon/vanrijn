@@ -7,19 +7,19 @@ use std::time::Duration;
 
 use nalgebra::Vector3;
 
-use vanrijn::materials::Material;
 use vanrijn::camera::render_scene;
-use vanrijn::colour::NamedColour;
-use vanrijn::image::OutputImage;
+use vanrijn::colour::{ColourRgbF, NamedColour};
+use vanrijn::image::{ClampingToneMapper, ImageRgbF, ImageRgbU8, ToneMapper};
+use vanrijn::materials::Material;
 use vanrijn::raycasting::{Plane, Sphere};
 use vanrijn::scene::Scene;
 
-fn update_texture(image: &OutputImage, texture: &mut Texture) {
+fn update_texture(image: &ImageRgbU8, texture: &mut Texture) {
     texture
         .update(
             None,
             image.get_pixel_data().as_slice(),
-            (image.get_width() * image.get_num_channels()) as usize,
+            (image.get_width() * ImageRgbU8::num_channels()) as usize,
         )
         .expect("Couldn't update texture.");
 }
@@ -53,7 +53,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         image_width as u32,
         image_height as u32,
     )?;
-    let mut output_image = OutputImage::new(image_width, image_height);
+    let mut output_image = ImageRgbF::<f64>::new(image_width, image_height);
 
     let scene = Scene {
         camera_location: Vector3::new(0.0, 0.0, 0.0),
@@ -62,7 +62,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Vector3::new(0.0, 1.0, 0.0),
                 -2.0,
                 Material {
-                    colour: NamedColour::Green.as_colourrgb(),
+                    colour: ColourRgbF::from_named(NamedColour::Green),
                     smoothness: 0.0,
                 },
             )),
@@ -70,14 +70,16 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Vector3::new(0.0, 1.0, 5.0),
                 1.0,
                 Material {
-                    colour: NamedColour::Blue.as_colourrgb(),
+                    colour: ColourRgbF::from_named(NamedColour::Blue),
                     smoothness: 0.7,
                 },
-            ))
+            )),
         ],
     };
     render_scene(&mut output_image, &scene);
-    update_texture(&output_image, &mut rendered_image_texture);
+    let mut output_image_rgbu8 = ImageRgbU8::new(image_width, image_height);
+    ClampingToneMapper {}.apply_tone_mapping(&output_image, &mut output_image_rgbu8);
+    update_texture(&output_image_rgbu8, &mut rendered_image_texture);
     canvas.copy(&rendered_image_texture, None, None)?;
     canvas.present();
 
