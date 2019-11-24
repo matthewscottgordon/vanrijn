@@ -1,6 +1,8 @@
 use nalgebra::{convert, RealField, Vector3};
 
-#[derive(Debug)]
+use std::ops::{Add, Mul};
+
+#[derive(Copy, Clone, Debug)]
 pub struct ColourRgbF<T: RealField> {
     values: Vector3<T>,
 }
@@ -78,12 +80,47 @@ pub enum NamedColour {
     Navy,
 }
 
+impl<T: RealField> Add<ColourRgbF<T>> for ColourRgbF<T> {
+    type Output = ColourRgbF<T>;
+    fn add(self, rhs: ColourRgbF<T>) -> ColourRgbF<T> {
+        ColourRgbF {
+            values: self.values + rhs.values,
+        }
+    }
+}
+
+impl<T: RealField> Mul<T> for ColourRgbF<T> {
+    type Output = ColourRgbF<T>;
+    fn mul(self, rhs: T) -> ColourRgbF<T> {
+        ColourRgbF {
+            values: self.values * rhs,
+        }
+    }
+}
+
+impl<T: RealField> Mul<ColourRgbF<T>> for ColourRgbF<T> {
+    type Output = ColourRgbF<T>;
+    fn mul(self, rhs: ColourRgbF<T>) -> ColourRgbF<T> {
+        ColourRgbF {
+            values: self.values.component_mul(&rhs.values),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     mod colour_rgb {
         use super::*;
+        use quickcheck::{Arbitrary, Gen};
+        use quickcheck_macros::quickcheck;
+        impl<T: Arbitrary + RealField> Arbitrary for ColourRgbF<T> {
+            fn arbitrary<G: Gen>(g: &mut G) -> ColourRgbF<T> {
+                let values = <Vector3<T> as Arbitrary>::arbitrary(g);
+                ColourRgbF { values }
+            }
+        }
 
         #[test]
         fn constructor_sets_correct_red_green_and_blue() {
@@ -98,6 +135,63 @@ mod tests {
             let target = ColourRgbF::new(1.0, 2.0, 3.0);
             let result = target.as_vector3();
             assert!(result.x == 1.0);
+        }
+
+        #[quickcheck]
+        fn any_colour_multiplied_by_zero_is_black(colour: ColourRgbF<f64>) {
+            let target = colour * 0.0;
+            assert!(target.red() == 0.0);
+            assert!(target.green() == 0.0);
+            assert!(target.blue() == 0.0);
+        }
+
+        #[quickcheck]
+        fn red_channel_multiplied_by_scalar_yields_correct_result(
+            colour: ColourRgbF<f64>,
+            scalar: f64,
+        ) {
+            let target = colour * scalar;
+            assert!(target.red() == colour.red() * scalar);
+        }
+
+        #[quickcheck]
+        fn green_channel_multiplied_by_scalar_yields_correct_result(
+            colour: ColourRgbF<f64>,
+            scalar: f64,
+        ) {
+            let target = colour * scalar;
+            assert!(target.green() == colour.green() * scalar);
+        }
+
+        #[quickcheck]
+        fn blue_channel_multiplied_by_scalar_yields_correct_result(
+            colour: ColourRgbF<f64>,
+            scalar: f64,
+        ) {
+            let target = colour * scalar;
+            assert!(target.blue() == colour.blue() * scalar);
+        }
+
+        #[quickcheck]
+        fn adding_colourrgbf_adds_individual_channels(
+            colour1: ColourRgbF<f64>,
+            colour2: ColourRgbF<f64>,
+        ) {
+            let target = colour1 + colour2;
+            assert!(target.red() == colour1.red() + colour2.red());
+            assert!(target.green() == colour1.green() + colour2.green());
+            assert!(target.blue() == colour1.blue() + colour2.blue());
+        }
+
+        #[quickcheck]
+        fn multiplying_colourrgbf_adds_individual_channels(
+            colour1: ColourRgbF<f64>,
+            colour2: ColourRgbF<f64>,
+        ) {
+            let target = colour1 * colour2;
+            assert!(target.red() == colour1.red() * colour2.red());
+            assert!(target.green() == colour1.green() * colour2.green());
+            assert!(target.blue() == colour1.blue() * colour2.blue());
         }
     }
 }
