@@ -4,6 +4,7 @@ use super::colour::{ColourRgbF, NamedColour};
 use super::image::ImageRgbF;
 use super::integrators::{DirectionalLight, Integrator, PhongIntegrator};
 use super::raycasting::Ray;
+use super::sampler::Sampler;
 use super::scene::Scene;
 
 struct ImageSampler<T: RealField> {
@@ -61,7 +62,7 @@ impl<T: RealField> ImageSampler<T> {
     }
 }
 
-pub fn render_scene<'a, T: RealField>(output_image: &mut ImageRgbF<T>, scene: &Scene<T>) {
+pub fn render_scene<T: RealField>(output_image: &mut ImageRgbF<T>, scene: &Scene<T>) {
     let image_sampler = ImageSampler::new(
         output_image.get_width(),
         output_image.get_height(),
@@ -76,22 +77,14 @@ pub fn render_scene<'a, T: RealField>(output_image: &mut ImageRgbF<T>, scene: &S
             colour: ColourRgbF::from_named(NamedColour::White) * directional_intensity,
         }],
     };
+    let sampler = Sampler { scene };
     for column in 0..output_image.get_width() {
         for row in 0..output_image.get_height() {
             let ray = image_sampler.ray_for_pixel(row, column);
-            let hit = scene
-                .objects
-                .iter()
-                .flat_map(|object| object.intersect(&ray))
-                .min_by(
-                    |a, b| match PartialOrd::partial_cmp(&a.distance, &b.distance) {
-                        None => std::cmp::Ordering::Less,
-                        Some(ordering) => ordering,
-                    },
-                );
+            let hit = sampler.sample(&ray);
             let colour = match hit {
                 None => ColourRgbF::from_named(NamedColour::Black),
-                Some(intersection_info) => integrator.integrate(&intersection_info),
+                Some(intersection_info) => integrator.integrate(&sampler, &intersection_info),
             };
             output_image.set_colour(row, column, colour);
         }
