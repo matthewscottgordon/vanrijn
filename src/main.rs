@@ -7,10 +7,12 @@ use std::time::Duration;
 
 use nalgebra::Vector3;
 
+use std::rc::Rc;
+
 use vanrijn::camera::render_scene;
 use vanrijn::colour::{ColourRgbF, NamedColour};
 use vanrijn::image::{ClampingToneMapper, ImageRgbF, ImageRgbU8, ToneMapper};
-use vanrijn::materials::Material;
+use vanrijn::materials::LambertianMaterial;
 use vanrijn::raycasting::{Plane, Sphere};
 use vanrijn::scene::Scene;
 
@@ -61,18 +63,16 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             Box::new(Plane::new(
                 Vector3::new(0.0, 1.0, 0.0),
                 -2.0,
-                Material {
+                Rc::new(LambertianMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Green),
-                    smoothness: 0.0,
-                },
+                }),
             )),
             Box::new(Sphere::new(
                 Vector3::new(0.0, 1.0, 5.0),
                 1.0,
-                Material {
+                Rc::new(LambertianMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Blue),
-                    smoothness: 0.7,
-                },
+                }),
             )),
         ],
     };

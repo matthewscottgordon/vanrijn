@@ -9,20 +9,22 @@ pub trait Integrator<T: RealField> {
 
 pub struct DirectionalLight<T: RealField> {
     pub direction: Vector3<T>,
-    pub intensity: T,
+    pub colour: ColourRgbF<T>,
 }
 
 pub struct PhongIntegrator<T: RealField> {
-    pub ambient_light: T,
+    pub ambient_light: ColourRgbF<T>,
     pub lights: Vec<DirectionalLight<T>>,
 }
 
 impl<T: RealField> Integrator<T> for PhongIntegrator<T> {
     fn integrate(&self, info: &IntersectionInfo<T>) -> ColourRgbF<T> {
-        let intensity = self.lights
+        self.lights
             .iter()
-            .map(|light| light.intensity * light.direction.dot(&info.normal))
-            .fold(self.ambient_light, |a, b| a + b);
-        ColourRgbF::from_vector3(&(info.material.colour.as_vector3() * intensity))
+            .map(|light| {
+                info.material.bsdf()(info.retro, light.direction, light.colour)
+                    * light.direction.dot(&info.normal)
+            })
+            .fold(self.ambient_light, |a, b| a + b)
     }
 }

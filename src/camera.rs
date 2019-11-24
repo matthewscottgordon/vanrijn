@@ -61,18 +61,19 @@ impl<T: RealField> ImageSampler<T> {
     }
 }
 
-pub fn render_scene<T: RealField>(output_image: &mut ImageRgbF<T>, scene: &Scene<T>)
-{
+pub fn render_scene<'a, T: RealField>(output_image: &mut ImageRgbF<T>, scene: &Scene<T>) {
     let image_sampler = ImageSampler::new(
         output_image.get_width(),
         output_image.get_height(),
         scene.camera_location,
     );
+    let ambient_intensity: T = convert(0.0);
+    let directional_intensity: T = convert(0.9);
     let integrator = PhongIntegrator::<T> {
-        ambient_light: convert(0.1),
+        ambient_light: ColourRgbF::from_named(NamedColour::White) * ambient_intensity,
         lights: vec![DirectionalLight {
             direction: Vector3::new(convert(1.0), convert(1.0), convert(-1.0)).normalize(),
-            intensity: convert(0.3),
+            colour: ColourRgbF::from_named(NamedColour::White) * directional_intensity,
         }],
     };
     for column in 0..output_image.get_width() {
@@ -100,8 +101,9 @@ pub fn render_scene<T: RealField>(output_image: &mut ImageRgbF<T>, scene: &Scene
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::materials::Material;
+    use crate::materials::LambertianMaterial;
     use crate::raycasting::{Intersect, IntersectionInfo, Plane};
+    use std::rc::Rc;
 
     #[cfg(test)]
     mod imagesampler {
@@ -126,7 +128,7 @@ mod tests {
             let film_plane = Plane::new(
                 Vector3::new(0.0, 0.0, 1.0),
                 target.film_distance,
-                Material::<f64>::new_dummy(),
+                Rc::new(LambertianMaterial::<f64>::new_dummy()),
             );
             let point_on_film_plane = match film_plane.intersect(&ray) {
                 Some(IntersectionInfo {
