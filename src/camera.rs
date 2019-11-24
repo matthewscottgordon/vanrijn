@@ -2,7 +2,7 @@ use nalgebra::{convert, RealField, Vector3};
 
 use super::colour::{ColourRgbF, NamedColour};
 use super::image::ImageRgbF;
-use super::integrators::{DirectionalLight, Integrator, PhongIntegrator};
+use super::integrators::{DirectionalLight, Integrator, WhittedIntegrator};
 use super::raycasting::Ray;
 use super::sampler::Sampler;
 use super::scene::Scene;
@@ -69,13 +69,20 @@ pub fn render_scene<T: RealField>(output_image: &mut ImageRgbF<T>, scene: &Scene
         scene.camera_location,
     );
     let ambient_intensity: T = convert(0.0);
-    let directional_intensity: T = convert(0.9);
-    let integrator = PhongIntegrator::<T> {
+    let directional_intensity1: T = convert(0.7);
+    let directional_intensity2: T = convert(0.3);
+    let integrator = WhittedIntegrator::<T> {
         ambient_light: ColourRgbF::from_named(NamedColour::White) * ambient_intensity,
-        lights: vec![DirectionalLight {
-            direction: Vector3::new(convert(1.0), convert(1.0), convert(-1.0)).normalize(),
-            colour: ColourRgbF::from_named(NamedColour::White) * directional_intensity,
-        }],
+        lights: vec![
+            DirectionalLight {
+                direction: Vector3::new(convert(1.0), convert(1.0), convert(-1.0)).normalize(),
+                colour: ColourRgbF::from_named(NamedColour::White) * directional_intensity1,
+            },
+            DirectionalLight {
+                direction: Vector3::new(convert(-0.5), convert(2.0), convert(-0.5)).normalize(),
+                colour: ColourRgbF::from_named(NamedColour::White) * directional_intensity2,
+            },
+        ],
     };
     let sampler = Sampler { scene };
     for column in 0..output_image.get_width() {

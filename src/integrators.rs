@@ -1,4 +1,4 @@
-use nalgebra::{RealField, Vector3};
+use nalgebra::{convert, RealField, Vector3};
 
 use super::colour::ColourRgbF;
 use super::raycasting::{IntersectionInfo, Ray};
@@ -13,24 +13,28 @@ pub struct DirectionalLight<T: RealField> {
     pub colour: ColourRgbF<T>,
 }
 
-pub struct PhongIntegrator<T: RealField> {
+pub struct WhittedIntegrator<T: RealField> {
     pub ambient_light: ColourRgbF<T>,
     pub lights: Vec<DirectionalLight<T>>,
 }
 
-impl<T: RealField> Integrator<T> for PhongIntegrator<T> {
+// TODO: Get rid of the magic bias number, which should be calculated base on expected error
+// bounds and tangent direction
+impl<T: RealField> Integrator<T> for WhittedIntegrator<T> {
     fn integrate(&self, sampler: &Sampler<T>, info: &IntersectionInfo<T>) -> ColourRgbF<T> {
         self.lights
             .iter()
-            .map(
-                |light| match sampler.sample(&Ray::new(info.location, light.direction)) {
+            .map(|light| {
+                match sampler
+                    .sample(&Ray::new(info.location, light.direction).bias(convert(0.000000001)))
+                {
                     Some(_) => self.ambient_light,
                     None => {
                         info.material.bsdf()(info.retro, light.direction, light.colour)
                             * light.direction.dot(&info.normal)
                     }
-                },
-            )
+                }
+            })
             .fold(self.ambient_light, |a, b| a + b)
     }
 }
