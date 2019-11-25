@@ -64,14 +64,28 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Vector3::new(0.0, 1.0, 0.0),
                 -2.0,
                 Rc::new(LambertianMaterial {
+                    colour: ColourRgbF::new(0.55, 0.27, 0.04),
+                }),
+            )),
+            Box::new(Sphere::new(
+                Vector3::new(1.25, -0.5, 6.0),
+                1.0,
+                Rc::new(LambertianMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Green),
                 }),
             )),
             Box::new(Sphere::new(
-                Vector3::new(0.0, 1.0, 5.0),
+                Vector3::new(-1.25, -0.5, 6.0),
                 1.0,
                 Rc::new(LambertianMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Blue),
+                }),
+            )),
+            Box::new(Sphere::new(
+                Vector3::new(0.0, 1.5, 6.0),
+                1.0,
+                Rc::new(LambertianMaterial {
+                    colour: ColourRgbF::from_named(NamedColour::Red),
                 }),
             )),
         ],
