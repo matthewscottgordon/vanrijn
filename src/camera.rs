@@ -63,6 +63,24 @@ impl<T: RealField> ImageSampler<T> {
 }
 
 pub fn render_scene<T: RealField>(output_image: &mut ImageRgbF<T>, scene: &Scene<T>) {
+    partial_render_scene(
+        output_image,
+        scene,
+        0,
+        output_image.get_height(),
+        0,
+        output_image.get_width(),
+    )
+}
+
+pub fn partial_render_scene<T: RealField>(
+    output_image: &mut ImageRgbF<T>,
+    scene: &Scene<T>,
+    row_start: u32,
+    row_end: u32,
+    column_start: u32,
+    column_end: u32,
+) {
     let image_sampler = ImageSampler::new(
         output_image.get_width(),
         output_image.get_height(),
@@ -85,8 +103,8 @@ pub fn render_scene<T: RealField>(output_image: &mut ImageRgbF<T>, scene: &Scene
         ],
     };
     let sampler = Sampler { scene };
-    for column in 0..output_image.get_width() {
-        for row in 0..output_image.get_height() {
+    for column in column_start..column_end {
+        for row in row_start..row_end {
             let ray = image_sampler.ray_for_pixel(row, column);
             let hit = sampler.sample(&ray);
             let colour = match hit {

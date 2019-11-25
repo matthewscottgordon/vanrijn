@@ -7,9 +7,10 @@ use std::time::Duration;
 
 use nalgebra::Vector3;
 
+use std::cmp::min;
 use std::rc::Rc;
 
-use vanrijn::camera::render_scene;
+use vanrijn::camera::partial_render_scene;
 use vanrijn::colour::{ColourRgbF, NamedColour};
 use vanrijn::image::{ClampingToneMapper, ImageRgbF, ImageRgbU8, ToneMapper};
 use vanrijn::materials::LambertianMaterial;
@@ -90,16 +91,46 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             )),
         ],
     };
-    render_scene(&mut output_image, &scene);
-    let mut output_image_rgbu8 = ImageRgbU8::new(image_width, image_height);
-    ClampingToneMapper {}.apply_tone_mapping(&output_image, &mut output_image_rgbu8);
-    update_texture(&output_image_rgbu8, &mut rendered_image_texture);
-    canvas.copy(&rendered_image_texture, None, None)?;
-    canvas.present();
 
     let mut event_pump = sdl_context.event_pump()?;
     let mut i = 0;
     'running: loop {
+        let tile_size = 128;
+        for tile_row in 0..(output_image.get_height() + 1) / tile_size {
+            for tile_column in 0..(output_image.get_width() + 1) / tile_size {
+                let row_start = tile_row * tile_size;
+                let row_end = min(tile_row * tile_size + tile_size, output_image.get_width());
+                let column_start = tile_column * tile_size;
+                let column_end = min(
+                    tile_column * tile_size + tile_size,
+                    output_image.get_height(),
+                );
+                partial_render_scene(
+                    &mut output_image,
+                    &scene,
+                    row_start,
+                    row_end,
+                    column_start,
+                    column_end,
+                );
+                let mut output_image_rgbu8 = ImageRgbU8::new(image_width, image_height);
+                ClampingToneMapper {}.apply_tone_mapping(&output_image, &mut output_image_rgbu8);
+                update_texture(&output_image_rgbu8, &mut rendered_image_texture);
+                canvas.copy(&rendered_image_texture, None, None)?;
+                canvas.present();
+
+                for event in event_pump.poll_iter() {
+                    match event {
+                        Event::Quit { .. }
+                        | Event::KeyDown {
+                            keycode: Some(Keycode::Escape),
+                            ..
+                        } => break 'running,
+                        _ => {}
+                    }
+                }
+            }
+        }
         i = (i + 1) % 255;
         for event in event_pump.poll_iter() {
             match event {
