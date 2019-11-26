@@ -66,6 +66,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 -2.0,
                 Rc::new(LambertianMaterial {
                     colour: ColourRgbF::new(0.55, 0.27, 0.04),
+                    diffuse_strength: 0.1,
                 }),
             )),
             Box::new(Sphere::new(
@@ -73,6 +74,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 1.0,
                 Rc::new(LambertianMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Green),
+                    diffuse_strength: 0.1,
                 }),
             )),
             Box::new(Sphere::new(
@@ -80,6 +82,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 1.0,
                 Rc::new(LambertianMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Blue),
+                    diffuse_strength: 0.1,
                 }),
             )),
             Box::new(Sphere::new(
@@ -87,6 +90,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 1.0,
                 Rc::new(LambertianMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Red),
+                    diffuse_strength: 0.1,
                 }),
             )),
         ],

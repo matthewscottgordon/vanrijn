@@ -87,8 +87,8 @@ pub fn partial_render_scene<T: RealField>(
         scene.camera_location,
     );
     let ambient_intensity: T = convert(0.0);
-    let directional_intensity1: T = convert(0.7);
-    let directional_intensity2: T = convert(0.3);
+    let directional_intensity1: T = convert(7.0);
+    let directional_intensity2: T = convert(3.0);
     let integrator = WhittedIntegrator::<T> {
         ambient_light: ColourRgbF::from_named(NamedColour::White) * ambient_intensity,
         lights: vec![
