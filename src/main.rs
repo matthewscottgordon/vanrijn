@@ -99,11 +99,11 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         for tile_row in 0..(output_image.get_height() + 1) / tile_size {
             for tile_column in 0..(output_image.get_width() + 1) / tile_size {
                 let row_start = tile_row * tile_size;
-                let row_end = min(tile_row * tile_size + tile_size, output_image.get_width());
+                let row_end = min(tile_row * tile_size + tile_size, output_image.get_height());
                 let column_start = tile_column * tile_size;
                 let column_end = min(
                     tile_column * tile_size + tile_size,
-                    output_image.get_height(),
+                    output_image.get_width(),
                 );
                 partial_render_scene(
                     &mut output_image,
