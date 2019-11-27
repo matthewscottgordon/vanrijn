@@ -1,5 +1,6 @@
 use nalgebra::{convert, RealField, Vector3};
 
+use super::algebra_utils::try_change_of_basis_matrix;
 use super::colour::ColourRgbF;
 use super::raycasting::{IntersectionInfo, Ray};
 use super::sampler::Sampler;
@@ -25,13 +26,19 @@ impl<T: RealField> Integrator<T> for WhittedIntegrator<T> {
         self.lights
             .iter()
             .map(|light| {
+                let basis_change =
+                    try_change_of_basis_matrix(&info.tangent, &info.cotangent, &info.normal)
+                        .expect("Normal, tangent and cotangent don't for a valid basis.");
                 match sampler
                     .sample(&Ray::new(info.location, light.direction).bias(convert(0.000000001)))
                 {
                     Some(_) => self.ambient_light,
                     None => {
-                        info.material.bsdf()(info.retro, light.direction, light.colour)
-                            * light.direction.dot(&info.normal)
+                        info.material.bsdf()(
+                            basis_change * info.retro,
+                            basis_change * light.direction,
+                            light.colour,
+                        ) * light.direction.dot(&info.normal).abs()
                     }
                 }
             })

@@ -13,7 +13,7 @@ use std::rc::Rc;
 use vanrijn::camera::partial_render_scene;
 use vanrijn::colour::{ColourRgbF, NamedColour};
 use vanrijn::image::{ClampingToneMapper, ImageRgbF, ImageRgbU8, ToneMapper};
-use vanrijn::materials::LambertianMaterial;
+use vanrijn::materials::{LambertianMaterial, PhongMaterial};
 use vanrijn::raycasting::{Plane, Sphere};
 use vanrijn::scene::Scene;
 
@@ -88,9 +88,11 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             Box::new(Sphere::new(
                 Vector3::new(0.0, 1.5, 6.0),
                 1.0,
-                Rc::new(LambertianMaterial {
+                Rc::new(PhongMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Red),
-                    diffuse_strength: 0.1,
+                    diffuse_strength: 0.05,
+                    smoothness: 20.0,
+                    specular_strength: 250.0,
                 }),
             )),
         ],
