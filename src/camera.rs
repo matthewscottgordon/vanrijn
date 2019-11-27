@@ -153,6 +153,8 @@ mod tests {
                     location,
                     distance: _,
                     normal: _,
+                    tangent: _,
+                    cotangent: _,
                     retro: _,
                     material: _,
                 }) => location,

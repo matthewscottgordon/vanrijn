@@ -32,6 +32,8 @@ pub struct IntersectionInfo<T: RealField> {
     pub distance: T,
     pub location: Vector3<T>,
     pub normal: Vector3<T>,
+    pub tangent: Vector3<T>,
+    pub cotangent: Vector3<T>,
     pub retro: Vector3<T>,
     pub material: Rc<dyn Material<T>>,
 }
@@ -58,23 +60,30 @@ impl<T: RealField> Sphere<T> {
 
 impl<T: RealField> Intersect<T> for Sphere<T> {
     fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
-        let ray_origin_to_sphere_centre = self.centre - ray.origin;
+        /*let ray_origin_to_sphere_centre = self.centre - ray.origin;
         let radius_squared = self.radius * self.radius;
         let is_inside_sphere = ray_origin_to_sphere_centre.norm_squared() <= radius_squared;
         // t0/p0 is the point on the ray that's closest to the centre of the sphere
+        // ray.direction is normalized, so it's not necessary to divide by its length.
         let t0 = ray_origin_to_sphere_centre.dot(&ray.direction);
         if !is_inside_sphere && t0 < T::zero() {
             // Sphere is behind ray origin
             return None;
         }
         // Squared distance between ray origin and sphere centre
-        let d0_squared = (ray.origin - self.centre).norm_squared();
-        // Squared distance petween p0 and sphere centre
+        let d0_squared = (ray_origin_to_sphere_centre).norm_squared();
+        // p0, ray.origin and sphere.centre form a right triangle, with p0 at the right corner,
+        // Squared distance petween p0 and sphere centre, using Pythagoras
         let p0_dist_from_centre_squared = d0_squared - t0 * t0;
         if p0_dist_from_centre_squared > radius_squared {
             // Sphere is in front of ray but ray misses
             return None;
         }
+        let p0_dist_from_centre =p0_dist_from_centre_squared.sqrt();
+        // Two more right triangles are formed by p0, the sphere centre, and the two places
+        // where the ray intersects the sphere. (Or the ray may be a tangent to the sphere
+        // in which case these triangles are degenerate. Here we use Pythagoras again to find
+        .// find the distance between p0 and the two intersection points.
         let delta = (radius_squared - p0_dist_from_centre_squared).sqrt();
         let distance = if is_inside_sphere {
             // radius origin is inside sphere
@@ -84,19 +93,69 @@ impl<T: RealField> Intersect<T> for Sphere<T> {
         };
         let location = ray.point_at(distance);
         let normal = (location - self.centre).normalize();
-        let retro = -ray.direction;
-        Some(IntersectionInfo {
-            distance,
-            location,
-            normal,
-            retro,
-            material: Rc::clone(&self.material),
-        })
+        let tangent = normal.cross(&Vector3::z_axis());
+        let cotangent = normal.cross(&tangent);
+        let retro = -ray.direction;*/
+        let two: T = convert(2.0);
+        let four: T = convert(4.0);
+        let a = ray
+            .direction
+            .component_mul(&ray.direction)
+            .iter()
+            .fold(T::zero(), |a, b| a + *b);
+        let b = ((ray.origin.component_mul(&ray.direction)
+            - self.centre.component_mul(&ray.direction))
+            * two)
+            .iter()
+            .fold(T::zero(), |a, b| a + *b);
+        let c = (ray.origin.component_mul(&ray.origin) + self.centre.component_mul(&self.centre)
+            - self.centre.component_mul(&ray.origin) * two)
+            .iter()
+            .fold(T::zero(), |a, b| a + *b)
+            - self.radius * self.radius;
+        let delta_squared: T = b * b - four * a * c;
+        if delta_squared < T::zero() {
+            None
+        } else {
+            let delta = delta_squared.sqrt();
+            let one_over_2_a = T::one() / (two * a);
+            let t1 = (-b - delta) * one_over_2_a;
+            let t2 = (-b + delta) * one_over_2_a;
+            let distance = if t1 < T::zero() {
+                t2
+            } else if t2 < T::zero() {
+                t1
+            } else if t1 < t2 {
+                t1
+            } else {
+                t2
+            };
+            if distance <= T::zero() {
+                None
+            } else {
+                let location = ray.point_at(distance);
+                let normal = (location - self.centre).normalize();
+                let tangent = normal.cross(&Vector3::z_axis());
+                let cotangent = normal.cross(&tangent);
+                let retro = -ray.direction;
+                Some(IntersectionInfo {
+                    distance,
+                    location,
+                    normal,
+                    tangent,
+                    cotangent,
+                    retro,
+                    material: Rc::clone(&self.material),
+                })
+            }
+        }
     }
 }
 
 pub struct Plane<T: RealField> {
     normal: Vector3<T>,
+    tangent: Vector3<T>,
+    cotangent: Vector3<T>,
     distance_from_origin: T,
     material: Rc<dyn Material<T>>,
 }
@@ -108,8 +167,14 @@ impl<T: RealField> Plane<T> {
         material: Rc<dyn Material<T>>,
     ) -> Plane<T> {
         normal.normalize();
+        let mut axis_closest_to_tangent = Vector3::zeros();
+        axis_closest_to_tangent[normal.iamin()] = T::one();
+        let cotangent = normal.cross(&axis_closest_to_tangent);
+        let tangent = normal.cross(&cotangent);
         Plane {
             normal,
+            tangent,
+            cotangent,
             distance_from_origin,
             material,
         }
@@ -137,6 +202,8 @@ impl<T: RealField> Intersect<T> for Plane<T> {
             distance: t,
             location: ray.point_at(t),
             normal: self.normal,
+            tangent: self.tangent,
+            cotangent: self.cotangent,
             retro: -ray.direction,
             material: Rc::clone(&self.material),
         })
@@ -159,7 +226,7 @@ mod tests {
 
     use super::*;
     use crate::materials::LambertianMaterial;
-    use quickcheck::{Arbitrary, Gen};
+    use quickcheck::{Arbitrary, Gen, TestResult};
     impl<T: Arbitrary + RealField> Arbitrary for Ray<T> {
         fn arbitrary<G: Gen>(g: &mut G) -> Ray<T> {
             let origin = <Vector3<T> as Arbitrary>::arbitrary(g);
@@ -240,6 +307,28 @@ mod tests {
         assert_matches!(s.intersect(&r), Some(_));
     }
 
+    #[quickcheck]
+    fn ray_intersects_sphere_centre_at_correct_distance(
+        ray_origin: Vector3<f64>,
+        sphere_centre: Vector3<f64>,
+        radius: f64,
+    ) -> TestResult {
+        if radius <= 0.0 || radius + 0.000001 >= (ray_origin - sphere_centre).norm() {
+            return TestResult::discard();
+        };
+        let sphere = Sphere::new(
+            sphere_centre,
+            radius,
+            Rc::new(LambertianMaterial::new_dummy()),
+        );
+        let ray = Ray::new(ray_origin, sphere_centre - ray_origin);
+        let info = sphere.intersect(&ray).unwrap();
+        let distance_to_centre = (sphere_centre - ray.origin).norm();
+        TestResult::from_bool(
+            (distance_to_centre - (info.distance + sphere.radius)).abs() < 0.00001,
+        )
+    }
+
     #[test]
     fn ray_intersects_plane() {
         let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(-1.0, 0.0, 1.0));
@@ -275,6 +364,8 @@ mod tests {
                 distance: _,
                 location,
                 normal: _,
+                tangent: _,
+                cotangent: _,
                 retro: _,
                 material: _,
             }) => assert!((location.x - (-5.0f64)).abs() < 0.0000000001),
