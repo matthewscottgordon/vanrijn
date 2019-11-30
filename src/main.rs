@@ -91,8 +91,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Rc::new(PhongMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Red),
                     diffuse_strength: 0.05,
-                    smoothness: 20.0,
-                    specular_strength: 250.0,
+                    smoothness: 100.0,
+                    specular_strength: 1.0,
                 }),
             )),
         ],

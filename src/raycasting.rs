@@ -135,7 +135,7 @@ impl<T: RealField> Intersect<T> for Sphere<T> {
             } else {
                 let location = ray.point_at(distance);
                 let normal = (location - self.centre).normalize();
-                let tangent = normal.cross(&Vector3::z_axis());
+                let tangent = normal.cross(&Vector3::z_axis()).normalize();
                 let cotangent = normal.cross(&tangent);
                 let retro = -ray.direction;
                 Some(IntersectionInfo {
@@ -169,7 +169,7 @@ impl<T: RealField> Plane<T> {
         normal.normalize();
         let mut axis_closest_to_tangent = Vector3::zeros();
         axis_closest_to_tangent[normal.iamin()] = T::one();
-        let cotangent = normal.cross(&axis_closest_to_tangent);
+        let cotangent = normal.cross(&axis_closest_to_tangent).normalize();
         let tangent = normal.cross(&cotangent);
         Plane {
             normal,
