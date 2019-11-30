@@ -1,4 +1,4 @@
-use nalgebra::{convert, RealField, Vector3};
+use nalgebra::{clamp, convert, RealField, Vector3};
 
 use super::colour::{ColourRgbF, NamedColour};
 
@@ -88,11 +88,15 @@ impl<T: RealField> Material<T> for ReflectiveMaterial<T> {
                     let reflection_vector = Vector3::new(-w_o.x, -w_o.y, w_o.z);
                     let reflection_colour = colour_in * self.reflection_strength;
                     let diffuse_colour = self.colour * colour_in * self.diffuse_strength;
-                    let sigma: T = convert(0.001);
+                    let sigma: T = convert(0.05);
                     let two: T = convert(2.0);
-                    let reflection_factor = (-w_i.dot(&reflection_vector).acos().powf(two)
-                        / (two * sigma * sigma))
-                    .exp();
+                    // These are normalized vectors, but sometimes rounding errors cause the
+                    // dot product to be slightly above 1 or below 0. The call to clamp
+                    // ensures the values stay within the domain of acos,
+                    let theta = clamp(w_i.dot(&reflection_vector), T::zero(), T::one())
+                        .abs()
+                        .acos();
+                    let reflection_factor = (-(theta.powf(two)) / (two * sigma * sigma)).exp();
                     reflection_colour * reflection_factor
                         + diffuse_colour * (T::one() - reflection_factor)
                 }
