@@ -89,6 +89,7 @@ pub fn partial_render_scene<T: RealField>(
     let ambient_intensity: T = convert(0.0);
     let directional_intensity1: T = convert(7.0);
     let directional_intensity2: T = convert(3.0);
+    let directional_intensity3: T = convert(2.0);
     let integrator = WhittedIntegrator::<T> {
         ambient_light: ColourRgbF::from_named(NamedColour::White) * ambient_intensity,
         lights: vec![
@@ -99,6 +100,10 @@ pub fn partial_render_scene<T: RealField>(
             DirectionalLight {
                 direction: Vector3::new(convert(-0.5), convert(2.0), convert(-0.5)).normalize(),
                 colour: ColourRgbF::from_named(NamedColour::White) * directional_intensity2,
+            },
+            DirectionalLight {
+                direction: Vector3::new(convert(-3.0), convert(0.1), convert(-0.5)).normalize(),
+                colour: ColourRgbF::from_named(NamedColour::White) * directional_intensity3,
             },
         ],
     };
