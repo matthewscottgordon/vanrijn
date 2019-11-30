@@ -8,6 +8,10 @@ pub trait Material<T: RealField>: Debug {
     fn bsdf<'a>(
         &'a self,
     ) -> Box<dyn Fn(Vector3<T>, Vector3<T>, ColourRgbF<T>) -> ColourRgbF<T> + 'a>;
+
+    fn sample(&self, _w_o: &Vector3<T>) -> Vec<Vector3<T>> {
+        vec![]
+    }
 }
 
 #[derive(Debug)]

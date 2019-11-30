@@ -23,25 +23,49 @@ pub struct WhittedIntegrator<T: RealField> {
 // bounds and tangent direction
 impl<T: RealField> Integrator<T> for WhittedIntegrator<T> {
     fn integrate(&self, sampler: &Sampler<T>, info: &IntersectionInfo<T>) -> ColourRgbF<T> {
+        let world_to_bsdf_space =
+            try_change_of_basis_matrix(&info.tangent, &info.cotangent, &info.normal)
+                .expect("Normal, tangent and cotangent don't for a valid basis.");
+        let bsdf_to_world_space = world_to_bsdf_space
+            .try_inverse()
+            .expect("Expected matrix to be invertable.");
         self.lights
             .iter()
             .map(|light| {
-                let basis_change =
-                    try_change_of_basis_matrix(&info.tangent, &info.cotangent, &info.normal)
-                        .expect("Normal, tangent and cotangent don't for a valid basis.");
                 match sampler
-                    .sample(&Ray::new(info.location, light.direction).bias(convert(0.000000001)))
+                    .sample(&Ray::new(info.location, light.direction).bias(convert(0.0000001)))
                 {
                     Some(_) => self.ambient_light,
                     None => {
                         info.material.bsdf()(
-                            basis_change * info.retro,
-                            basis_change * light.direction,
+                            world_to_bsdf_space * info.retro,
+                            world_to_bsdf_space * light.direction,
                             light.colour,
                         ) * light.direction.dot(&info.normal).abs()
                     }
                 }
             })
+            .chain(
+                info.material
+                    .sample(&(world_to_bsdf_space * info.retro))
+                    .iter()
+                    .map(|direction| {
+                        let world_space_direction = bsdf_to_world_space * direction;
+                        match sampler.sample(
+                            &Ray::new(info.location, world_space_direction)
+                                .bias(convert(0.0000001)),
+                        ) {
+                            Some(recursive_hit) => {
+                                info.material.bsdf()(
+                                    world_to_bsdf_space * info.retro,
+                                    *direction,
+                                    self.integrate(&sampler, &recursive_hit),
+                                ) * world_space_direction.dot(&info.normal).abs()
+                            }
+                            None => ColourRgbF::new(T::zero(), T::zero(), T::zero()),
+                        }
+                    }),
+            )
             .fold(self.ambient_light, |a, b| a + b)
     }
 }
