@@ -16,6 +16,9 @@ version = "0.19"
 features = ["arbitrary"]
 
 
+[profile.dev]
+opt-level = 3
+
 [profile.release]
 opt-level = 3
 lto = true
