@@ -1,4 +1,4 @@
-use nalgebra::{RealField, Vector3};
+use nalgebra::{convert, RealField, Vector3};
 
 use super::colour::{ColourRgbF, NamedColour};
 
@@ -66,5 +66,41 @@ impl<T: RealField> Material<T> for PhongMaterial<T> {
                 }
             },
         )
+    }
+}
+
+#[derive(Debug)]
+pub struct ReflectiveMaterial<T: RealField> {
+    pub colour: ColourRgbF<T>,
+    pub diffuse_strength: T,
+    pub reflection_strength: T,
+}
+
+impl<T: RealField> Material<T> for ReflectiveMaterial<T> {
+    fn bsdf<'a>(
+        &'a self,
+    ) -> Box<dyn Fn(Vector3<T>, Vector3<T>, ColourRgbF<T>) -> ColourRgbF<T> + 'a> {
+        Box::new(
+            move |w_o: Vector3<T>, w_i: Vector3<T>, colour_in: ColourRgbF<T>| {
+                if w_i.z < T::zero() || w_o.z < T::zero() {
+                    ColourRgbF::new(T::zero(), T::one(), T::one())
+                } else {
+                    let reflection_vector = Vector3::new(-w_o.x, -w_o.y, w_o.z);
+                    let reflection_colour = colour_in * self.reflection_strength;
+                    let diffuse_colour = self.colour * colour_in * self.diffuse_strength;
+                    let sigma: T = convert(0.001);
+                    let two: T = convert(2.0);
+                    let reflection_factor = (-w_i.dot(&reflection_vector).acos().powf(two)
+                        / (two * sigma * sigma))
+                    .exp();
+                    reflection_colour * reflection_factor
+                        + diffuse_colour * (T::one() - reflection_factor)
+                }
+            },
+        )
+    }
+
+    fn sample(&self, w_o: &Vector3<T>) -> Vec<Vector3<T>> {
+        vec![Vector3::new(-w_o.x, -w_o.y, w_o.z)]
     }
 }
