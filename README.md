@@ -2,3 +2,5 @@
 
 # vanrijn
 Ray tracer
+
+![Rendered test image of three spheres](.github/output.png?raw=true "Test Image")
