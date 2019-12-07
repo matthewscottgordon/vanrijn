@@ -19,7 +19,7 @@ impl<T: RealField> Ray<T> {
     }
 
     pub fn point_at(&self, t: T) -> Vector3<T> {
-        return self.origin + self.direction * t;
+        self.origin + self.direction * t
     }
 
     pub fn bias(&self, amount: T) -> Ray<T> {

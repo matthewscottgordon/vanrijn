@@ -115,9 +115,9 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut event_pump = sdl_context.event_pump()?;
     let mut i = 0;
     'running: loop {
-        let tile_size = 128;
-        for tile_row in 0..1 + (output_image.get_height() + 1) / tile_size {
-            for tile_column in 0..1 + (output_image.get_width() + 1) / tile_size {
+        let tile_size = 256;
+        for tile_row in 0..=(output_image.get_height() + 1) / tile_size {
+            for tile_column in 0..=(output_image.get_width() + 1) / tile_size {
                 let row_start = tile_row * tile_size;
                 let row_end = min(tile_row * tile_size + tile_size, output_image.get_height());
                 let column_start = tile_column * tile_size;

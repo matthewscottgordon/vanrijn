@@ -33,7 +33,7 @@ impl<T: RealField> Integrator<T> for WhittedIntegrator<T> {
             .iter()
             .map(|light| {
                 match sampler
-                    .sample(&Ray::new(info.location, light.direction).bias(convert(0.0000001)))
+                    .sample(&Ray::new(info.location, light.direction).bias(convert(0.000_000_1)))
                 {
                     Some(_) => self.ambient_light,
                     None => {
@@ -53,7 +53,7 @@ impl<T: RealField> Integrator<T> for WhittedIntegrator<T> {
                         let world_space_direction = bsdf_to_world_space * direction;
                         match sampler.sample(
                             &Ray::new(info.location, world_space_direction)
-                                .bias(convert(0.0000001)),
+                                .bias(convert(0.000_000_1)),
                         ) {
                             Some(recursive_hit) => {
                                 info.material.bsdf()(

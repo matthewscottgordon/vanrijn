@@ -13,8 +13,8 @@ pub struct ImageRgbU8 {
 impl ImageRgbU8 {
     pub fn new(width: u32, height: u32) -> ImageRgbU8 {
         ImageRgbU8 {
-            width: width,
-            height: height,
+            width,
+            height,
             pixel_data: vec![0; (width * height * 3) as usize],
         }
     }
@@ -73,8 +73,8 @@ pub struct ImageRgbF<T: RealField> {
 impl<T: RealField> ImageRgbF<T> {
     pub fn new(width: u32, height: u32) -> ImageRgbF<T> {
         ImageRgbF {
-            width: width,
-            height: height,
+            width,
+            height,
             pixel_data: vec![convert(0.0); (width * height * 3) as usize],
         }
     }
@@ -272,7 +272,7 @@ mod tests {
             let mut image_out = ImageRgbU8::new(1, 1);
             image_in.set_colour(0, 0, ColourRgbF::new(1.0, 1.0, 1.0));
             target.apply_tone_mapping(&image_in, &mut image_out);
-            assert!(image_out.get_colour(0, 0).values ==  [0xff, 0xff, 0xff]);
+            assert!(image_out.get_colour(0, 0).values == [0xff, 0xff, 0xff]);
         }
 
         #[test]
@@ -282,7 +282,7 @@ mod tests {
             let mut image_out = ImageRgbU8::new(1, 1);
             image_in.set_colour(0, 0, ColourRgbF::new(2.0, 2.0, 2.0));
             target.apply_tone_mapping(&image_in, &mut image_out);
-            assert!(image_out.get_colour(0, 0).values ==  [0xff, 0xff, 0xff]);
+            assert!(image_out.get_colour(0, 0).values == [0xff, 0xff, 0xff]);
         }
 
         #[test]
@@ -292,7 +292,7 @@ mod tests {
             let mut image_out = ImageRgbU8::new(1, 1);
             image_in.set_colour(0, 0, ColourRgbF::new(0.0, 2.0, 0.0));
             target.apply_tone_mapping(&image_in, &mut image_out);
-            assert!(image_out.get_colour(0, 0).values ==  [0x0, 0xff, 0x0]);
+            assert!(image_out.get_colour(0, 0).values == [0x0, 0xff, 0x0]);
         }
 
         #[test]
@@ -302,7 +302,7 @@ mod tests {
             let mut image_out = ImageRgbU8::new(1, 1);
             image_in.set_colour(0, 0, ColourRgbF::new(0.5, 0.0, 0.0));
             target.apply_tone_mapping(&image_in, &mut image_out);
-            assert!(image_out.get_colour(0, 0).values ==  [0x7f, 0x0, 0x0]);
+            assert!(image_out.get_colour(0, 0).values == [0x7f, 0x0, 0x0]);
         }
     }
 }
