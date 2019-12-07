@@ -6,8 +6,8 @@ use std::rc::Rc;
 
 #[derive(Clone, Debug)]
 pub struct Ray<T: RealField> {
-    origin: Vector3<T>,
-    direction: Vector3<T>,
+    pub origin: Vector3<T>,
+    pub direction: Vector3<T>,
 }
 
 impl<T: RealField> Ray<T> {
