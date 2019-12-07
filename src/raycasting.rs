@@ -121,14 +121,10 @@ impl<T: RealField> Intersect<T> for Sphere<T> {
             let one_over_2_a = T::one() / (two * a);
             let t1 = (-b - delta) * one_over_2_a;
             let t2 = (-b + delta) * one_over_2_a;
-            let distance = if t1 < T::zero() {
+            let distance = if t1 < T::zero() || (t2 >= T::zero() && t1 >= t2) {
                 t2
-            } else if t2 < T::zero() {
-                t1
-            } else if t1 < t2 {
-                t1
             } else {
-                t2
+                t1
             };
             if distance <= T::zero() {
                 None
