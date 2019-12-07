@@ -5,7 +5,7 @@ use sdl2::render::{Canvas, Texture};
 use sdl2::Sdl;
 use std::time::Duration;
 
-use nalgebra::Vector3;
+use nalgebra::{Point3, Vector3};
 
 use std::cmp::min;
 use std::rc::Rc;
@@ -46,8 +46,8 @@ fn init_canvas(
 }
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let image_width = 1200;
-    let image_height = 900;
+    let image_width = 2400;
+    let image_height = 1800;
 
     let (sdl_context, mut canvas) = init_canvas(image_width, image_height)?;
 
@@ -60,7 +60,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut output_image = ImageRgbF::<f64>::new(image_width, image_height);
 
     let scene = Scene {
-        camera_location: Vector3::new(0.0, 0.0, 0.0),
+        camera_location: Point3::new(0.0, 0.0, 0.0),
         objects: vec![
             Box::new(Plane::new(
                 Vector3::new(0.0, 1.0, 0.0),
@@ -71,7 +71,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }),
             )),
             Box::new(Sphere::new(
-                Vector3::new(1.25, -0.5, 6.0),
+                Point3::new(1.25, -0.5, 6.0),
                 1.0,
                 Rc::new(LambertianMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Green),
@@ -79,7 +79,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }),
             )),
             Box::new(Sphere::new(
-                Vector3::new(-1.25, -0.5, 6.0),
+                Point3::new(-1.25, -0.5, 6.0),
                 1.0,
                 Rc::new(ReflectiveMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Blue),
@@ -88,7 +88,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }),
             )),
             Box::new(Sphere::new(
-                Vector3::new(0.0, 1.5, 6.0),
+                Point3::new(0.0, 1.5, 6.0),
                 1.0,
                 Rc::new(PhongMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Red),
@@ -99,9 +99,9 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             )),
             Box::new(Triangle {
                 vertices: [
-                    Vector3::new(0.5, 2.0, 6.0),
-                    Vector3::new(1.5, 2.0, 4.0),
-                    Vector3::new(1.0, 1.0, 6.0),
+                    Point3::new(0.5, 2.0, 6.0),
+                    Point3::new(1.5, 2.0, 4.0),
+                    Point3::new(1.0, 1.0, 6.0),
                 ],
                 normals: [Vector3::new(0.0, 0.0, 1.0); 3],
                 material: Rc::new(LambertianMaterial {

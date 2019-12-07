@@ -1,4 +1,4 @@
-use nalgebra::{convert, RealField, Vector3};
+use nalgebra::{convert, Point3, RealField, Vector3};
 
 use super::materials::Material;
 
@@ -6,19 +6,19 @@ use std::rc::Rc;
 
 #[derive(Clone, Debug)]
 pub struct Ray<T: RealField> {
-    pub origin: Vector3<T>,
+    pub origin: Point3<T>,
     pub direction: Vector3<T>,
 }
 
 impl<T: RealField> Ray<T> {
-    pub fn new(origin: Vector3<T>, direction: Vector3<T>) -> Ray<T> {
+    pub fn new(origin: Point3<T>, direction: Vector3<T>) -> Ray<T> {
         Ray {
             origin,
             direction: direction.normalize(),
         }
     }
 
-    pub fn point_at(&self, t: T) -> Vector3<T> {
+    pub fn point_at(&self, t: T) -> Point3<T> {
         self.origin + self.direction * t
     }
 
@@ -30,7 +30,7 @@ impl<T: RealField> Ray<T> {
 #[derive(Debug)]
 pub struct IntersectionInfo<T: RealField> {
     pub distance: T,
-    pub location: Vector3<T>,
+    pub location: Point3<T>,
     pub normal: Vector3<T>,
     pub tangent: Vector3<T>,
     pub cotangent: Vector3<T>,
@@ -43,13 +43,13 @@ pub trait Intersect<T: RealField> {
 }
 
 pub struct Sphere<T: RealField> {
-    centre: Vector3<T>,
+    centre: Point3<T>,
     radius: T,
     material: Rc<dyn Material<T>>,
 }
 
 impl<T: RealField> Sphere<T> {
-    pub fn new(centre: Vector3<T>, radius: T, material: Rc<dyn Material<T>>) -> Sphere<T> {
+    pub fn new(centre: Point3<T>, radius: T, material: Rc<dyn Material<T>>) -> Sphere<T> {
         Sphere {
             centre,
             radius,
@@ -98,18 +98,19 @@ impl<T: RealField> Intersect<T> for Sphere<T> {
         let retro = -ray.direction;*/
         let two: T = convert(2.0);
         let four: T = convert(4.0);
+        let r_o = ray.origin.coords;
+        let centre_coords = self.centre.coords;
         let a = ray
             .direction
             .component_mul(&ray.direction)
             .iter()
             .fold(T::zero(), |a, b| a + *b);
-        let b = ((ray.origin.component_mul(&ray.direction)
-            - self.centre.component_mul(&ray.direction))
+        let b = ((r_o.component_mul(&ray.direction) - centre_coords.component_mul(&ray.direction))
             * two)
             .iter()
             .fold(T::zero(), |a, b| a + *b);
-        let c = (ray.origin.component_mul(&ray.origin) + self.centre.component_mul(&self.centre)
-            - self.centre.component_mul(&ray.origin) * two)
+        let c = (r_o.component_mul(&r_o) + centre_coords.component_mul(&centre_coords)
+            - centre_coords.component_mul(&r_o) * two)
             .iter()
             .fold(T::zero(), |a, b| a + *b)
             - self.radius * self.radius;
@@ -182,7 +183,7 @@ impl<T: RealField> Intersect<T> for Plane<T> {
         let ray_direction_dot_plane_normal = ray.direction.dot(&self.normal);
         let point_on_plane = self.normal * self.distance_from_origin;
         let point_on_plane_minus_ray_origin_dot_normal =
-            (point_on_plane - ray.origin).dot(&self.normal);
+            (point_on_plane - ray.origin.coords).dot(&self.normal);
         if ray_direction_dot_plane_normal == convert(0.0) {
             //Ray is parallel to plane
             if point_on_plane_minus_ray_origin_dot_normal != convert(0.0) {
@@ -225,7 +226,7 @@ mod tests {
     use quickcheck::{Arbitrary, Gen, TestResult};
     impl<T: Arbitrary + RealField> Arbitrary for Ray<T> {
         fn arbitrary<G: Gen>(g: &mut G) -> Ray<T> {
-            let origin = <Vector3<T> as Arbitrary>::arbitrary(g);
+            let origin = <Point3<T> as Arbitrary>::arbitrary(g);
             let direction = <Vector3<T> as Arbitrary>::arbitrary(g);
             return Ray::new(origin, direction);
         }
@@ -261,9 +262,9 @@ mod tests {
 
     #[test]
     fn ray_intersects_sphere() {
-        let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
+        let r = Ray::new(Point3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
         let s = Sphere::new(
-            Vector3::new(1.5, 1.5, 15.0),
+            Point3::new(1.5, 1.5, 15.0),
             5.0,
             Rc::new(LambertianMaterial::new_dummy()),
         );
@@ -272,9 +273,9 @@ mod tests {
 
     #[test]
     fn ray_does_not_intersect_sphere_when_sphere_is_in_front() {
-        let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
+        let r = Ray::new(Point3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
         let s = Sphere::new(
-            Vector3::new(-5.0, 1.5, 15.0),
+            Point3::new(-5.0, 1.5, 15.0),
             5.0,
             Rc::new(LambertianMaterial::new_dummy()),
         );
@@ -283,9 +284,9 @@ mod tests {
 
     #[test]
     fn ray_does_not_intersect_sphere_when_sphere_is_behind() {
-        let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
+        let r = Ray::new(Point3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
         let s = Sphere::new(
-            Vector3::new(1.5, 1.5, -15.0),
+            Point3::new(1.5, 1.5, -15.0),
             5.0,
             Rc::new(LambertianMaterial::new_dummy()),
         );
@@ -294,9 +295,9 @@ mod tests {
 
     #[test]
     fn ray_intersects_sphere_when_origin_is_inside() {
-        let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
+        let r = Ray::new(Point3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
         let s = Sphere::new(
-            Vector3::new(1.5, 1.5, 2.0),
+            Point3::new(1.5, 1.5, 2.0),
             5.0,
             Rc::new(LambertianMaterial::new_dummy()),
         );
@@ -305,8 +306,8 @@ mod tests {
 
     #[quickcheck]
     fn ray_intersects_sphere_centre_at_correct_distance(
-        ray_origin: Vector3<f64>,
-        sphere_centre: Vector3<f64>,
+        ray_origin: Point3<f64>,
+        sphere_centre: Point3<f64>,
         radius: f64,
     ) -> TestResult {
         if radius <= 0.0 || radius + 0.000001 >= (ray_origin - sphere_centre).norm() {
@@ -327,7 +328,7 @@ mod tests {
 
     #[test]
     fn ray_intersects_plane() {
-        let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(-1.0, 0.0, 1.0));
+        let r = Ray::new(Point3::new(1.0, 2.0, 3.0), Vector3::new(-1.0, 0.0, 1.0));
         let p = Plane::new(
             Vector3::new(1.0, 0.0, 0.0),
             -5.0,
@@ -338,7 +339,7 @@ mod tests {
 
     #[test]
     fn ray_does_not_intersect_plane() {
-        let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(1.0, 0.0, 1.0));
+        let r = Ray::new(Point3::new(1.0, 2.0, 3.0), Vector3::new(1.0, 0.0, 1.0));
         let p = Plane::new(
             Vector3::new(1.0, 0.0, 0.0),
             -5.0,
@@ -349,7 +350,7 @@ mod tests {
 
     #[test]
     fn intersection_point_is_on_plane() {
-        let r = Ray::new(Vector3::new(1.0, 2.0, 3.0), Vector3::new(-1.0, 0.0, 1.0));
+        let r = Ray::new(Point3::new(1.0, 2.0, 3.0), Vector3::new(-1.0, 0.0, 1.0));
         let p = Plane::new(
             Vector3::new(1.0, 0.0, 0.0),
             -5.0,

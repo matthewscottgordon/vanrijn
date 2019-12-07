@@ -1,4 +1,4 @@
-use nalgebra::{convert, RealField, Vector3};
+use nalgebra::{convert, Point3, RealField, Vector3};
 
 use super::colour::{ColourRgbF, NamedColour};
 use super::image::ImageRgbF;
@@ -14,12 +14,12 @@ struct ImageSampler<T: RealField> {
     film_width: T,
     film_height: T,
 
-    camera_location: Vector3<T>,
+    camera_location: Point3<T>,
     film_distance: T,
 }
 
 impl<T: RealField> ImageSampler<T> {
-    pub fn new(width: u32, height: u32, camera_location: Vector3<T>) -> ImageSampler<T> {
+    pub fn new(width: u32, height: u32, camera_location: Point3<T>) -> ImageSampler<T> {
         let (film_width, film_height) = {
             let width: T = convert(width as f64);
             let height: T = convert(height as f64);
@@ -146,7 +146,7 @@ mod tests {
 
         #[test]
         fn ray_for_pixel_returns_value_that_intersects_film_plane_at_expected_location() {
-            let target = ImageSampler::new(800, 600, Vector3::new(0.0, 0.0, 0.0));
+            let target = ImageSampler::new(800, 600, Point3::new(0.0, 0.0, 0.0));
             let ray = target.ray_for_pixel(100, 200);
             let film_plane = Plane::new(
                 Vector3::new(0.0, 0.0, 1.0),

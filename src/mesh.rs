@@ -1,4 +1,4 @@
-use nalgebra::{RealField, Vector2, Vector3};
+use nalgebra::{Point3, RealField, Vector2, Vector3};
 
 use super::materials::Material;
 use super::raycasting::{Intersect, IntersectionInfo, Ray};
@@ -6,14 +6,14 @@ use super::raycasting::{Intersect, IntersectionInfo, Ray};
 use std::rc::Rc;
 
 pub struct Triangle<T: RealField> {
-    pub vertices: [Vector3<T>; 3],
+    pub vertices: [Point3<T>; 3],
     pub normals: [Vector3<T>; 3],
     pub material: Rc<dyn Material<T>>,
 }
 
 impl<T: RealField> Intersect<T> for Triangle<T> {
     fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
-        let translation = -ray.origin;
+        let translation = -ray.origin.coords;
         let indices = indices_with_index_of_largest_element_last(&ray.direction);
         let permuted_ray_direction = permute_vector_elements(&ray.direction, &indices);
         let shear_slopes = calculate_shear_to_z_axis(&permuted_ray_direction);
@@ -22,7 +22,7 @@ impl<T: RealField> Intersect<T> for Triangle<T> {
             .iter()
             .map(|elem| {
                 apply_shear_to_z_axis(
-                    &permute_vector_elements(&(elem + translation), &indices),
+                    &permute_vector_elements(&(elem.coords + translation), &indices),
                     &shear_slopes,
                 )
             })
@@ -37,11 +37,11 @@ impl<T: RealField> Intersect<T> for Triangle<T> {
                 )),
                 &indices,
             );
-            let location: Vector3<T> = barycentric_coordinates
+            let location: Point3<T> = barycentric_coordinates
                 .iter()
                 .zip(self.vertices.iter())
-                .map(|(&coord, vertex)| vertex * coord)
-                .sum();
+                .map(|(&coord, vertex)| vertex.coords * coord)
+                .fold(Point3::new(T::zero(), T::zero(), T::zero()), |a, e| a + e);
             let distance = (ray.origin - location).norm();
             let normal = barycentric_coordinates
                 .iter()
@@ -295,14 +295,14 @@ mod tests {
         fn intersection_passes_with_ray_along_z_axis_ccw_winding() {
             let target_triangle = Triangle {
                 vertices: [
-                    Vector3::new(0.0, 1.0, 1.0),
-                    Vector3::new(1.0, -1.0, 1.0),
-                    Vector3::new(-1.0, -1.0, 1.0),
+                    Point3::new(0.0, 1.0, 1.0),
+                    Point3::new(1.0, -1.0, 1.0),
+                    Point3::new(-1.0, -1.0, 1.0),
                 ],
                 normals: [Vector3::zeros(); 3],
                 material: Rc::new(LambertianMaterial::new_dummy()),
             };
-            let target_ray = Ray::new(Vector3::zeros(), Vector3::new(0.0, 0.0, 1.0));
+            let target_ray = Ray::new(Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 1.0));
             if let None = target_triangle.intersect(&target_ray) {
                 panic!()
             }
@@ -312,14 +312,14 @@ mod tests {
         fn intersection_passes_with_ray_along_z_axis_cw_winding() {
             let target_triangle = Triangle {
                 vertices: [
-                    Vector3::new(0.0, 1.0, 1.0),
-                    Vector3::new(-1.0, -1.0, 1.0),
-                    Vector3::new(1.0, -1.0, 1.0),
+                    Point3::new(0.0, 1.0, 1.0),
+                    Point3::new(-1.0, -1.0, 1.0),
+                    Point3::new(1.0, -1.0, 1.0),
                 ],
                 normals: [Vector3::zeros(); 3],
                 material: Rc::new(LambertianMaterial::new_dummy()),
             };
-            let target_ray = Ray::new(Vector3::zeros(), Vector3::new(0.0, 0.0, 1.0));
+            let target_ray = Ray::new(Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 1.0));
             if let None = target_triangle.intersect(&target_ray) {
                 panic!()
             }
@@ -329,14 +329,14 @@ mod tests {
         fn intersection_passes_with_ray_along_nagative_z_axis_ccw_winding() {
             let target_triangle = Triangle {
                 vertices: [
-                    Vector3::new(0.0, 1.0, -1.0),
-                    Vector3::new(1.0, -1.0, -1.0),
-                    Vector3::new(-1.0, -1.0, -1.0),
+                    Point3::new(0.0, 1.0, -1.0),
+                    Point3::new(1.0, -1.0, -1.0),
+                    Point3::new(-1.0, -1.0, -1.0),
                 ],
                 normals: [Vector3::zeros(); 3],
                 material: Rc::new(LambertianMaterial::new_dummy()),
             };
-            let target_ray = Ray::new(Vector3::zeros(), Vector3::new(0.0, 0.0, -1.0));
+            let target_ray = Ray::new(Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, -1.0));
             if let None = target_triangle.intersect(&target_ray) {
                 panic!()
             }
@@ -346,14 +346,14 @@ mod tests {
         fn intersection_passes_with_ray_along_negativez_axis_cw_winding() {
             let target_triangle = Triangle {
                 vertices: [
-                    Vector3::new(0.0, 1.0, -1.0),
-                    Vector3::new(-1.0, -1.0, -1.0),
-                    Vector3::new(1.0, -1.0, -1.0),
+                    Point3::new(0.0, 1.0, -1.0),
+                    Point3::new(-1.0, -1.0, -1.0),
+                    Point3::new(1.0, -1.0, -1.0),
                 ],
                 normals: [Vector3::zeros(); 3],
                 material: Rc::new(LambertianMaterial::new_dummy()),
             };
-            let target_ray = Ray::new(Vector3::zeros(), Vector3::new(0.0, 0.0, -1.0));
+            let target_ray = Ray::new(Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, -1.0));
             if let None = target_triangle.intersect(&target_ray) {
                 panic!()
             }
@@ -363,14 +363,14 @@ mod tests {
         fn intersection_passes_with_ray_along_z_axis_but_translated_ccw_winding() {
             let target_triangle = Triangle {
                 vertices: [
-                    Vector3::new(5.0, 6.0, 6.0),
-                    Vector3::new(6.0, 4.0, 6.0),
-                    Vector3::new(4.0, 4.0, 6.0),
+                    Point3::new(5.0, 6.0, 6.0),
+                    Point3::new(6.0, 4.0, 6.0),
+                    Point3::new(4.0, 4.0, 6.0),
                 ],
                 normals: [Vector3::zeros(); 3],
                 material: Rc::new(LambertianMaterial::new_dummy()),
             };
-            let target_ray = Ray::new(Vector3::new(5.0, 5.0, 5.0), Vector3::new(0.0, 0.0, 1.0));
+            let target_ray = Ray::new(Point3::new(5.0, 5.0, 5.0), Vector3::new(0.0, 0.0, 1.0));
             if let None = target_triangle.intersect(&target_ray) {
                 panic!()
             }
@@ -380,14 +380,14 @@ mod tests {
         fn intersection_passes_with_ray_at_angle_to_z_axisand_translated_ccw_winding() {
             let target_triangle = Triangle {
                 vertices: [
-                    Vector3::new(6.0, 6.5, 6.0),
-                    Vector3::new(7.0, 4.5, 6.0),
-                    Vector3::new(5.0, 4.5, 6.0),
+                    Point3::new(6.0, 6.5, 6.0),
+                    Point3::new(7.0, 4.5, 6.0),
+                    Point3::new(5.0, 4.5, 6.0),
                 ],
                 normals: [Vector3::zeros(); 3],
                 material: Rc::new(LambertianMaterial::new_dummy()),
             };
-            let target_ray = Ray::new(Vector3::new(5.0, 5.0, 5.0), Vector3::new(1.0, 0.5, 1.0));
+            let target_ray = Ray::new(Point3::new(5.0, 5.0, 5.0), Vector3::new(1.0, 0.5, 1.0));
             if let None = target_triangle.intersect(&target_ray) {
                 panic!()
             }
