@@ -149,13 +149,10 @@ pub trait ToneMapper<T: RealField> {
     fn apply_tone_mapping(&self, image_in: &ImageRgbF<T>, image_out: &mut ImageRgbU8);
 }
 
+#[derive(Default)]
 pub struct ClampingToneMapper {}
 
 impl ClampingToneMapper {
-    pub fn new() -> ClampingToneMapper {
-        ClampingToneMapper {}
-    }
-
     fn clamp<T: RealField + NormalizedAsByte>(v: &T) -> u8 {
         clamp(v, &T::zero(), &T::one()).normalized_to_byte()
     }
