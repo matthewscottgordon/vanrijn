@@ -4,10 +4,11 @@ use super::colour::{ColourRgbF, NamedColour};
 
 use std::fmt::Debug;
 
+type Bsdf<'a, T> =
+    Box<dyn Fn(Vector3<T>, Vector3<T>, ColourRgbF<T>) -> ColourRgbF<T> + 'a>;
+
 pub trait Material<T: RealField>: Debug {
-    fn bsdf<'a>(
-        &'a self,
-    ) -> Box<dyn Fn(Vector3<T>, Vector3<T>, ColourRgbF<T>) -> ColourRgbF<T> + 'a>;
+    fn bsdf<'a>(&'a self) -> Bsdf<'a, T>;
 
     fn sample(&self, _w_o: &Vector3<T>) -> Vec<Vector3<T>> {
         vec![]
@@ -30,9 +31,7 @@ impl<T: RealField> LambertianMaterial<T> {
 }
 
 impl<T: RealField> Material<T> for LambertianMaterial<T> {
-    fn bsdf<'a>(
-        &'a self,
-    ) -> Box<dyn Fn(Vector3<T>, Vector3<T>, ColourRgbF<T>) -> ColourRgbF<T> + 'a> {
+    fn bsdf<'a>(&'a self) -> Bsdf<'a, T> {
         Box::new(
             move |_w_o: Vector3<T>, _w_i: Vector3<T>, colour_in: ColourRgbF<T>| {
                 self.colour * colour_in * self.diffuse_strength
@@ -50,9 +49,7 @@ pub struct PhongMaterial<T: RealField> {
 }
 
 impl<T: RealField> Material<T> for PhongMaterial<T> {
-    fn bsdf<'a>(
-        &'a self,
-    ) -> Box<dyn Fn(Vector3<T>, Vector3<T>, ColourRgbF<T>) -> ColourRgbF<T> + 'a> {
+    fn bsdf<'a>(&'a self) -> Bsdf<'a, T> {
         Box::new(
             move |w_o: Vector3<T>, w_i: Vector3<T>, colour_in: ColourRgbF<T>| {
                 if w_i.z < T::zero() || w_o.z < T::zero() {
@@ -77,9 +74,7 @@ pub struct ReflectiveMaterial<T: RealField> {
 }
 
 impl<T: RealField> Material<T> for ReflectiveMaterial<T> {
-    fn bsdf<'a>(
-        &'a self,
-    ) -> Box<dyn Fn(Vector3<T>, Vector3<T>, ColourRgbF<T>) -> ColourRgbF<T> + 'a> {
+    fn bsdf<'a>(&'a self) -> Bsdf<'a, T> {
         Box::new(
             move |w_o: Vector3<T>, w_i: Vector3<T>, colour_in: ColourRgbF<T>| {
                 if w_i.z < T::zero() || w_o.z < T::zero() {
