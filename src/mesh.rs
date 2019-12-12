@@ -34,10 +34,18 @@ impl<T: RealField> Intersect<T> for Triangle<T> {
             let barycentric_coordinates = barycentric_coordinates_from_signed_edge_functions(
                 Vector3::from_iterator(edge_functions.iter().map(|e| e.abs())),
             );
+            let transformed_z = barycentric_coordinates
+                .iter()
+                .zip(transformed_vertices.iter())
+                .map(|(&coord, vertex)| vertex.z * coord)
+                .fold(T::zero(), |acc, z| acc + z);
+            if transformed_z.is_positive() != permuted_ray_direction.z.is_positive() {
+                return None;
+            }
             let location: Point3<T> = barycentric_coordinates
                 .iter()
                 .zip(self.vertices.iter())
-                .map(|(&coord, vertex)| vertex.coords * coord)
+                .map(|(&barycentric_coord, vertex)| vertex.coords * barycentric_coord)
                 .fold(Point3::new(T::zero(), T::zero(), T::zero()), |a, e| a + e);
             let distance = (ray.origin - location).norm();
             let normal: Vector3<T> = barycentric_coordinates
@@ -776,6 +784,32 @@ mod tests {
             let ray = Ray {
                 origin: ray_origin,
                 direction: (target_point - ray_origin).normalize(),
+            };
+            let triangle = Triangle {
+                vertices: [vertex0, vertex1, vertex2],
+                normals: [Vector3::zeros(); 3],
+                material: Rc::new(LambertianMaterial::new_dummy()),
+            };
+            match triangle.intersect(&ray) {
+                Some(_) => false,
+                None => true,
+            }
+        }
+
+        #[quickcheck]
+        fn intersection_fails_when_triangle_is_behind_ray(
+            vertex0: Point3<f64>,
+            vertex1: Point3<f64>,
+            vertex2: Point3<f64>,
+            ray_origin: Point3<f64>,
+            barycentric_coords: BarycentricCoords,
+        ) -> bool {
+            let point_behind_ray = vertex0.coords * barycentric_coords.alpha
+                + vertex1.coords * barycentric_coords.beta
+                + vertex2.coords * barycentric_coords.gamma;
+            let ray = Ray {
+                origin: ray_origin,
+                direction: (ray_origin.coords - point_behind_ray).normalize(),
             };
             let triangle = Triangle {
                 vertices: [vertex0, vertex1, vertex2],
