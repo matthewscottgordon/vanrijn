@@ -546,7 +546,7 @@ mod tests {
                 |result, centroid| {
                     let expected_retro = (ray_origin - centroid).normalize();
                     if let Some(IntersectionInfo { retro, .. }) = result {
-                        (dbg!(expected_retro) - dbg!(retro)).norm() < 0.000_000_1
+                        (expected_retro - retro).norm() < 0.000_000_1
                     } else {
                         false
                     }
@@ -719,10 +719,10 @@ mod tests {
             let target_point = uv_origin + u_axis * uv.x + v_axis * uv.y.abs();
             let ray = Ray {
                 origin: ray_origin,
-                direction: (dbg!(target_point) - ray_origin).normalize(),
+                direction: (target_point - ray_origin).normalize(),
             };
             let triangle = Triangle {
-                vertices: dbg!([vertex0, vertex1, vertex2]),
+                vertices: [vertex0, vertex1, vertex2],
                 normals: [Vector3::zeros(); 3],
                 material: Rc::new(LambertianMaterial::new_dummy()),
             };
@@ -747,10 +747,10 @@ mod tests {
             let target_point = uv_origin + u_axis * uv.x + v_axis * uv.y.abs();
             let ray = Ray {
                 origin: ray_origin,
-                direction: (dbg!(target_point) - ray_origin).normalize(),
+                direction: (target_point - ray_origin).normalize(),
             };
             let triangle = Triangle {
-                vertices: dbg!([vertex0, vertex1, vertex2]),
+                vertices: [vertex0, vertex1, vertex2],
                 normals: [Vector3::zeros(); 3],
                 material: Rc::new(LambertianMaterial::new_dummy()),
             };
@@ -775,10 +775,10 @@ mod tests {
             let target_point = uv_origin + u_axis * uv.x + v_axis * uv.y.abs();
             let ray = Ray {
                 origin: ray_origin,
-                direction: (dbg!(target_point) - ray_origin).normalize(),
+                direction: (target_point - ray_origin).normalize(),
             };
             let triangle = Triangle {
-                vertices: dbg!([vertex0, vertex1, vertex2]),
+                vertices: [vertex0, vertex1, vertex2],
                 normals: [Vector3::zeros(); 3],
                 material: Rc::new(LambertianMaterial::new_dummy()),
             };
