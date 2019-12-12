@@ -101,18 +101,6 @@ fn permute_vector_elements<T: RealField>(v: &Vector3<T>, indices: &[usize; 3]) -
     Vector3::new(v[indices[0]], v[indices[1]], v[indices[2]])
 }
 
-fn reverse_permute_vector_elements<T: RealField>(
-    v: &Vector3<T>,
-    indices: &[usize; 3],
-) -> Vector3<T> {
-    debug_assert!(is_valid_permutation(&indices));
-    let mut result = Vector3::zeros();
-    for i in 0..3 {
-        result[indices[i]] = v[i];
-    }
-    result
-}
-
 fn calculate_shear_to_z_axis<T: RealField>(v: &Vector3<T>) -> Vector2<T> {
     Vector2::new(-v.x / v.z, -v.y / v.z)
 }
