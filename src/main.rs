@@ -99,14 +99,14 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             )),
             Box::new(Triangle {
                 vertices: [
-                    Point3::new(0.5, 2.0, 6.0),
-                    Point3::new(1.5, 2.0, 4.0),
-                    Point3::new(1.0, 1.0, 6.0),
+                    Point3::new(1.25, -0.5, 6.0),
+                    Point3::new(-1.25, -0.5, 6.0),
+                    Point3::new(0.0, 1.5, 6.0),
                 ],
-                normals: [Vector3::new(0.0, 0.0, 1.0); 3],
+                normals: [Vector3::new(0.0, 0.0, -1.0); 3],
                 material: Rc::new(LambertianMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Green),
-                    diffuse_strength: 0.1,
+                    diffuse_strength: 1.0,
                 }),
             }),
         ],

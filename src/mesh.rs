@@ -31,11 +31,8 @@ impl<T: RealField> Intersect<T> for Triangle<T> {
         if edge_functions.iter().all(|e| e.is_sign_positive())
             || edge_functions.iter().all(|e| e.is_sign_negative())
         {
-            let barycentric_coordinates = reverse_permute_vector_elements(
-                &barycentric_coordinates_from_signed_edge_functions(Vector3::from_iterator(
-                    edge_functions.iter().map(|e| e.abs()),
-                )),
-                &indices,
+            let barycentric_coordinates = barycentric_coordinates_from_signed_edge_functions(
+                Vector3::from_iterator(edge_functions.iter().map(|e| e.abs())),
             );
             let location: Point3<T> = barycentric_coordinates
                 .iter()
@@ -43,11 +40,13 @@ impl<T: RealField> Intersect<T> for Triangle<T> {
                 .map(|(&coord, vertex)| vertex.coords * coord)
                 .fold(Point3::new(T::zero(), T::zero(), T::zero()), |a, e| a + e);
             let distance = (ray.origin - location).norm();
-            let normal = barycentric_coordinates
+            let normal: Vector3<T> = barycentric_coordinates
                 .iter()
                 .zip(self.normals.iter())
-                .map(|(&coord, vertex)| vertex * coord)
-                .sum();
+                .fold(Vector3::zeros(), |acc, (&coord, vertex)| {
+                    acc + vertex * coord
+                })
+                .normalize();
             let cotangent = (self.vertices[0] - self.vertices[1])
                 .cross(&normal)
                 .normalize();
@@ -133,7 +132,7 @@ fn signed_edge_functions<T: RealField>(vertices: &Vec<Vector3<T>>) -> Vector3<T>
 }
 
 fn barycentric_coordinates_from_signed_edge_functions<T: RealField>(e: Vector3<T>) -> Vector3<T> {
-    e * (T::one() / e.iter().fold(T::zero(), |a, b| a + *b))
+    e * (T::one() / e.iter().fold(T::zero(), |a, &b| a + b))
 }
 
 #[cfg(test)]
@@ -280,9 +279,10 @@ mod tests {
             b: Vector3<f64>,
             c: Vector3<f64>,
         ) -> bool {
-            let barycentric_coordinates = dbg!(barycentric_coordinates_from_signed_edge_functions(
-                signed_edge_functions(&vec![a, b, c]),
-            ));
+            let barycentric_coordinates =
+                barycentric_coordinates_from_signed_edge_functions(signed_edge_functions(&vec![
+                    a, b, c,
+                ]));
             (barycentric_coordinates.iter().fold(0.0, |a, b| a + b) - 1.0).abs() < 0.00000001
         }
     }
@@ -290,6 +290,8 @@ mod tests {
     mod triangle_intersect {
         use super::*;
         use crate::materials::LambertianMaterial;
+        use quickcheck::{Arbitrary, TestResult};
+        use quickcheck_macros::quickcheck;
 
         #[test]
         fn intersection_passes_with_ray_along_z_axis_ccw_winding() {
@@ -390,6 +392,399 @@ mod tests {
             let target_ray = Ray::new(Point3::new(5.0, 5.0, 5.0), Vector3::new(1.0, 0.5, 1.0));
             if let None = target_triangle.intersect(&target_ray) {
                 panic!()
+            }
+        }
+
+        fn intersect_with_centroid_and_test_result<
+            F: Fn(Option<IntersectionInfo<f64>>, Point3<f64>) -> bool,
+        >(
+            vertex0: Point3<f64>,
+            vertex1: Point3<f64>,
+            vertex2: Point3<f64>,
+            ray_origin: Point3<f64>,
+            test: F,
+        ) -> TestResult {
+            let centroid: Point3<f64> = [vertex0.coords, vertex1.coords, vertex2.coords]
+                .iter()
+                .fold(Point3::new(0.0, 0.0, 0.0), |acc, &elem| acc + elem)
+                / 3.0;
+            let ray_direction = (centroid - ray_origin).normalize();
+            let normal = (vertex1 - vertex0).cross(&(vertex2 - vertex0)).normalize();
+            if normal.dot(&ray_direction).abs() < 0.000_000_1 {
+                //Discard if triangle is too close to edge-on
+                return TestResult::discard();
+            }
+            let target_triangle = Triangle {
+                vertices: [
+                    Point3::from(vertex0),
+                    Point3::from(vertex1),
+                    Point3::from(vertex2),
+                ],
+                normals: [normal; 3],
+                material: Rc::new(LambertianMaterial::new_dummy()),
+            };
+            let ray = Ray::new(ray_origin, ray_direction);
+
+            TestResult::from_bool(test(target_triangle.intersect(&ray), centroid))
+        }
+
+        #[quickcheck]
+        fn intersection_with_centroid_hits(
+            vertex0: Point3<f64>,
+            vertex1: Point3<f64>,
+            vertex2: Point3<f64>,
+            ray_origin: Point3<f64>,
+        ) -> TestResult {
+            let centroid: Point3<f64> = [vertex0.coords, vertex1.coords, vertex2.coords]
+                .iter()
+                .fold(Point3::new(0.0, 0.0, 0.0), |acc, &elem| acc + elem)
+                / 3.0;
+            let ray_direction = (centroid - ray_origin).normalize();
+            let normal = (vertex1 - vertex0).cross(&(vertex2 - vertex0)).normalize();
+            if normal.dot(&ray_direction).abs() < 0.000_000_1 {
+                //Discard if triangle is too close to edge-on
+                return TestResult::discard();
+            }
+            let target_triangle = Triangle {
+                vertices: [
+                    Point3::from(vertex0),
+                    Point3::from(vertex1),
+                    Point3::from(vertex2),
+                ],
+                normals: [normal; 3],
+                material: Rc::new(LambertianMaterial::new_dummy()),
+            };
+            let ray = Ray::new(ray_origin, ray_direction);
+
+            if let Some(_) = target_triangle.intersect(&ray) {
+                TestResult::passed()
+            } else {
+                TestResult::failed()
+            }
+        }
+
+        #[quickcheck]
+        fn intersection_with_centroid_hits_centroid(
+            vertex0: Point3<f64>,
+            vertex1: Point3<f64>,
+            vertex2: Point3<f64>,
+            ray_origin: Point3<f64>,
+        ) -> TestResult {
+            intersect_with_centroid_and_test_result(
+                vertex0,
+                vertex1,
+                vertex2,
+                ray_origin,
+                |result, centroid| {
+                    if let Some(IntersectionInfo { location, .. }) = result {
+                        (location - centroid).norm() < 0.000_000_1
+                    } else {
+                        false
+                    }
+                },
+            )
+        }
+
+        #[quickcheck]
+        fn intersection_with_centroid_hits_at_expected_distance(
+            vertex0: Point3<f64>,
+            vertex1: Point3<f64>,
+            vertex2: Point3<f64>,
+            ray_origin: Point3<f64>,
+        ) -> TestResult {
+            intersect_with_centroid_and_test_result(
+                vertex0,
+                vertex1,
+                vertex2,
+                ray_origin,
+                |result, centroid| {
+                    if let Some(IntersectionInfo { distance, .. }) = result {
+                        ((ray_origin - centroid).norm() - distance).abs() < 0.000_000_1
+                    } else {
+                        false
+                    }
+                },
+            )
+        }
+
+        #[quickcheck]
+        fn intersection_with_centroid_has_expected_normal(
+            vertex0: Point3<f64>,
+            vertex1: Point3<f64>,
+            vertex2: Point3<f64>,
+            ray_origin: Point3<f64>,
+        ) -> TestResult {
+            intersect_with_centroid_and_test_result(
+                vertex0,
+                vertex1,
+                vertex2,
+                ray_origin,
+                |result, _| {
+                    if let Some(IntersectionInfo { normal, .. }) = result {
+                        (normal - (vertex1 - vertex0).cross(&(vertex2 - vertex0)).normalize())
+                            .norm()
+                            < 0.000_000_1
+                    } else {
+                        false
+                    }
+                },
+            )
+        }
+
+        #[quickcheck]
+        fn intersection_with_centroid_has_expected_retro(
+            vertex0: Point3<f64>,
+            vertex1: Point3<f64>,
+            vertex2: Point3<f64>,
+            ray_origin: Point3<f64>,
+        ) -> TestResult {
+            intersect_with_centroid_and_test_result(
+                vertex0,
+                vertex1,
+                vertex2,
+                ray_origin,
+                |result, centroid| {
+                    let expected_retro = (ray_origin - centroid).normalize();
+                    if let Some(IntersectionInfo { retro, .. }) = result {
+                        (dbg!(expected_retro) - dbg!(retro)).norm() < 0.000_000_1
+                    } else {
+                        false
+                    }
+                },
+            )
+        }
+
+        #[derive(Clone, Copy, Debug)]
+        struct BarycentricCoords {
+            alpha: f64,
+            beta: f64,
+            gamma: f64,
+        }
+
+        impl quickcheck::Arbitrary for BarycentricCoords {
+            fn arbitrary<G: quickcheck::Gen>(g: &mut G) -> Self {
+                let e = 0.000_000_1;
+                let alpha = <f64 as Arbitrary>::arbitrary(g).abs().fract() * (1.0 - e) + e;
+                let beta = <f64 as Arbitrary>::arbitrary(g).abs().fract() * (1.0 - alpha) + e;
+                let gamma = 1.0 - (alpha + beta);
+                BarycentricCoords { alpha, beta, gamma }
+            }
+        }
+
+        fn intersect_with_barycentric_and_test_result<
+            F: Fn(Option<IntersectionInfo<f64>>, Point3<f64>) -> bool,
+        >(
+            vertex0: Point3<f64>,
+            vertex1: Point3<f64>,
+            vertex2: Point3<f64>,
+            ray_origin: Point3<f64>,
+            barycentric_coords: BarycentricCoords,
+            test: F,
+        ) -> TestResult {
+            let point = vertex0 * barycentric_coords.alpha
+                + vertex1.coords * barycentric_coords.beta
+                + vertex2.coords * barycentric_coords.gamma;
+            let ray_direction = (point - ray_origin).normalize();
+            let normal = (vertex1 - vertex0).cross(&(vertex2 - vertex0)).normalize();
+            if normal.dot(&ray_direction).abs() < 0.000_000_1 {
+                //Discard if triangle is too close to edge-on
+                return TestResult::discard();
+            }
+            let target_triangle = Triangle {
+                vertices: [
+                    Point3::from(vertex0),
+                    Point3::from(vertex1),
+                    Point3::from(vertex2),
+                ],
+                normals: [normal; 3],
+                material: Rc::new(LambertianMaterial::new_dummy()),
+            };
+            let ray = Ray::new(ray_origin, ray_direction);
+
+            TestResult::from_bool(test(target_triangle.intersect(&ray), point))
+        }
+
+        #[quickcheck]
+        fn point_with_arbitrary_barycentric_coords_hits(
+            vertex0: Point3<f64>,
+            vertex1: Point3<f64>,
+            vertex2: Point3<f64>,
+            ray_origin: Point3<f64>,
+            barycentric_coords: BarycentricCoords,
+        ) -> TestResult {
+            intersect_with_barycentric_and_test_result(
+                vertex0,
+                vertex1,
+                vertex2,
+                ray_origin,
+                barycentric_coords,
+                |result, _point| {
+                    if let Some(_) = result {
+                        true
+                    } else {
+                        false
+                    }
+                },
+            )
+        }
+
+        #[quickcheck]
+        fn point_with_arbitrary_barycentric_coords_has_expected_normal(
+            vertex0: Point3<f64>,
+            vertex1: Point3<f64>,
+            vertex2: Point3<f64>,
+            ray_origin: Point3<f64>,
+            barycentric_coords: BarycentricCoords,
+        ) -> TestResult {
+            intersect_with_barycentric_and_test_result(
+                vertex0,
+                vertex1,
+                vertex2,
+                ray_origin,
+                barycentric_coords,
+                |result, _point| {
+                    let expected_normal =
+                        (vertex1 - vertex0).cross(&(vertex2 - vertex0)).normalize();
+                    if let Some(IntersectionInfo { normal, .. }) = result {
+                        (normal - expected_normal).norm().abs() < 0.000_01
+                    } else {
+                        false
+                    }
+                },
+            )
+        }
+
+        #[quickcheck]
+        fn point_with_arbitrary_barycentric_coords_has_expected_distance(
+            vertex0: Point3<f64>,
+            vertex1: Point3<f64>,
+            vertex2: Point3<f64>,
+            ray_origin: Point3<f64>,
+            barycentric_coords: BarycentricCoords,
+        ) -> TestResult {
+            intersect_with_barycentric_and_test_result(
+                vertex0,
+                vertex1,
+                vertex2,
+                ray_origin,
+                barycentric_coords,
+                |result, point| {
+                    let expected_distance = (point - ray_origin).norm();
+                    if let Some(IntersectionInfo { distance, .. }) = result {
+                        (distance - expected_distance).abs() < 0.000_01
+                    } else {
+                        false
+                    }
+                },
+            )
+        }
+
+        #[quickcheck]
+        fn point_with_arbitrary_barycentric_coords_has_expected_retro(
+            vertex0: Point3<f64>,
+            vertex1: Point3<f64>,
+            vertex2: Point3<f64>,
+            ray_origin: Point3<f64>,
+            barycentric_coords: BarycentricCoords,
+        ) -> TestResult {
+            intersect_with_barycentric_and_test_result(
+                vertex0,
+                vertex1,
+                vertex2,
+                ray_origin,
+                barycentric_coords,
+                |result, point| {
+                    let expected_retro = (ray_origin - point).normalize();
+                    if let Some(IntersectionInfo { retro, .. }) = result {
+                        (retro - expected_retro).norm().abs() < 0.000_01
+                    } else {
+                        false
+                    }
+                },
+            )
+        }
+
+        #[quickcheck]
+        fn intersection_fails_when_ray_outside_first_edge(
+            vertex0: Point3<f64>,
+            vertex1: Point3<f64>,
+            vertex2: Point3<f64>,
+            ray_origin: Point3<f64>,
+            uv: Vector2<f64>,
+        ) -> bool {
+            let uv_origin = Point3::from(vertex0);
+            let u_axis = (vertex1 - vertex0).normalize();
+            let w_axis = (vertex2 - vertex0).cross(&u_axis).normalize();
+            let v_axis = w_axis.cross(&u_axis);
+            let target_point = uv_origin + u_axis * uv.x + v_axis * uv.y.abs();
+            let ray = Ray {
+                origin: ray_origin,
+                direction: (dbg!(target_point) - ray_origin).normalize(),
+            };
+            let triangle = Triangle {
+                vertices: dbg!([vertex0, vertex1, vertex2]),
+                normals: [Vector3::zeros(); 3],
+                material: Rc::new(LambertianMaterial::new_dummy()),
+            };
+            match triangle.intersect(&ray) {
+                Some(_) => false,
+                None => true,
+            }
+        }
+
+        #[quickcheck]
+        fn intersection_fails_when_ray_outside_second_edge(
+            vertex0: Point3<f64>,
+            vertex1: Point3<f64>,
+            vertex2: Point3<f64>,
+            ray_origin: Point3<f64>,
+            uv: Vector2<f64>,
+        ) -> bool {
+            let uv_origin = Point3::from(vertex0);
+            let u_axis = (vertex2 - vertex1).normalize();
+            let w_axis = (vertex1 - vertex0).cross(&u_axis).normalize();
+            let v_axis = w_axis.cross(&u_axis);
+            let target_point = uv_origin + u_axis * uv.x + v_axis * uv.y.abs();
+            let ray = Ray {
+                origin: ray_origin,
+                direction: (dbg!(target_point) - ray_origin).normalize(),
+            };
+            let triangle = Triangle {
+                vertices: dbg!([vertex0, vertex1, vertex2]),
+                normals: [Vector3::zeros(); 3],
+                material: Rc::new(LambertianMaterial::new_dummy()),
+            };
+            match triangle.intersect(&ray) {
+                Some(_) => false,
+                None => true,
+            }
+        }
+
+        #[quickcheck]
+        fn intersection_fails_when_ray_outside_third_edge(
+            vertex0: Point3<f64>,
+            vertex1: Point3<f64>,
+            vertex2: Point3<f64>,
+            ray_origin: Point3<f64>,
+            uv: Vector2<f64>,
+        ) -> bool {
+            let uv_origin = Point3::from(vertex0);
+            let u_axis = (vertex0 - vertex2).normalize();
+            let w_axis = (vertex1 - vertex2).cross(&u_axis).normalize();
+            let v_axis = w_axis.cross(&u_axis);
+            let target_point = uv_origin + u_axis * uv.x + v_axis * uv.y.abs();
+            let ray = Ray {
+                origin: ray_origin,
+                direction: (dbg!(target_point) - ray_origin).normalize(),
+            };
+            let triangle = Triangle {
+                vertices: dbg!([vertex0, vertex1, vertex2]),
+                normals: [Vector3::zeros(); 3],
+                material: Rc::new(LambertianMaterial::new_dummy()),
+            };
+            match triangle.intersect(&ray) {
+                Some(_) => false,
+                None => true,
             }
         }
     }
