@@ -50,8 +50,8 @@ fn init_canvas(
 }
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let image_width = 2400;
-    let image_height = 1800;
+    let image_width = 1200;
+    let image_height = 900;
 
     let (sdl_context, mut canvas) = init_canvas(image_width, image_height)?;
 
