@@ -11,6 +11,9 @@ pub use sphere::Sphere;
 pub mod plane;
 pub use plane::Plane;
 
+pub mod triangle;
+pub use triangle::Triangle;
+
 #[derive(Clone, Debug)]
 pub struct Ray<T: RealField> {
     pub origin: Point3<T>,
