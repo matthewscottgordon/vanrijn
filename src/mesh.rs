@@ -4,16 +4,16 @@ use obj::{IndexTuple, Obj, SimplePolygon};
 use super::materials::Material;
 use super::raycasting::{Intersect, IntersectionInfo, Ray};
 
-use std::rc::Rc;
 use alga::general::SupersetOf;
 use std::io::Result;
 use std::path::Path;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct Triangle<T: RealField> {
     pub vertices: [Point3<T>; 3],
     pub normals: [Vector3<T>; 3],
-    pub material: Rc<dyn Material<T>>,
+    pub material: Arc<dyn Material<T> >,
 }
 
 impl<T: RealField> Intersect<T> for Triangle<T> {
@@ -65,7 +65,7 @@ impl<T: RealField> Intersect<T> for Triangle<T> {
                 .normalize();
             let tangent = cotangent.cross(&normal).normalize();
             let retro = (ray.origin - location).normalize();
-            let material = Rc::clone(&self.material);
+            let material = Arc::clone(&self.material);
             Some(IntersectionInfo {
                 distance,
                 location,
@@ -373,7 +373,7 @@ mod tests {
                     Point3::new(-1.0, -1.0, 1.0),
                 ],
                 normals: [Vector3::zeros(); 3],
-                material: Rc::new(LambertianMaterial::new_dummy()),
+                material: Arc::new(LambertianMaterial::new_dummy()),
             };
             let target_ray = Ray::new(Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 1.0));
             if let None = target_triangle.intersect(&target_ray) {
@@ -390,7 +390,7 @@ mod tests {
                     Point3::new(1.0, -1.0, 1.0),
                 ],
                 normals: [Vector3::zeros(); 3],
-                material: Rc::new(LambertianMaterial::new_dummy()),
+                material: Arc::new(LambertianMaterial::new_dummy()),
             };
             let target_ray = Ray::new(Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 1.0));
             if let None = target_triangle.intersect(&target_ray) {
@@ -407,7 +407,7 @@ mod tests {
                     Point3::new(-1.0, -1.0, -1.0),
                 ],
                 normals: [Vector3::zeros(); 3],
-                material: Rc::new(LambertianMaterial::new_dummy()),
+                material: Arc::new(LambertianMaterial::new_dummy()),
             };
             let target_ray = Ray::new(Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, -1.0));
             if let None = target_triangle.intersect(&target_ray) {
@@ -424,7 +424,7 @@ mod tests {
                     Point3::new(1.0, -1.0, -1.0),
                 ],
                 normals: [Vector3::zeros(); 3],
-                material: Rc::new(LambertianMaterial::new_dummy()),
+                material: Arc::new(LambertianMaterial::new_dummy()),
             };
             let target_ray = Ray::new(Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, -1.0));
             if let None = target_triangle.intersect(&target_ray) {
@@ -441,7 +441,7 @@ mod tests {
                     Point3::new(4.0, 4.0, 6.0),
                 ],
                 normals: [Vector3::zeros(); 3],
-                material: Rc::new(LambertianMaterial::new_dummy()),
+                material: Arc::new(LambertianMaterial::new_dummy()),
             };
             let target_ray = Ray::new(Point3::new(5.0, 5.0, 5.0), Vector3::new(0.0, 0.0, 1.0));
             if let None = target_triangle.intersect(&target_ray) {
@@ -458,7 +458,7 @@ mod tests {
                     Point3::new(5.0, 4.5, 6.0),
                 ],
                 normals: [Vector3::zeros(); 3],
-                material: Rc::new(LambertianMaterial::new_dummy()),
+                material: Arc::new(LambertianMaterial::new_dummy()),
             };
             let target_ray = Ray::new(Point3::new(5.0, 5.0, 5.0), Vector3::new(1.0, 0.5, 1.0));
             if let None = target_triangle.intersect(&target_ray) {
@@ -492,7 +492,7 @@ mod tests {
                     Point3::from(vertex2),
                 ],
                 normals: [normal; 3],
-                material: Rc::new(LambertianMaterial::new_dummy()),
+                material: Arc::new(LambertianMaterial::new_dummy()),
             };
             let ray = Ray::new(ray_origin, ray_direction);
 
@@ -523,7 +523,7 @@ mod tests {
                     Point3::from(vertex2),
                 ],
                 normals: [normal; 3],
-                material: Rc::new(LambertianMaterial::new_dummy()),
+                material: Arc::new(LambertianMaterial::new_dummy()),
             };
             let ray = Ray::new(ray_origin, ray_direction);
 
@@ -668,7 +668,7 @@ mod tests {
                     Point3::from(vertex2),
                 ],
                 normals: [normal; 3],
-                material: Rc::new(LambertianMaterial::new_dummy()),
+                material: Arc::new(LambertianMaterial::new_dummy()),
             };
             let ray = Ray::new(ray_origin, ray_direction);
 
@@ -795,7 +795,7 @@ mod tests {
             let triangle = Triangle {
                 vertices: [vertex0, vertex1, vertex2],
                 normals: [Vector3::zeros(); 3],
-                material: Rc::new(LambertianMaterial::new_dummy()),
+                material: Arc::new(LambertianMaterial::new_dummy()),
             };
             match triangle.intersect(&ray) {
                 Some(_) => false,
@@ -823,7 +823,7 @@ mod tests {
             let triangle = Triangle {
                 vertices: [vertex0, vertex1, vertex2],
                 normals: [Vector3::zeros(); 3],
-                material: Rc::new(LambertianMaterial::new_dummy()),
+                material: Arc::new(LambertianMaterial::new_dummy()),
             };
             match triangle.intersect(&ray) {
                 Some(_) => false,
@@ -851,7 +851,7 @@ mod tests {
             let triangle = Triangle {
                 vertices: [vertex0, vertex1, vertex2],
                 normals: [Vector3::zeros(); 3],
-                material: Rc::new(LambertianMaterial::new_dummy()),
+                material: Arc::new(LambertianMaterial::new_dummy()),
             };
             match triangle.intersect(&ray) {
                 Some(_) => false,
@@ -877,7 +877,7 @@ mod tests {
             let triangle = Triangle {
                 vertices: [vertex0, vertex1, vertex2],
                 normals: [Vector3::zeros(); 3],
-                material: Rc::new(LambertianMaterial::new_dummy()),
+                material: Arc::new(LambertianMaterial::new_dummy()),
             };
             match triangle.intersect(&ray) {
                 Some(_) => false,

@@ -4,10 +4,9 @@ use super::colour::{ColourRgbF, NamedColour};
 
 use std::fmt::Debug;
 
-type Bsdf<'a, T> =
-    Box<dyn Fn(Vector3<T>, Vector3<T>, ColourRgbF<T>) -> ColourRgbF<T> + 'a>;
+type Bsdf<'a, T> = Box<dyn Fn(Vector3<T>, Vector3<T>, ColourRgbF<T>) -> ColourRgbF<T> + 'a>;
 
-pub trait Material<T: RealField>: Debug {
+pub trait Material<T: RealField>: Debug + Sync + Send {
     fn bsdf<'a>(&'a self) -> Bsdf<'a, T>;
 
     fn sample(&self, _w_o: &Vector3<T>) -> Vec<Vector3<T>> {

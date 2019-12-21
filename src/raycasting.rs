@@ -2,7 +2,7 @@ use nalgebra::{convert, Point3, RealField, Vector3};
 
 use super::materials::Material;
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub struct Ray<T: RealField> {
@@ -35,21 +35,21 @@ pub struct IntersectionInfo<T: RealField> {
     pub tangent: Vector3<T>,
     pub cotangent: Vector3<T>,
     pub retro: Vector3<T>,
-    pub material: Rc<dyn Material<T>>,
+    pub material: Arc<dyn Material<T>>,
 }
 
-pub trait Intersect<T: RealField> {
+pub trait Intersect<T: RealField>: Send + Sync {
     fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>>;
 }
 
 pub struct Sphere<T: RealField> {
     centre: Point3<T>,
     radius: T,
-    material: Rc<dyn Material<T>>,
+    material: Arc<dyn Material<T>>,
 }
 
 impl<T: RealField> Sphere<T> {
-    pub fn new(centre: Point3<T>, radius: T, material: Rc<dyn Material<T>>) -> Sphere<T> {
+    pub fn new(centre: Point3<T>, radius: T, material: Arc<dyn Material<T>>) -> Sphere<T> {
         Sphere {
             centre,
             radius,
@@ -142,7 +142,7 @@ impl<T: RealField> Intersect<T> for Sphere<T> {
                     tangent,
                     cotangent,
                     retro,
-                    material: Rc::clone(&self.material),
+                    material: Arc::clone(&self.material),
                 })
             }
         }
@@ -154,14 +154,14 @@ pub struct Plane<T: RealField> {
     tangent: Vector3<T>,
     cotangent: Vector3<T>,
     distance_from_origin: T,
-    material: Rc<dyn Material<T>>,
+    material: Arc<dyn Material<T>>,
 }
 
 impl<T: RealField> Plane<T> {
     pub fn new(
         normal: Vector3<T>,
         distance_from_origin: T,
-        material: Rc<dyn Material<T>>,
+        material: Arc<dyn Material<T>>,
     ) -> Plane<T> {
         normal.normalize();
         let mut axis_closest_to_tangent = Vector3::zeros();
@@ -202,7 +202,7 @@ impl<T: RealField> Intersect<T> for Plane<T> {
             tangent: self.tangent,
             cotangent: self.cotangent,
             retro: -ray.direction,
-            material: Rc::clone(&self.material),
+            material: Arc::clone(&self.material),
         })
     }
 }
@@ -266,7 +266,7 @@ mod tests {
         let s = Sphere::new(
             Point3::new(1.5, 1.5, 15.0),
             5.0,
-            Rc::new(LambertianMaterial::new_dummy()),
+            Arc::new(LambertianMaterial::new_dummy()),
         );
         assert_matches!(s.intersect(&r), Some(_));
     }
@@ -277,7 +277,7 @@ mod tests {
         let s = Sphere::new(
             Point3::new(-5.0, 1.5, 15.0),
             5.0,
-            Rc::new(LambertianMaterial::new_dummy()),
+            Arc::new(LambertianMaterial::new_dummy()),
         );
         assert_matches!(s.intersect(&r), None);
     }
@@ -288,7 +288,7 @@ mod tests {
         let s = Sphere::new(
             Point3::new(1.5, 1.5, -15.0),
             5.0,
-            Rc::new(LambertianMaterial::new_dummy()),
+            Arc::new(LambertianMaterial::new_dummy()),
         );
         assert_matches!(s.intersect(&r), None);
     }
@@ -299,7 +299,7 @@ mod tests {
         let s = Sphere::new(
             Point3::new(1.5, 1.5, 2.0),
             5.0,
-            Rc::new(LambertianMaterial::new_dummy()),
+            Arc::new(LambertianMaterial::new_dummy()),
         );
         assert_matches!(s.intersect(&r), Some(_));
     }
@@ -316,7 +316,7 @@ mod tests {
         let sphere = Sphere::new(
             sphere_centre,
             radius,
-            Rc::new(LambertianMaterial::new_dummy()),
+            Arc::new(LambertianMaterial::new_dummy()),
         );
         let ray = Ray::new(ray_origin, sphere_centre - ray_origin);
         let info = sphere.intersect(&ray).unwrap();
@@ -332,7 +332,7 @@ mod tests {
         let p = Plane::new(
             Vector3::new(1.0, 0.0, 0.0),
             -5.0,
-            Rc::new(LambertianMaterial::new_dummy()),
+            Arc::new(LambertianMaterial::new_dummy()),
         );
         assert_matches!(p.intersect(&r), Some(_));
     }
@@ -343,7 +343,7 @@ mod tests {
         let p = Plane::new(
             Vector3::new(1.0, 0.0, 0.0),
             -5.0,
-            Rc::new(LambertianMaterial::new_dummy()),
+            Arc::new(LambertianMaterial::new_dummy()),
         );
         assert_matches!(p.intersect(&r), None);
     }
@@ -354,7 +354,7 @@ mod tests {
         let p = Plane::new(
             Vector3::new(1.0, 0.0, 0.0),
             -5.0,
-            Rc::new(LambertianMaterial::new_dummy()),
+            Arc::new(LambertianMaterial::new_dummy()),
         );
         match p.intersect(&r) {
             Some(IntersectionInfo {

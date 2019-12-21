@@ -7,6 +7,8 @@ use super::raycasting::Ray;
 use super::sampler::Sampler;
 use super::scene::Scene;
 
+use std::sync::{Arc, Mutex};
+
 struct ImageSampler<T: RealField> {
     image_height_pixels: u32,
     image_width_pixels: u32,
@@ -62,30 +64,23 @@ impl<T: RealField> ImageSampler<T> {
     }
 }
 
-pub fn render_scene<T: RealField>(output_image: &mut ImageRgbF<T>, scene: &Scene<T>) {
-    partial_render_scene(
-        output_image,
-        scene,
-        0,
-        output_image.get_height(),
-        0,
-        output_image.get_width(),
-    )
+pub fn render_scene<T: RealField>(output_image: Arc<Mutex<ImageRgbF<T>>>, scene: Arc<Scene<T>>) {
+    let height = output_image.lock().unwrap().get_height();
+    let width = output_image.lock().unwrap().get_width();
+    partial_render_scene(output_image, scene, 0, height, 0, width, height, width)
 }
 
 pub fn partial_render_scene<T: RealField>(
-    output_image: &mut ImageRgbF<T>,
-    scene: &Scene<T>,
+    output_image: Arc<Mutex<ImageRgbF<T>>>,
+    scene: Arc<Scene<T>>,
     row_start: u32,
     row_end: u32,
     column_start: u32,
     column_end: u32,
+    height: u32,
+    width: u32,
 ) {
-    let image_sampler = ImageSampler::new(
-        output_image.get_width(),
-        output_image.get_height(),
-        scene.camera_location,
-    );
+    let image_sampler = ImageSampler::new(width, height, scene.camera_location);
     let ambient_intensity: T = convert(0.0);
     let directional_intensity1: T = convert(7.0);
     let directional_intensity2: T = convert(3.0);
@@ -107,7 +102,7 @@ pub fn partial_render_scene<T: RealField>(
             },
         ],
     };
-    let sampler = Sampler { scene };
+    let sampler = Sampler { scene: &scene };
     for column in column_start..column_end {
         for row in row_start..row_end {
             let ray = image_sampler.ray_for_pixel(row, column);
@@ -116,7 +111,8 @@ pub fn partial_render_scene<T: RealField>(
                 None => ColourRgbF::from_named(NamedColour::Black),
                 Some(intersection_info) => integrator.integrate(&sampler, &intersection_info),
             };
-            output_image.set_colour(row, column, colour);
+            let mut locked_image = output_image.lock().unwrap();
+            locked_image.set_colour(row, column, colour);
         }
     }
 }
@@ -126,7 +122,7 @@ mod tests {
     use super::*;
     use crate::materials::LambertianMaterial;
     use crate::raycasting::{Intersect, IntersectionInfo, Plane};
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     #[cfg(test)]
     mod imagesampler {
@@ -151,7 +147,7 @@ mod tests {
             let film_plane = Plane::new(
                 Vector3::new(0.0, 0.0, 1.0),
                 target.film_distance,
-                Rc::new(LambertianMaterial::<f64>::new_dummy()),
+                Arc::new(LambertianMaterial::<f64>::new_dummy()),
             );
             let point_on_film_plane = match film_plane.intersect(&ray) {
                 Some(IntersectionInfo {

@@ -7,16 +7,18 @@ use std::time::Duration;
 
 use nalgebra::{Point3, Vector3};
 
+use itertools::iproduct;
 
 use std::cmp::min;
-use std::rc::Rc;
 use std::path::Path;
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 use vanrijn::camera::partial_render_scene;
 use vanrijn::colour::{ColourRgbF, NamedColour};
 use vanrijn::image::{ClampingToneMapper, ImageRgbF, ImageRgbU8, ToneMapper};
 use vanrijn::materials::{LambertianMaterial, PhongMaterial, ReflectiveMaterial};
-use vanrijn::mesh::{load_obj, Triangle};
+use vanrijn::mesh::load_obj;
 use vanrijn::raycasting::{Intersect, Plane, Sphere};
 use vanrijn::scene::Scene;
 
@@ -59,7 +61,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         image_width as u32,
         image_height as u32,
     )?;
-    let mut output_image = ImageRgbF::<f64>::new(image_width, image_height);
+    let output_image = Arc::new(Mutex::new(ImageRgbF::<f64>::new(image_width, image_height)));
 
     let scene = Arc::new(Scene {
         camera_location: Point3::new(-2.0, 1.0, -5.0),
@@ -78,7 +80,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             Box::new(Plane::new(
                 Vector3::new(0.0, 1.0, 0.0),
                 -2.0,
-                Rc::new(LambertianMaterial {
+                Arc::new(LambertianMaterial {
                     colour: ColourRgbF::new(0.55, 0.27, 0.04),
                     diffuse_strength: 0.1,
                 }),
@@ -94,7 +96,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             Box::new(Sphere::new(
                 Point3::new(-4.25, -0.5, 2.0),
                 1.0,
-                Rc::new(ReflectiveMaterial {
+                Arc::new(ReflectiveMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Blue),
                     diffuse_strength: 0.01,
                     reflection_strength: 0.99,
@@ -103,7 +105,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             Box::new(Sphere::new(
                 Point3::new(-5.0, 1.5, 1.0),
                 1.0,
-                Rc::new(PhongMaterial {
+                Arc::new(PhongMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Red),
                     diffuse_strength: 0.05,
                     smoothness: 100.0,
@@ -117,26 +119,49 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut event_pump = sdl_context.event_pump()?;
     let mut i = 0;
     'running: loop {
-        let tile_size = 256;
-        for tile_row in 0..=(output_image.get_height() + 1) / tile_size {
-            for tile_column in 0..=(output_image.get_width() + 1) / tile_size {
-                let row_start = tile_row * tile_size;
-                let row_end = min(tile_row * tile_size + tile_size, output_image.get_height());
-                let column_start = tile_column * tile_size;
-                let column_end = min(
-                    tile_column * tile_size + tile_size,
-                    output_image.get_width(),
-                );
-                partial_render_scene(
-                    &mut output_image,
-                    &scene,
-                    row_start,
-                    row_end,
-                    column_start,
-                    column_end,
-                );
+        let subtile_size = 16;
+        let tile_divisions = 4;
+        let tile_size = subtile_size * tile_divisions;
+        for tile_row in 0..=(image_height + 1) / tile_size {
+            for tile_column in 0..=(image_width + 1) / tile_size {
+                //let row_start = tile_row * tile_size;
+                //let row_end = min(tile_row * tile_size + tile_size, image_height);
+                //let column_start = tile_column * tile_size;
+                //let column_end = min(tile_column * tile_size + tile_size, image_width);
+                let join_handles: Vec<_> = iproduct!(0..tile_divisions, 0..tile_divisions)
+                    .map(|(tile_i, tile_j)| {
+                        let start_i = tile_row * tile_size + tile_i * subtile_size;
+                        let start_j = tile_column * tile_size + tile_j * subtile_size;
+                        (
+                            start_i,
+                            min(start_i + subtile_size, image_height),
+                            start_j,
+                            min(start_j + subtile_size, image_width),
+                        )
+                    })
+                    .map(|(i_min, i_max, j_min, j_max)| {
+                        let image_ptr = output_image.clone();
+                        let scene_ptr = scene.clone();
+                        thread::spawn(move || {
+                            partial_render_scene(
+                                image_ptr,
+                                scene_ptr,
+                                i_min,
+                                i_max,
+                                j_min,
+                                j_max,
+                                image_height,
+                                image_width,
+                            );
+                        })
+                    })
+                    .collect();
+                for h in join_handles {
+                    h.join();
+                }
+                let locked_image = output_image.lock().unwrap();
                 let mut output_image_rgbu8 = ImageRgbU8::new(image_width, image_height);
-                ClampingToneMapper {}.apply_tone_mapping(&output_image, &mut output_image_rgbu8);
+                ClampingToneMapper {}.apply_tone_mapping(&locked_image, &mut output_image_rgbu8);
                 update_texture(&output_image_rgbu8, &mut rendered_image_texture);
                 canvas.copy(&rendered_image_texture, None, None)?;
                 canvas.present();
