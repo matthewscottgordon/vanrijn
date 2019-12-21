@@ -262,12 +262,6 @@ mod tests {
         use quickcheck_macros::quickcheck;
 
         #[quickcheck]
-        fn permute_and_reverse_yields_input(v: Vector3<f32>) -> bool {
-            let indices = indices_with_index_of_largest_element_last(&v);
-            v == reverse_permute_vector_elements(&permute_vector_elements(&v, &indices), &indices)
-        }
-
-        #[quickcheck]
         fn last_index_is_greater_than_or_equal_to_x(v: Vector3<f32>) -> bool {
             let p = permute_vector_elements(&v, &indices_with_index_of_largest_element_last(&v));
             p.z >= v.x
