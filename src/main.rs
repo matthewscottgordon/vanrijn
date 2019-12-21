@@ -7,15 +7,17 @@ use std::time::Duration;
 
 use nalgebra::{Point3, Vector3};
 
+
 use std::cmp::min;
 use std::rc::Rc;
+use std::path::Path;
 
 use vanrijn::camera::partial_render_scene;
 use vanrijn::colour::{ColourRgbF, NamedColour};
 use vanrijn::image::{ClampingToneMapper, ImageRgbF, ImageRgbU8, ToneMapper};
 use vanrijn::materials::{LambertianMaterial, PhongMaterial, ReflectiveMaterial};
-use vanrijn::mesh::Triangle;
-use vanrijn::raycasting::{Plane, Sphere};
+use vanrijn::mesh::{load_obj, Triangle};
+use vanrijn::raycasting::{Intersect, Plane, Sphere};
 use vanrijn::scene::Scene;
 
 fn update_texture(image: &ImageRgbU8, texture: &mut Texture) {
@@ -59,9 +61,20 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     let mut output_image = ImageRgbF::<f64>::new(image_width, image_height);
 
-    let scene = Scene {
-        camera_location: Point3::new(0.0, 0.0, 0.0),
-        objects: vec![
+    let scene = Arc::new(Scene {
+        camera_location: Point3::new(-2.0, 1.0, -5.0),
+        objects: load_obj(
+            Path::new("/home/matthew/Downloads/bunny.obj"),
+            Arc::new(ReflectiveMaterial {
+                colour: ColourRgbF::from_named(NamedColour::Yellow),
+                diffuse_strength: 0.05,
+                reflection_strength: 0.9,
+            }),
+        )
+        .unwrap()
+        .into_iter()
+        .map(|triangle| Box::new(triangle) as Box<dyn Intersect<f64>>)
+        .chain(vec![
             Box::new(Plane::new(
                 Vector3::new(0.0, 1.0, 0.0),
                 -2.0,
@@ -69,17 +82,17 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     colour: ColourRgbF::new(0.55, 0.27, 0.04),
                     diffuse_strength: 0.1,
                 }),
-            )),
+            )) as Box<dyn Intersect<f64>>,
             Box::new(Sphere::new(
-                Point3::new(1.25, -0.5, 6.0),
+                Point3::new(-6.25, -0.5, 1.0),
                 1.0,
-                Rc::new(LambertianMaterial {
+                Arc::new(LambertianMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Green),
                     diffuse_strength: 0.1,
                 }),
             )),
             Box::new(Sphere::new(
-                Point3::new(-1.25, -0.5, 6.0),
+                Point3::new(-4.25, -0.5, 2.0),
                 1.0,
                 Rc::new(ReflectiveMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Blue),
@@ -88,7 +101,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }),
             )),
             Box::new(Sphere::new(
-                Point3::new(0.0, 1.5, 6.0),
+                Point3::new(-5.0, 1.5, 1.0),
                 1.0,
                 Rc::new(PhongMaterial {
                     colour: ColourRgbF::from_named(NamedColour::Red),
@@ -97,20 +110,9 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     specular_strength: 1.0,
                 }),
             )),
-            Box::new(Triangle {
-                vertices: [
-                    Point3::new(1.25, -0.5, 6.0),
-                    Point3::new(-1.25, -0.5, 6.0),
-                    Point3::new(0.0, 1.5, 6.0),
-                ],
-                normals: [Vector3::new(0.0, 0.0, 1.0); 3],
-                material: Rc::new(LambertianMaterial {
-                    colour: ColourRgbF::from_named(NamedColour::Green),
-                    diffuse_strength: 0.1,
-                }),
-            }),
-        ],
-    };
+        ])
+        .collect(),
+    });
 
     let mut event_pump = sdl_context.event_pump()?;
     let mut i = 0;
