@@ -4,7 +4,6 @@ use super::materials::Material;
 
 use std::sync::Arc;
 
-
 pub mod sphere;
 pub use sphere::Sphere;
 
@@ -13,6 +12,9 @@ pub use plane::Plane;
 
 pub mod triangle;
 pub use triangle::Triangle;
+
+pub mod axis_aligned_bounding_box;
+pub use axis_aligned_bounding_box::BoundingBox;
 
 #[derive(Clone, Debug)]
 pub struct Ray<T: RealField> {
