@@ -12,7 +12,7 @@ pub mod raycasting;
 pub mod sampler;
 pub mod scene;
 
-#[cfg(test)]
+#[cfg(bench)]
 mod tests {
     use test::Bencher;
 
