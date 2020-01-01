@@ -49,9 +49,14 @@ pub struct IntersectionInfo<T: RealField> {
 }
 
 pub trait Intersect<T: RealField>: Send + Sync {
+    /// Test if the ray intersects the object, and return information about the object and intersection.
     fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>>;
 }
 
+pub trait IntersectP<T: RealField>: Send + Sync {
+    /// Test if the ray intersects the object, without calculating any extra information.
+    fn intersect(&self, ray: &Ray<T>) -> bool;
+}
 
 #[cfg(test)]
 mod tests {
