@@ -44,6 +44,13 @@ impl<T: RealField> Interval<T> {
             max: self.max.min(b.max),
         }
     }
+
+    pub fn union(self, b: Self) -> Self {
+        Interval {
+            min: self.min.min(b.min),
+            max: self.max.max(b.max),
+        }
+    }
 }
 
 pub struct BoundingBox<T: RealField> {
@@ -90,6 +97,11 @@ impl<T: RealField> IntersectP<T> for BoundingBox<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use itertools::{Itertools, MinMaxResult};
+
+    use quickcheck::TestResult;
+    use quickcheck_macros::quickcheck;
 
     mod interval {
         use super::*;
@@ -211,15 +223,34 @@ mod tests {
             assert!(target.min == result.min);
             assert!(target.max == result.max);
         }
+
+        #[quickcheck]
+        fn union_with_self_yields_self(a: f64, b: f64) -> bool {
+            let target = Interval::new(a, b);
+            let result = target.union(target);
+            result.min == target.min && result.max == target.max
+        }
+
+        #[quickcheck]
+        fn union_yields_min_and_max(a: f64, b: f64, c: f64, d: f64) -> bool {
+            let values = vec![a, b, c, d];
+            if let MinMaxResult::MinMax(&min, &max) =
+                values.iter().minmax_by(|a, b| a.partial_cmp(b).unwrap())
+            {
+                let target1 = Interval::new(a, b);
+                let target2 = Interval::new(c, d);
+                let result = target1.union(target2);
+                result.min == min && result.max == max
+            } else {
+                false
+            }
+        }
     }
 
     mod bounding_box {
         use super::*;
 
         use nalgebra::Vector3;
-
-        use quickcheck::TestResult;
-        use quickcheck_macros::quickcheck;
 
         #[test]
         fn from_corners_with_same_point_yields_degenerate_intervals() {
