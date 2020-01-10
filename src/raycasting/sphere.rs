@@ -2,7 +2,7 @@ use nalgebra::{convert, Point3, RealField, Vector3};
 
 use crate::materials::Material;
 
-use super::{Intersect, IntersectionInfo, Ray};
+use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Ray};
 
 use std::sync::Arc;
 
@@ -77,11 +77,18 @@ impl<T: RealField> Intersect<T> for Sphere<T> {
     }
 }
 
+impl<T: RealField> HasBoundingBox<T> for Sphere<T> {
+    fn bounding_box(&self) -> BoundingBox<T> {
+        let radius_xyz = Vector3::new(self.radius, self.radius, self.radius);
+        BoundingBox::from_corners(self.centre + radius_xyz, self.centre - radius_xyz)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use quickcheck_macros::quickcheck;
     use quickcheck::TestResult;
-    
+    use quickcheck_macros::quickcheck;
+
     use super::*;
     use crate::materials::LambertianMaterial;
 
@@ -157,5 +164,19 @@ mod tests {
         TestResult::from_bool(
             (distance_to_centre - (info.distance + sphere.radius)).abs() < 0.00001,
         )
+    }
+
+    #[quickcheck]
+    fn all_points_on_sphere_are_in_bounding_box(
+        sphere_centre: Point3<f64>,
+        radius_vector: Vector3<f64>,
+    ) -> bool {
+        let target_sphere = Sphere::new(
+            sphere_centre,
+            radius_vector.norm(),
+            Arc::new(LambertianMaterial::new_dummy()),
+        );
+        let bounding_box = target_sphere.bounding_box();
+        bounding_box.contains_point(sphere_centre + radius_vector)
     }
 }
