@@ -1,4 +1,4 @@
-use nalgebra::{convert, Point3, RealField, Vector3};
+use nalgebra::{convert, Point3, RealField};
 
 use super::{IntersectP, Ray};
 
@@ -215,6 +215,9 @@ mod tests {
 
     mod bounding_box {
         use super::*;
+
+        use nalgebra::Vector3;
+
         use quickcheck::TestResult;
         use quickcheck_macros::quickcheck;
 
