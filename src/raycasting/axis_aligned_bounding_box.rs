@@ -74,6 +74,16 @@ impl<T: RealField> BoundingBox<T> {
             .zip(p.iter())
             .all(|(interval, &value)| interval.contains_value(value))
     }
+
+    pub fn union(&self, other: &BoundingBox<T>) -> BoundingBox<T> {
+        BoundingBox {
+            bounds: [
+                self.bounds[0].union(other.bounds[0]),
+                self.bounds[1].union(other.bounds[1]),
+                self.bounds[2].union(other.bounds[2]),
+            ],
+        }
+    }
 }
 
 impl<T: RealField> IntersectP<T> for BoundingBox<T> {
@@ -382,6 +392,37 @@ mod tests {
             assert!(!target.intersect(&y_ray));
             let z_ray = Ray::new(Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 1.0));
             assert!(!target.intersect(&z_ray));
+        }
+
+        #[quickcheck]
+        fn union_with_self_yields_self(a: Point3<f64>, b: Point3<f64>) -> bool {
+            let target = BoundingBox::from_corners(a, b);
+            let result = target.union(&target);
+            target
+                .bounds
+                .iter()
+                .zip(result.bounds.iter())
+                .all(|(a, b)| a.min == b.min && a.max == b.max)
+        }
+
+        #[quickcheck]
+        fn union_yields_full_ranges(
+            a: Point3<f64>,
+            b: Point3<f64>,
+            c: Point3<f64>,
+            d: Point3<f64>,
+        ) -> bool {
+            let target1 = BoundingBox::from_corners(a, b);
+            let target2 = BoundingBox::from_corners(c, d);
+            let result = target1.union(&target2);
+            izip!(
+                result.bounds.iter(),
+                target1.bounds.iter(),
+                target2.bounds.iter()
+            )
+            .all(|(r, t1, t2)| {
+                r.min <= t1.min && r.min <= t2.min && r.max >= t1.max && r.max >= t2.max
+            })
         }
     }
 }
