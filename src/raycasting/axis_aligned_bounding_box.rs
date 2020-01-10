@@ -26,13 +26,6 @@ impl<T: RealField> Interval<T> {
         }
     }
 
-    pub fn intersection(self, b: Self) -> Self {
-        Interval {
-            min: self.min.max(b.min),
-            max: self.max.min(b.max),
-        }
-    }
-
     pub fn is_degenerate(self) -> bool {
         self.min == self.max
     }
@@ -43,6 +36,13 @@ impl<T: RealField> Interval<T> {
 
     pub fn contains_value(&self, value: T) -> bool {
         value >= self.min && value <= self.max
+    }
+
+    pub fn intersection(self, b: Self) -> Self {
+        Interval {
+            min: self.min.max(b.min),
+            max: self.max.min(b.max),
+        }
     }
 }
 
