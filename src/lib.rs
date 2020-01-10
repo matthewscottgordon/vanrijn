@@ -1,6 +1,3 @@
-#![feature(test)]
-extern crate test;
-
 pub mod algebra_utils;
 pub mod camera;
 pub mod colour;
@@ -14,6 +11,7 @@ pub mod scene;
 
 #[cfg(bench)]
 mod tests {
+    extern crate test;
     use test::Bencher;
 
     use super::camera::render_scene;
