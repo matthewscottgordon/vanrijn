@@ -33,6 +33,13 @@ impl<T: RealField> Interval<T> {
         }
     }
 
+    pub fn degenerate(value: T) -> Self {
+        Interval {
+            min: value,
+            max: value,
+        }
+    }
+
     pub fn is_degenerate(self) -> bool {
         self.min == self.max
     }
@@ -61,6 +68,17 @@ impl<T: RealField> Interval<T> {
             Interval {
                 min: self.min.min(b.min),
                 max: self.max.max(b.max),
+            }
+        }
+    }
+
+    pub fn expand_to_value(self, v: T) -> Self {
+        if self.is_empty() {
+            Interval::degenerate(v)
+        } else {
+            Interval {
+                min: self.min.min(v),
+                max: self.max.max(v),
             }
         }
     }
@@ -151,6 +169,12 @@ mod tests {
 
         #[test]
         fn empty_is_empty() {
+            let target: Interval<f64> = Interval::empty();
+            assert!(target.is_empty());
+        }
+
+        #[test]
+        fn empty_when_min_greater_than_max() {
             let target = Interval {
                 min: 10f64,
                 max: 5f64,
@@ -159,7 +183,7 @@ mod tests {
         }
 
         #[test]
-        fn empty_is_empty_with_negative_values() {
+        fn empty_when_min_greater_than_max_with_negative_values() {
             let target = Interval {
                 min: -5f64,
                 max: -10f64,
@@ -168,7 +192,7 @@ mod tests {
         }
 
         #[test]
-        fn empty_is_empty_with_mixed_signs() {
+        fn empty_when_min_greater_than_max_with_mixed_signs() {
             let target = Interval {
                 min: 5f64,
                 max: -10f64,
@@ -203,12 +227,23 @@ mod tests {
             assert!(!target.is_degenerate());
         }
 
+        #[quickcheck]
+        fn no_value_is_in_interval_returned_by_emtpy(value: f64) -> bool {
+            !Interval::empty().contains_value(value)
+        }
+
         #[test]
-        fn degenerate_is_degenerate() {
+        fn identical_min_max_yields_degenerate() {
             let target = Interval {
                 min: 5f64,
                 max: 5f64,
             };
+            assert!(target.is_degenerate());
+        }
+
+        #[test]
+        fn degenerate_is_degenerate() {
+            let target = Interval::degenerate(5f64);
             assert!(target.is_degenerate());
         }
 
@@ -237,6 +272,19 @@ mod tests {
                 max: -5f64,
             };
             assert!(target.is_degenerate());
+        }
+
+        #[test]
+        fn degenerate_contains_expected_value() {
+            let target = Interval::degenerate(5f64);
+            assert!(target.contains_value(5.0));
+        }
+
+        #[quickcheck]
+        fn degenerate_does_not_contain_any_values_othter_than_expected_value(value: f64) -> bool {
+            let target_value = if value == 5f64 { 5.5 } else { 5f64 };
+            let target = Interval::degenerate(target_value);
+            !target.contains_value(value)
         }
 
         #[test]
@@ -303,6 +351,32 @@ mod tests {
             let union2 = empty.union(not_empty);
             assert!(union2.min == 5.0);
             assert!(union2.max == 10.0);
+        }
+
+        #[quickcheck]
+        pub fn expand_to_value_creates_interval_that_includes_value(
+            min: f64,
+            max: f64,
+            value: f64,
+        ) -> bool {
+            // Don't check if min <= max, we want to test empty intervals too
+            let interval1 = Interval { min, max };
+            let interval2 = interval1.expand_to_value(value);
+            interval2.contains_value(value)
+        }
+
+        #[quickcheck]
+        pub fn expand_to_value_creates_interval_that_includes_original_interval(
+            b: f64,
+            a: f64,
+            value: f64,
+        ) -> bool {
+            let interval1 = Interval::new(a, b);
+            let interval2 = interval1.expand_to_value(value);
+            let interval3 = interval2.intersection(interval1);
+            // If interval2 contains interval1, that the intersection of the two will
+            // be equal to interval1
+            interval1.min == interval3.min && interval1.max == interval3.max
         }
     }
 
