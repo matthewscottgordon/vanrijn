@@ -6,8 +6,8 @@ use itertools::izip;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Interval<T: RealField> {
-    pub min: T,
-    pub max: T,
+    min: T,
+    max: T,
 }
 
 impl<T: RealField> Interval<T> {
@@ -16,6 +16,13 @@ impl<T: RealField> Interval<T> {
             Interval { min: b, max: a }
         } else {
             Interval { min: a, max: b }
+        }
+    }
+
+    pub fn empty() -> Self {
+        Interval {
+            min: convert(std::f64::INFINITY),
+            max: convert(std::f64::NEG_INFINITY),
         }
     }
 
@@ -46,9 +53,15 @@ impl<T: RealField> Interval<T> {
     }
 
     pub fn union(self, b: Self) -> Self {
-        Interval {
-            min: self.min.min(b.min),
-            max: self.max.max(b.max),
+        if self.is_empty() {
+            b
+        } else if b.is_empty() {
+            self
+        } else {
+            Interval {
+                min: self.min.min(b.min),
+                max: self.max.max(b.max),
+            }
         }
     }
 }
@@ -254,6 +267,42 @@ mod tests {
             } else {
                 false
             }
+        }
+
+        #[test]
+        fn union_with_empty_interval_is_correct() {
+            let empty = Interval {
+                min: 1f64,
+                max: -1f64,
+            };
+            let not_empty = Interval {
+                min: 5f64,
+                max: 10f64,
+            };
+            let union1 = not_empty.union(empty);
+            assert!(union1.min == 5.0);
+            assert!(union1.max == 10.0);
+            let union2 = empty.union(not_empty);
+            assert!(union2.min == 5.0);
+            assert!(union2.max == 10.0);
+        }
+
+        #[test]
+        fn union_with_empty_interval_is_correct_when_empty_interval_produced_by_intersection() {
+            let empty = Interval {
+                min: 1f64,
+                max: -1f64,
+            };
+            let not_empty = Interval {
+                min: 5f64,
+                max: 10f64,
+            };
+            let union1 = not_empty.union(empty);
+            assert!(union1.min == 5.0);
+            assert!(union1.max == 10.0);
+            let union2 = empty.union(not_empty);
+            assert!(union2.min == 5.0);
+            assert!(union2.max == 10.0);
         }
     }
 
