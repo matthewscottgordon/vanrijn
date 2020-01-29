@@ -1,6 +1,6 @@
 use crate::materials::Material;
 
-use super::{Intersect, IntersectionInfo, Ray};
+use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Ray};
 use nalgebra::{Point3, RealField, Vector2, Vector3};
 
 use std::sync::Arc;
@@ -74,6 +74,12 @@ impl<T: RealField> Intersect<T> for Triangle<T> {
         } else {
             None
         }
+    }
+}
+
+impl<T: RealField> HasBoundingBox<T> for Triangle<T> {
+    fn bounding_box(&self) -> BoundingBox<T> {
+        BoundingBox::from_points(&self.vertices)
     }
 }
 
