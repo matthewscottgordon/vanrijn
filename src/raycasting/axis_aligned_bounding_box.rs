@@ -115,9 +115,12 @@ impl<T: RealField> BoundingBox<T> {
         }
     }
 
-    pub fn from_points(points: &Vec<Point3<T>>) -> Self {
+    pub fn from_points<'a, I>(points: I) -> Self
+    where
+        I: IntoIterator<Item = &'a Point3<T>>,
+    {
         points
-            .iter()
+            .into_iter()
             .fold(BoundingBox::empty(), |acc, p| acc.expand_to_point(p))
     }
 
