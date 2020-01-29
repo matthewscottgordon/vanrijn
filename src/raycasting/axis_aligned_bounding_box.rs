@@ -99,6 +99,38 @@ impl<T: RealField> BoundingBox<T> {
         result
     }
 
+    pub fn empty() -> Self {
+        BoundingBox {
+            bounds: [Interval::empty(), Interval::empty(), Interval::empty()],
+        }
+    }
+
+    pub fn from_point(p: Point3<T>) -> Self {
+        BoundingBox {
+            bounds: [
+                Interval::degenerate(p.x),
+                Interval::degenerate(p.y),
+                Interval::degenerate(p.z),
+            ],
+        }
+    }
+
+    pub fn from_points(points: &Vec<Point3<T>>) -> Self {
+        points
+            .iter()
+            .fold(BoundingBox::empty(), |acc, p| acc.expand_to_point(p))
+    }
+
+    pub fn expand_to_point(&self, p: &Point3<T>) -> Self {
+        BoundingBox {
+            bounds: [
+                self.bounds[0].expand_to_value(p.x),
+                self.bounds[1].expand_to_value(p.y),
+                self.bounds[2].expand_to_value(p.z),
+            ],
+        }
+    }
+
     pub fn contains_point(&self, p: Point3<T>) -> bool {
         self.bounds
             .iter()
@@ -546,6 +578,32 @@ mod tests {
             .all(|(r, t1, t2)| {
                 r.min <= t1.min && r.min <= t2.min && r.max >= t1.max && r.max >= t2.max
             })
+        }
+
+        #[quickcheck]
+        fn empty_box_contains_no_points(p: Point3<f64>) -> bool {
+            let target = BoundingBox::empty();
+            !target.contains_point(p)
+        }
+
+        #[quickcheck]
+        fn from_points_produces_box_that_contains_only_points_bounded_by_inputs_on_all_axes(
+            p: Point3<f64>,
+            a: Point3<f64>,
+            b: Point3<f64>,
+            c: Point3<f64>,
+            d: Point3<f64>,
+            e: Point3<f64>,
+        ) -> bool {
+            let points = vec![a, b, c, d, e];
+            let target = BoundingBox::from_points(&points);
+            let is_in_bounds = points.iter().any(|elem| elem.x >= p.x)
+                && points.iter().any(|elem| elem.x <= p.x)
+                && points.iter().any(|elem| elem.y >= p.y)
+                && points.iter().any(|elem| elem.y <= p.y)
+                && points.iter().any(|elem| elem.z >= p.z)
+                && points.iter().any(|elem| elem.z <= p.z);
+            target.contains_point(p) == is_in_bounds
         }
     }
 }
