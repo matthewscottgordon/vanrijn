@@ -84,6 +84,7 @@ impl<T: RealField> Interval<T> {
     }
 }
 
+#[derive(Debug)]
 pub struct BoundingBox<T: RealField> {
     bounds: [Interval<T>; 3],
 }
