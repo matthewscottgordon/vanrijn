@@ -1,6 +1,6 @@
 use crate::materials::Material;
 
-use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Ray};
+use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray};
 use nalgebra::{Point3, RealField, Vector2, Vector3};
 
 use std::sync::Arc;
@@ -82,6 +82,8 @@ impl<T: RealField> HasBoundingBox<T> for Triangle<T> {
         BoundingBox::from_points(&self.vertices)
     }
 }
+
+impl<T: RealField> Primitive<T> for Triangle<T> {}
 
 fn indices_with_index_of_largest_element_last<T: RealField>(v: &Vector3<T>) -> [usize; 3] {
     if v.x > v.y {

@@ -2,7 +2,7 @@ use nalgebra::{convert, Point3, RealField, Vector3};
 
 use crate::materials::Material;
 
-use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Ray};
+use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray};
 
 use std::sync::Arc;
 
@@ -86,6 +86,8 @@ impl<T: RealField> HasBoundingBox<T> for Plane<T> {
         BoundingBox::from_points(&[p1, p2, p3, p4])
     }
 }
+
+impl<T: RealField> Primitive<T> for Plane<T> {}
 
 #[cfg(test)]
 mod tests {
@@ -274,6 +276,4 @@ mod tests {
         assert!(bb.contains_point(Point3::new(-2000.0, 2.0, 2.0)));
         assert!(bb.contains_point(Point3::new(3.0, 2.0, 3.0)));
     }
-
-
 }

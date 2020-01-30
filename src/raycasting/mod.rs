@@ -64,6 +64,8 @@ pub trait HasBoundingBox<T: RealField>: Send + Sync {
     fn bounding_box(&self) -> BoundingBox<T>;
 }
 
+pub trait Primitive<T: RealField>: Intersect<T> + HasBoundingBox<T> {}
+
 #[cfg(test)]
 mod tests {
     use quickcheck_macros::quickcheck;

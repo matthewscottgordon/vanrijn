@@ -2,7 +2,7 @@ use nalgebra::{convert, Point3, RealField, Vector3};
 
 use crate::materials::Material;
 
-use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Ray};
+use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray};
 
 use std::sync::Arc;
 
@@ -83,6 +83,8 @@ impl<T: RealField> HasBoundingBox<T> for Sphere<T> {
         BoundingBox::from_corners(self.centre + radius_xyz, self.centre - radius_xyz)
     }
 }
+
+impl<T: RealField> Primitive<T> for Sphere<T> {}
 
 #[cfg(test)]
 mod tests {

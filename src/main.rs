@@ -19,7 +19,7 @@ use vanrijn::colour::{ColourRgbF, NamedColour};
 use vanrijn::image::{ClampingToneMapper, ImageRgbF, ImageRgbU8, ToneMapper};
 use vanrijn::materials::{LambertianMaterial, PhongMaterial, ReflectiveMaterial};
 use vanrijn::mesh::load_obj;
-use vanrijn::raycasting::{Intersect, Plane, Sphere};
+use vanrijn::raycasting::{Primitive, Plane, Sphere};
 use vanrijn::scene::Scene;
 
 fn update_texture(image: &ImageRgbU8, texture: &mut Texture) {
@@ -75,17 +75,17 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .unwrap()
         .into_iter()
-        .map(|triangle| Box::new(triangle) as Box<dyn Intersect<f64>>)
+        .map(|triangle| Arc::new(triangle) as Arc<dyn Primitive<f64>>)
         .chain(vec![
-            Box::new(Plane::new(
+            Arc::new(Plane::new(
                 Vector3::new(0.0, 1.0, 0.0),
                 -2.0,
                 Arc::new(LambertianMaterial {
                     colour: ColourRgbF::new(0.55, 0.27, 0.04),
                     diffuse_strength: 0.1,
                 }),
-            )) as Box<dyn Intersect<f64>>,
-            Box::new(Sphere::new(
+            )) as Arc<dyn Primitive<f64>>,
+            Arc::new(Sphere::new(
                 Point3::new(-6.25, -0.5, 1.0),
                 1.0,
                 Arc::new(LambertianMaterial {
@@ -93,7 +93,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     diffuse_strength: 0.1,
                 }),
             )),
-            Box::new(Sphere::new(
+            Arc::new(Sphere::new(
                 Point3::new(-4.25, -0.5, 2.0),
                 1.0,
                 Arc::new(ReflectiveMaterial {
@@ -102,7 +102,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     reflection_strength: 0.99,
                 }),
             )),
-            Box::new(Sphere::new(
+            Arc::new(Sphere::new(
                 Point3::new(-5.0, 1.5, 1.0),
                 1.0,
                 Arc::new(PhongMaterial {
