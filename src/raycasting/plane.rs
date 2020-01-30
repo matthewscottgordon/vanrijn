@@ -1,8 +1,8 @@
-use nalgebra::{convert, RealField, Vector3};
+use nalgebra::{convert, Point3, RealField, Vector3};
 
 use crate::materials::Material;
 
-use super::{Intersect, IntersectionInfo, Ray};
+use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Ray};
 
 use std::sync::Arc;
 
@@ -64,6 +64,29 @@ impl<T: RealField> Intersect<T> for Plane<T> {
     }
 }
 
+impl<T: RealField> HasBoundingBox<T> for Plane<T> {
+    fn bounding_box(&self) -> BoundingBox<T> {
+        let p0 = Point3::from(self.normal * self.distance_from_origin);
+        let f = |v: Vector3<T>| {
+            let infinity: T = convert(std::f64::INFINITY);
+            Vector3::from_iterator(v.iter().map(|&elem| {
+                if elem == T::zero() {
+                    T::zero()
+                } else {
+                    infinity
+                }
+            }))
+        };
+        let tangent = f(self.tangent);
+        let cotangent = f(self.cotangent);
+        let p1 = p0 + tangent;
+        let p2 = p0 - tangent;
+        let p3 = p0 + cotangent;
+        let p4 = p0 - cotangent;
+        BoundingBox::from_points(&[p1, p2, p3, p4])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use nalgebra::Point3;
@@ -118,4 +141,139 @@ mod tests {
             None => panic!(),
         }
     }
+
+    #[test]
+    fn bounding_box_is_correct_for_yz_plane() {
+        let target = Plane::new(
+            Vector3::new(1.0, 0.0, 0.0),
+            2.0,
+            Arc::new(LambertianMaterial::new_dummy()),
+        );
+        let bb = target.bounding_box();
+        assert!(!bb.contains_point(Point3::new(1.0, 2.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(2.0, 2.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(2.0, 2000.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(2.0, 0.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(2.0, -2000.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(2.0, 2.0, 3000.0)));
+        assert!(bb.contains_point(Point3::new(2.0, 2.0, 0.0)));
+        assert!(bb.contains_point(Point3::new(2.0, 2.0, -3000.0)));
+        assert!(!bb.contains_point(Point3::new(3.0, 2.0, 3.0)));
+    }
+
+    #[test]
+    fn bounding_box_is_correct_for_yz_plane_with_negative_normal() {
+        let target = Plane::new(
+            Vector3::new(-1.0, 0.0, 0.0),
+            2.0,
+            Arc::new(LambertianMaterial::new_dummy()),
+        );
+        let bb = target.bounding_box();
+        assert!(!bb.contains_point(Point3::new(1.0, 2.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(-2.0, 2.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(-2.0, 2000.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(-2.0, 0.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(-2.0, -2000.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(-2.0, 2.0, 3000.0)));
+        assert!(bb.contains_point(Point3::new(-2.0, 2.0, 0.0)));
+        assert!(bb.contains_point(Point3::new(-2.0, 2.0, -3000.0)));
+        assert!(!bb.contains_point(Point3::new(-3.0, 2.0, 3.0)));
+    }
+
+    #[test]
+    fn bounding_box_is_correct_for_xz_plane() {
+        let target = Plane::new(
+            Vector3::new(0.0, 1.0, 0.0),
+            2.0,
+            Arc::new(LambertianMaterial::new_dummy()),
+        );
+        let bb = target.bounding_box();
+        assert!(!bb.contains_point(Point3::new(1.0, 1.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(1.0, 2.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(1000.0, 2.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(0.0, 2.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(-1000.0, 2.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(1.0, 2.0, 3000.0)));
+        assert!(bb.contains_point(Point3::new(1.0, 2.0, 0.0)));
+        assert!(bb.contains_point(Point3::new(1.0, 2.0, -3000.0)));
+        assert!(!bb.contains_point(Point3::new(1.0, 3.0, 3.0)));
+    }
+
+    #[test]
+    fn bounding_box_is_correct_for_xz_plane_with_negative_normal() {
+        let target = Plane::new(
+            Vector3::new(0.0, -1.0, 0.0),
+            2.0,
+            Arc::new(LambertianMaterial::new_dummy()),
+        );
+        let bb = target.bounding_box();
+        assert!(!bb.contains_point(Point3::new(1.0, -1.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(1.0, -2.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(1000.0, -2.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(0.0, -2.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(-1000.0, -2.0, 3.0)));
+        assert!(bb.contains_point(Point3::new(1.0, -2.0, 3000.0)));
+        assert!(bb.contains_point(Point3::new(1.0, -2.0, 0.0)));
+        assert!(bb.contains_point(Point3::new(1.0, -2.0, -3000.0)));
+        assert!(!bb.contains_point(Point3::new(1.0, 3.0, 3.0)));
+    }
+
+    #[test]
+    fn bounding_box_is_correct_for_xy_plane() {
+        let target = Plane::new(
+            Vector3::new(0.0, 0.0, 1.0),
+            2.0,
+            Arc::new(LambertianMaterial::new_dummy()),
+        );
+        let bb = target.bounding_box();
+        assert!(!bb.contains_point(Point3::new(1.0, 2.0, 1.0)));
+        assert!(bb.contains_point(Point3::new(1.0, 2.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(1.0, 2000.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(1.0, 0.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(1.0, -2000.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(2000.0, 2.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(0.0, 2.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(-2000.0, 2.0, 2.0)));
+        assert!(!bb.contains_point(Point3::new(3.0, 2.0, 3.0)));
+    }
+
+    #[test]
+    fn bounding_box_is_correct_for_xy_plane_with_negative_normal() {
+        let target = Plane::new(
+            Vector3::new(0.0, 0.0, -1.0),
+            -2.0,
+            Arc::new(LambertianMaterial::new_dummy()),
+        );
+        let bb = target.bounding_box();
+        assert!(!bb.contains_point(Point3::new(1.0, 2.0, 1.0)));
+        assert!(bb.contains_point(Point3::new(1.0, 2.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(1.0, 2000.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(1.0, 0.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(1.0, -2000.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(2000.0, 2.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(0.0, 2.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(-2000.0, 2.0, 2.0)));
+        assert!(!bb.contains_point(Point3::new(3.0, 2.0, 3.0)));
+    }
+
+    #[test]
+    fn bounding_box_is_infinite_when_normal_is_not_aligned_with_axis() {
+        let target = Plane::new(
+            Vector3::new(0.1, 0.0, -1.0),
+            -2.0,
+            Arc::new(LambertianMaterial::new_dummy()),
+        );
+        let bb = target.bounding_box();
+        assert!(bb.contains_point(Point3::new(1.0, 2.0, 1.0)));
+        assert!(bb.contains_point(Point3::new(1.0, 2.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(1.0, 2000.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(1.0, 0.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(1.0, -2000.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(2000.0, 2.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(0.0, 2.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(-2000.0, 2.0, 2.0)));
+        assert!(bb.contains_point(Point3::new(3.0, 2.0, 3.0)));
+    }
+
+
 }
