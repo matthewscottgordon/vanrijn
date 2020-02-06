@@ -8,6 +8,7 @@ pub mod mesh;
 pub mod raycasting;
 pub mod sampler;
 pub mod scene;
+pub mod util;
 
 #[cfg(bench)]
 mod tests {
