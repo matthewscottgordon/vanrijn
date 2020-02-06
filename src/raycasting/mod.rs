@@ -16,6 +16,7 @@ pub use triangle::Triangle;
 pub mod axis_aligned_bounding_box;
 pub use axis_aligned_bounding_box::BoundingBox;
 
+
 #[derive(Clone, Debug)]
 pub struct Ray<T: RealField> {
     pub origin: Point3<T>,
