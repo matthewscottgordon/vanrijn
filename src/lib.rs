@@ -32,8 +32,7 @@ mod tests {
         let image_width = 3;
         let image_height = 3;
 
-        let output_image =
-            Arc::new(Mutex::new(ImageRgbF::<f64>::new(image_width, image_height)));
+        let output_image = Arc::new(Mutex::new(ImageRgbF::<f64>::new(image_width, image_height)));
 
         let scene = Arc::new(Scene {
             camera_location: Point3::new(-2.0, 1.0, -5.0),
