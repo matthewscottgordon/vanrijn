@@ -1,9 +1,9 @@
 use nalgebra::{convert, RealField, Vector3};
 
-use super::algebra_utils::try_change_of_basis_matrix;
 use super::colour::ColourRgbF;
 use super::raycasting::{IntersectionInfo, Ray};
 use super::sampler::Sampler;
+use super::util::algebra_utils::try_change_of_basis_matrix;
 
 pub trait Integrator<T: RealField> {
     fn integrate(&self, sampler: &Sampler<T>, info: &IntersectionInfo<T>) -> ColourRgbF<T>;

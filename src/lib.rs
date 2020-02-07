@@ -1,4 +1,3 @@
-pub mod algebra_utils;
 pub mod camera;
 pub mod colour;
 pub mod image;
