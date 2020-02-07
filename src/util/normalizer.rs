@@ -1,7 +1,11 @@
+use super::axis_aligned_bounding_box::BoundingBox;
 use super::Interval;
 
-use nalgebra::{clamp, RealField};
+use nalgebra::{clamp, Point3, RealField};
 
+use itertools::izip;
+
+#[derive(Debug, Copy, Clone)]
 pub struct RealFieldNormalizer<T: RealField> {
     min: T,
     range: T,
@@ -20,6 +24,51 @@ impl<T: RealField> RealFieldNormalizer<T> {
 
     pub fn normalize_and_clamp(&self, value: T) -> T {
         clamp((value - self.min) / self.range, T::zero(), T::one())
+    }
+}
+
+#[derive(Debug)]
+pub struct Point3Normalizer<T: RealField> {
+    dimension_normalizers: [RealFieldNormalizer<T>; 3],
+}
+
+impl<T: RealField> Point3Normalizer<T> {
+    pub fn new(bounds: BoundingBox<T>) -> Self {
+        let mut normalizer = Point3Normalizer {
+            dimension_normalizers: [RealFieldNormalizer::new(Interval::empty()); 3],
+        };
+        for (normalizer, &bounds) in normalizer
+            .dimension_normalizers
+            .iter_mut()
+            .zip(bounds.bounds.iter())
+        {
+            *normalizer = RealFieldNormalizer::new(bounds);
+        }
+        normalizer
+    }
+
+    pub fn normalize(&self, point: Point3<T>) -> Point3<T> {
+        let mut result = Point3::new(T::zero(), T::zero(), T::zero());
+        for (value_out, &value_in, normalizer) in izip!(
+            result.iter_mut(),
+            point.iter(),
+            self.dimension_normalizers.iter()
+        ) {
+            *value_out = normalizer.normalize(value_in);
+        }
+        result
+    }
+
+    pub fn normalize_and_clamp(&self, point: Point3<T>) -> Point3<T> {
+        let mut result = Point3::new(T::zero(), T::zero(), T::zero());
+        for (value_out, &value_in, normalizer) in izip!(
+            result.iter_mut(),
+            point.iter(),
+            self.dimension_normalizers.iter()
+        ) {
+            *value_out = normalizer.normalize_and_clamp(value_in);
+        }
+        result
     }
 }
 
@@ -93,5 +142,49 @@ mod test {
     ) -> bool {
         let target = RealFieldNormalizer::new(Interval::new(2.0, 4.0));
         target.normalize_and_clamp(value) == target.normalize(value) || value < 2.0 || value > 4.0
+    }
+
+    #[quickcheck]
+    fn normalize_point3_is_the_same_as_normalize_each_dimension(
+        a: Point3<f64>,
+        b: Point3<f64>,
+        c: Point3<f64>,
+    ) -> bool {
+        let x_normalizer = RealFieldNormalizer::new(Interval::new(a.x.min(b.x), a.x.max(b.x)));
+        let y_normalizer = RealFieldNormalizer::new(Interval::new(a.y.min(b.y), a.y.max(b.y)));
+        let z_normalizer = dbg!(RealFieldNormalizer::new(Interval::new(
+            a.z.min(b.z),
+            a.z.max(b.z)
+        )));
+        let xyz_normalizer = Point3Normalizer::new(BoundingBox::from_corners(a, b));
+        let normalized_point = xyz_normalizer.normalize(c);
+        x_normalizer.normalize(c.x) == normalized_point.x
+            && y_normalizer.normalize(c.y) == normalized_point.y
+            && z_normalizer.normalize(c.z) == normalized_point.z
+    }
+
+    #[quickcheck]
+    fn normalize_and_clamp_point3_is_the_same_as_normalize_and_clamp_each_dimension(
+        a: Point3<f64>,
+        b: Point3<f64>,
+        c: Point3<f64>,
+    ) -> bool {
+        let x_normalizer = dbg!(RealFieldNormalizer::new(Interval::new(
+            a.x.min(b.x),
+            a.x.max(b.x)
+        )));
+        let y_normalizer = dbg!(RealFieldNormalizer::new(Interval::new(
+            a.y.min(b.y),
+            a.y.max(b.y)
+        )));
+        let z_normalizer = dbg!(RealFieldNormalizer::new(Interval::new(
+            a.z.min(b.z),
+            a.z.max(b.z)
+        )));
+        let xyz_normalizer = dbg!(Point3Normalizer::new(BoundingBox::from_corners(a, b)));
+        let normalized_point = xyz_normalizer.normalize_and_clamp(c);
+        dbg!(x_normalizer.normalize_and_clamp(c.x)) == dbg!(normalized_point.x)
+            && y_normalizer.normalize_and_clamp(c.y) == normalized_point.y
+            && z_normalizer.normalize_and_clamp(c.z) == normalized_point.z
     }
 }
