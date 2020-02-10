@@ -1,12 +1,13 @@
-use nalgebra::{convert, Point3, RealField, Vector3};
+use nalgebra::{convert, Point3, Vector3};
 
 use crate::materials::Material;
+use crate::Real;
 
 use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray};
 
 use std::sync::Arc;
 
-pub struct Plane<T: RealField> {
+pub struct Plane<T: Real> {
     normal: Vector3<T>,
     tangent: Vector3<T>,
     cotangent: Vector3<T>,
@@ -14,7 +15,7 @@ pub struct Plane<T: RealField> {
     material: Arc<dyn Material<T>>,
 }
 
-impl<T: RealField> Plane<T> {
+impl<T: Real> Plane<T> {
     pub fn new(
         normal: Vector3<T>,
         distance_from_origin: T,
@@ -35,7 +36,7 @@ impl<T: RealField> Plane<T> {
     }
 }
 
-impl<T: RealField> Intersect<T> for Plane<T> {
+impl<T: Real> Intersect<T> for Plane<T> {
     fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
         let ray_direction_dot_plane_normal = ray.direction.dot(&self.normal);
         let point_on_plane = self.normal * self.distance_from_origin;
@@ -64,7 +65,7 @@ impl<T: RealField> Intersect<T> for Plane<T> {
     }
 }
 
-impl<T: RealField> HasBoundingBox<T> for Plane<T> {
+impl<T: Real> HasBoundingBox<T> for Plane<T> {
     fn bounding_box(&self) -> BoundingBox<T> {
         let p0 = Point3::from(self.normal * self.distance_from_origin);
         let f = |v: Vector3<T>| {
@@ -87,7 +88,7 @@ impl<T: RealField> HasBoundingBox<T> for Plane<T> {
     }
 }
 
-impl<T: RealField> Primitive<T> for Plane<T> {}
+impl<T: Real> Primitive<T> for Plane<T> {}
 
 #[cfg(test)]
 mod tests {

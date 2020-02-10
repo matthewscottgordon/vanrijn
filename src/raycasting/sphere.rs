@@ -1,18 +1,19 @@
-use nalgebra::{convert, Point3, RealField, Vector3};
+use nalgebra::{convert, Point3, Vector3};
 
 use crate::materials::Material;
+use crate::Real;
 
 use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray};
 
 use std::sync::Arc;
 
-pub struct Sphere<T: RealField> {
+pub struct Sphere<T: Real> {
     centre: Point3<T>,
     radius: T,
     material: Arc<dyn Material<T>>,
 }
 
-impl<T: RealField> Sphere<T> {
+impl<T: Real> Sphere<T> {
     pub fn new(centre: Point3<T>, radius: T, material: Arc<dyn Material<T>>) -> Sphere<T> {
         Sphere {
             centre,
@@ -22,7 +23,7 @@ impl<T: RealField> Sphere<T> {
     }
 }
 
-impl<T: RealField> Intersect<T> for Sphere<T> {
+impl<T: Real> Intersect<T> for Sphere<T> {
     fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
         let two: T = convert(2.0);
         let four: T = convert(4.0);
@@ -77,14 +78,14 @@ impl<T: RealField> Intersect<T> for Sphere<T> {
     }
 }
 
-impl<T: RealField> HasBoundingBox<T> for Sphere<T> {
+impl<T: Real> HasBoundingBox<T> for Sphere<T> {
     fn bounding_box(&self) -> BoundingBox<T> {
         let radius_xyz = Vector3::new(self.radius, self.radius, self.radius);
         BoundingBox::from_corners(self.centre + radius_xyz, self.centre - radius_xyz)
     }
 }
 
-impl<T: RealField> Primitive<T> for Sphere<T> {}
+impl<T: Real> Primitive<T> for Sphere<T> {}
 
 #[cfg(test)]
 mod tests {

@@ -1,13 +1,13 @@
 use super::raycasting::{IntersectionInfo, Ray};
 use super::scene::Scene;
 
-use nalgebra::RealField;
+use crate::Real;
 
-pub struct Sampler<'a, T: RealField> {
+pub struct Sampler<'a, T: Real> {
     pub scene: &'a Scene<T>,
 }
 
-impl<'a, T: RealField> Sampler<'a, T> {
+impl<'a, T: Real> Sampler<'a, T> {
     pub fn sample(&self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
         self.scene
             .objects

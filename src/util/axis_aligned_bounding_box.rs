@@ -1,15 +1,16 @@
-use nalgebra::{Point3, RealField};
+use nalgebra::Point3;
 
 use crate::util::Interval;
+use crate::Real;
 
 use itertools::izip;
 
 #[derive(Debug, Clone, Copy)]
-pub struct BoundingBox<T: RealField> {
+pub struct BoundingBox<T: Real> {
     pub bounds: [Interval<T>; 3],
 }
 
-impl<T: RealField> BoundingBox<T> {
+impl<T: Real> BoundingBox<T> {
     pub fn from_corners(a: Point3<T>, b: Point3<T>) -> Self {
         let mut result = BoundingBox {
             bounds: [Interval::infinite(); 3],

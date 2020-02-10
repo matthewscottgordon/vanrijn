@@ -1,12 +1,13 @@
-use nalgebra::{clamp, convert, RealField, Vector3};
+use nalgebra::{clamp, convert, Vector3};
 
 use super::colour::{ColourRgbF, NamedColour};
+use crate::Real;
 
 use std::fmt::Debug;
 
 type Bsdf<'a, T> = Box<dyn Fn(Vector3<T>, Vector3<T>, ColourRgbF<T>) -> ColourRgbF<T> + 'a>;
 
-pub trait Material<T: RealField>: Debug + Sync + Send {
+pub trait Material<T: Real>: Debug + Sync + Send {
     fn bsdf<'a>(&'a self) -> Bsdf<'a, T>;
 
     fn sample(&self, _w_o: &Vector3<T>) -> Vec<Vector3<T>> {
@@ -15,12 +16,12 @@ pub trait Material<T: RealField>: Debug + Sync + Send {
 }
 
 #[derive(Debug)]
-pub struct LambertianMaterial<T: RealField> {
+pub struct LambertianMaterial<T: Real> {
     pub colour: ColourRgbF<T>,
     pub diffuse_strength: T,
 }
 
-impl<T: RealField> LambertianMaterial<T> {
+impl<T: Real> LambertianMaterial<T> {
     pub fn new_dummy() -> LambertianMaterial<T> {
         LambertianMaterial {
             colour: ColourRgbF::new(T::one(), T::one(), T::one()),
@@ -29,7 +30,7 @@ impl<T: RealField> LambertianMaterial<T> {
     }
 }
 
-impl<T: RealField> Material<T> for LambertianMaterial<T> {
+impl<T: Real> Material<T> for LambertianMaterial<T> {
     fn bsdf<'a>(&'a self) -> Bsdf<'a, T> {
         Box::new(
             move |_w_o: Vector3<T>, _w_i: Vector3<T>, colour_in: ColourRgbF<T>| {
@@ -40,14 +41,14 @@ impl<T: RealField> Material<T> for LambertianMaterial<T> {
 }
 
 #[derive(Debug)]
-pub struct PhongMaterial<T: RealField> {
+pub struct PhongMaterial<T: Real> {
     pub colour: ColourRgbF<T>,
     pub diffuse_strength: T,
     pub specular_strength: T,
     pub smoothness: T,
 }
 
-impl<T: RealField> Material<T> for PhongMaterial<T> {
+impl<T: Real> Material<T> for PhongMaterial<T> {
     fn bsdf<'a>(&'a self) -> Bsdf<'a, T> {
         Box::new(
             move |w_o: Vector3<T>, w_i: Vector3<T>, colour_in: ColourRgbF<T>| {
@@ -66,13 +67,13 @@ impl<T: RealField> Material<T> for PhongMaterial<T> {
 }
 
 #[derive(Debug)]
-pub struct ReflectiveMaterial<T: RealField> {
+pub struct ReflectiveMaterial<T: Real> {
     pub colour: ColourRgbF<T>,
     pub diffuse_strength: T,
     pub reflection_strength: T,
 }
 
-impl<T: RealField> Material<T> for ReflectiveMaterial<T> {
+impl<T: Real> Material<T> for ReflectiveMaterial<T> {
     fn bsdf<'a>(&'a self) -> Bsdf<'a, T> {
         Box::new(
             move |w_o: Vector3<T>, w_i: Vector3<T>, colour_in: ColourRgbF<T>| {

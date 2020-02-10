@@ -1,17 +1,18 @@
 mod wavefront_obj {
     use crate::materials::Material;
+    use crate::Real;
 
     use crate::raycasting::Triangle;
 
     use alga::general::SupersetOf;
-    use nalgebra::{convert, Point3, RealField, Vector3};
+    use nalgebra::{convert, Point3, Vector3};
     use obj::{IndexTuple, Obj, SimplePolygon};
 
     use std::io::Result;
     use std::path::Path;
     use std::sync::Arc;
 
-    fn get_vertex_and_normal<T: RealField>(
+    fn get_vertex_and_normal<T: Real>(
         index_tuple: &IndexTuple,
         vertex_positions: &Vec<[f32; 3]>,
         normal_positions: &Vec<[f32; 3]>,
@@ -28,7 +29,7 @@ mod wavefront_obj {
         (vertex, normal)
     }
 
-    fn get_triangles<T: RealField>(
+    fn get_triangles<T: Real>(
         polygon: &SimplePolygon,
         vertex_positions: &Vec<[f32; 3]>,
         normal_positions: &Vec<[f32; 3]>,
@@ -63,7 +64,7 @@ mod wavefront_obj {
         }
     }
 
-    pub fn load_obj<T: RealField>(
+    pub fn load_obj<T: Real>(
         filename: &Path,
         material: Arc<dyn Material<T>>,
     ) -> Result<Vec<Triangle<T>>>

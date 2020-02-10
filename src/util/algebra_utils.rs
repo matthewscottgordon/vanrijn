@@ -1,6 +1,8 @@
-use nalgebra::{Matrix3, RealField, Vector3};
+use nalgebra::{Matrix3, Vector3};
 
-pub fn try_change_of_basis_matrix<T: RealField>(
+use crate::Real;
+
+pub fn try_change_of_basis_matrix<T: Real>(
     x: &Vector3<T>,
     y: &Vector3<T>,
     z: &Vector3<T>,

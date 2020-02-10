@@ -1,12 +1,14 @@
-use nalgebra::{convert, RealField};
+use nalgebra::convert;
+
+use crate::Real;
 
 #[derive(Debug, Clone, Copy)]
-pub struct Interval<T: RealField> {
+pub struct Interval<T: Real> {
     min: T,
     max: T,
 }
 
-impl<T: RealField> Interval<T> {
+impl<T: Real> Interval<T> {
     pub fn new(a: T, b: T) -> Self {
         if a > b {
             Interval { min: b, max: a }

@@ -1,13 +1,15 @@
-use nalgebra::{convert, RealField, Vector3};
+use nalgebra::{convert, Vector3};
+
+use crate::Real;
 
 use std::ops::{Add, Mul};
 
 #[derive(Copy, Clone, Debug)]
-pub struct ColourRgbF<T: RealField> {
+pub struct ColourRgbF<T: Real> {
     values: Vector3<T>,
 }
 
-impl<T: RealField> ColourRgbF<T> {
+impl<T: Real> ColourRgbF<T> {
     pub fn new(red: T, green: T, blue: T) -> ColourRgbF<T> {
         ColourRgbF {
             values: Vector3::new(red, green, blue),
@@ -80,7 +82,7 @@ pub enum NamedColour {
     Navy,
 }
 
-impl<T: RealField> Add<ColourRgbF<T>> for ColourRgbF<T> {
+impl<T: Real> Add<ColourRgbF<T>> for ColourRgbF<T> {
     type Output = ColourRgbF<T>;
     fn add(self, rhs: ColourRgbF<T>) -> ColourRgbF<T> {
         ColourRgbF {
@@ -89,7 +91,7 @@ impl<T: RealField> Add<ColourRgbF<T>> for ColourRgbF<T> {
     }
 }
 
-impl<T: RealField> Mul<T> for ColourRgbF<T> {
+impl<T: Real> Mul<T> for ColourRgbF<T> {
     type Output = ColourRgbF<T>;
     fn mul(self, rhs: T) -> ColourRgbF<T> {
         ColourRgbF {
@@ -98,7 +100,7 @@ impl<T: RealField> Mul<T> for ColourRgbF<T> {
     }
 }
 
-impl<T: RealField> Mul<ColourRgbF<T>> for ColourRgbF<T> {
+impl<T: Real> Mul<ColourRgbF<T>> for ColourRgbF<T> {
     type Output = ColourRgbF<T>;
     fn mul(self, rhs: ColourRgbF<T>) -> ColourRgbF<T> {
         ColourRgbF {
@@ -115,7 +117,7 @@ mod tests {
         use super::*;
         use quickcheck::{Arbitrary, Gen};
         use quickcheck_macros::quickcheck;
-        impl<T: Arbitrary + RealField> Arbitrary for ColourRgbF<T> {
+        impl<T: Arbitrary + Real> Arbitrary for ColourRgbF<T> {
             fn arbitrary<G: Gen>(g: &mut G) -> ColourRgbF<T> {
                 let values = <Vector3<T> as Arbitrary>::arbitrary(g);
                 ColourRgbF { values }

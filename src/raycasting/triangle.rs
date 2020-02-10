@@ -1,18 +1,19 @@
 use crate::materials::Material;
+use crate::Real;
 
 use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray};
-use nalgebra::{Point3, RealField, Vector2, Vector3};
+use nalgebra::{Point3, Vector2, Vector3};
 
 use std::sync::Arc;
 
 #[derive(Debug)]
-pub struct Triangle<T: RealField> {
+pub struct Triangle<T: Real> {
     pub vertices: [Point3<T>; 3],
     pub normals: [Vector3<T>; 3],
     pub material: Arc<dyn Material<T>>,
 }
 
-impl<T: RealField> Intersect<T> for Triangle<T> {
+impl<T: Real> Intersect<T> for Triangle<T> {
     fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
         let translation = -ray.origin.coords;
         let indices = indices_with_index_of_largest_element_last(&ray.direction);
@@ -77,15 +78,15 @@ impl<T: RealField> Intersect<T> for Triangle<T> {
     }
 }
 
-impl<T: RealField> HasBoundingBox<T> for Triangle<T> {
+impl<T: Real> HasBoundingBox<T> for Triangle<T> {
     fn bounding_box(&self) -> BoundingBox<T> {
         BoundingBox::from_points(&self.vertices)
     }
 }
 
-impl<T: RealField> Primitive<T> for Triangle<T> {}
+impl<T: Real> Primitive<T> for Triangle<T> {}
 
-fn indices_with_index_of_largest_element_last<T: RealField>(v: &Vector3<T>) -> [usize; 3] {
+fn indices_with_index_of_largest_element_last<T: Real>(v: &Vector3<T>) -> [usize; 3] {
     if v.x > v.y {
         if v.z > v.x {
             [0, 1, 2]
@@ -105,24 +106,24 @@ fn is_valid_permutation(indices: &[usize; 3]) -> bool {
     (0..2).all(|i: usize| indices.iter().any(|&j| j == i))
 }
 
-fn permute_vector_elements<T: RealField>(v: &Vector3<T>, indices: &[usize; 3]) -> Vector3<T> {
+fn permute_vector_elements<T: Real>(v: &Vector3<T>, indices: &[usize; 3]) -> Vector3<T> {
     debug_assert!(is_valid_permutation(&indices));
     Vector3::new(v[indices[0]], v[indices[1]], v[indices[2]])
 }
 
-fn calculate_shear_to_z_axis<T: RealField>(v: &Vector3<T>) -> Vector2<T> {
+fn calculate_shear_to_z_axis<T: Real>(v: &Vector3<T>) -> Vector2<T> {
     Vector2::new(-v.x / v.z, -v.y / v.z)
 }
 
-fn apply_shear_to_z_axis<T: RealField>(v: &Vector3<T>, s: &Vector2<T>) -> Vector3<T> {
+fn apply_shear_to_z_axis<T: Real>(v: &Vector3<T>, s: &Vector2<T>) -> Vector3<T> {
     Vector3::new(v.x + s.x * v.z, v.y + s.y * v.z, v.z)
 }
 
-fn signed_edge_function<T: RealField>(a: &Vector3<T>, b: &Vector3<T>) -> T {
+fn signed_edge_function<T: Real>(a: &Vector3<T>, b: &Vector3<T>) -> T {
     a.x * b.y - b.x * a.y
 }
 
-fn signed_edge_functions<T: RealField>(vertices: &Vec<Vector3<T>>) -> Vector3<T> {
+fn signed_edge_functions<T: Real>(vertices: &Vec<Vector3<T>>) -> Vector3<T> {
     // Iterate over the inputs in such a way that each output element is calculated
     // from the twoother elements of the input. ( (y,z) -> x, (z,x) -> y, (x,y) -> z )
     Vector3::from_iterator(
@@ -136,7 +137,7 @@ fn signed_edge_functions<T: RealField>(vertices: &Vec<Vector3<T>>) -> Vector3<T>
     )
 }
 
-fn barycentric_coordinates_from_signed_edge_functions<T: RealField>(e: Vector3<T>) -> Vector3<T> {
+fn barycentric_coordinates_from_signed_edge_functions<T: Real>(e: Vector3<T>) -> Vector3<T> {
     e * (T::one() / e.iter().fold(T::zero(), |a, &b| a + b))
 }
 

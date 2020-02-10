@@ -1,4 +1,4 @@
-use nalgebra::RealField;
+use crate::Real;
 
 use crate::util::Interval;
 
@@ -8,7 +8,7 @@ use itertools::izip;
 
 pub use crate::util::axis_aligned_bounding_box::BoundingBox;
 
-impl<T: RealField> IntersectP<T> for BoundingBox<T> {
+impl<T: Real> IntersectP<T> for BoundingBox<T> {
     fn intersect(&self, ray: &Ray<T>) -> bool {
         let mut t_interval_in_bounds = Interval::infinite();
         for (&ray_origin, &ray_direction, bounds) in

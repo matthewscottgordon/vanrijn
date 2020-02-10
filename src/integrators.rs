@@ -1,27 +1,29 @@
-use nalgebra::{convert, RealField, Vector3};
+use nalgebra::{convert, Vector3};
 
 use super::colour::ColourRgbF;
 use super::raycasting::{IntersectionInfo, Ray};
 use super::sampler::Sampler;
 use super::util::algebra_utils::try_change_of_basis_matrix;
 
-pub trait Integrator<T: RealField> {
+use crate::Real;
+
+pub trait Integrator<T: Real> {
     fn integrate(&self, sampler: &Sampler<T>, info: &IntersectionInfo<T>) -> ColourRgbF<T>;
 }
 
-pub struct DirectionalLight<T: RealField> {
+pub struct DirectionalLight<T: Real> {
     pub direction: Vector3<T>,
     pub colour: ColourRgbF<T>,
 }
 
-pub struct WhittedIntegrator<T: RealField> {
+pub struct WhittedIntegrator<T: Real> {
     pub ambient_light: ColourRgbF<T>,
     pub lights: Vec<DirectionalLight<T>>,
 }
 
 // TODO: Get rid of the magic bias number, which should be calculated base on expected error
 // bounds and tangent direction
-impl<T: RealField> Integrator<T> for WhittedIntegrator<T> {
+impl<T: Real> Integrator<T> for WhittedIntegrator<T> {
     fn integrate(&self, sampler: &Sampler<T>, info: &IntersectionInfo<T>) -> ColourRgbF<T> {
         let world_to_bsdf_space =
             try_change_of_basis_matrix(&info.tangent, &info.cotangent, &info.normal)

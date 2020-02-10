@@ -1,17 +1,19 @@
 use super::axis_aligned_bounding_box::BoundingBox;
 use super::Interval;
 
-use nalgebra::{clamp, Point3, RealField};
+use crate::Real;
+
+use nalgebra::{clamp, Point3};
 
 use itertools::izip;
 
 #[derive(Debug, Copy, Clone)]
-pub struct RealFieldNormalizer<T: RealField> {
+pub struct RealNormalizer<T: Real> {
     min: T,
     range: T,
 }
 
-impl<T: RealField> RealFieldNormalizer<T> {
+impl<T: Real> RealNormalizer<T> {
     pub fn new(interval: Interval<T>) -> Self {
         let min = interval.get_min();
         let range = interval.get_max() - min;
@@ -28,21 +30,21 @@ impl<T: RealField> RealFieldNormalizer<T> {
 }
 
 #[derive(Debug)]
-pub struct Point3Normalizer<T: RealField> {
-    dimension_normalizers: [RealFieldNormalizer<T>; 3],
+pub struct Point3Normalizer<T: Real> {
+    dimension_normalizers: [RealNormalizer<T>; 3],
 }
 
-impl<T: RealField> Point3Normalizer<T> {
+impl<T: Real> Point3Normalizer<T> {
     pub fn new(bounds: BoundingBox<T>) -> Self {
         let mut normalizer = Point3Normalizer {
-            dimension_normalizers: [RealFieldNormalizer::new(Interval::empty()); 3],
+            dimension_normalizers: [RealNormalizer::new(Interval::empty()); 3],
         };
         for (normalizer, &bounds) in normalizer
             .dimension_normalizers
             .iter_mut()
             .zip(bounds.bounds.iter())
         {
-            *normalizer = RealFieldNormalizer::new(bounds);
+            *normalizer = RealNormalizer::new(bounds);
         }
         normalizer
     }
@@ -80,43 +82,43 @@ mod test {
 
     #[quickcheck]
     fn normalize_zero_to_one_yields_input(value: f64) -> bool {
-        let target = RealFieldNormalizer::new(Interval::new(0.0, 1.0));
+        let target = RealNormalizer::new(Interval::new(0.0, 1.0));
         target.normalize(value) == value
     }
 
     #[quickcheck]
     fn normalize_two_to_three_yields_input_minus_two(value: f64) -> bool {
-        let target = RealFieldNormalizer::new(Interval::new(2.0, 3.0));
+        let target = RealNormalizer::new(Interval::new(2.0, 3.0));
         target.normalize(value) == value - 2.0
     }
 
     #[quickcheck]
     fn normalize_negative_three_to_negative_two_yields_input_plus_three(value: f64) -> bool {
-        let target = RealFieldNormalizer::new(Interval::new(-3.0, -2.0));
+        let target = RealNormalizer::new(Interval::new(-3.0, -2.0));
         target.normalize(value) == value + 3.0
     }
 
     #[quickcheck]
     fn normalize_zero_to_two_yields_input_divided_by_two(value: f64) -> bool {
-        let target = RealFieldNormalizer::new(Interval::new(0.0, 2.0));
+        let target = RealNormalizer::new(Interval::new(0.0, 2.0));
         target.normalize(value) == value / 2.0
     }
 
     #[test]
     fn normalize_two_to_four_yields_zero_when_input_is_two() {
-        let target = RealFieldNormalizer::new(Interval::new(2.0, 4.0));
+        let target = RealNormalizer::new(Interval::new(2.0, 4.0));
         assert!(target.normalize(2.0) == 0.0)
     }
 
     #[test]
     fn normalize_two_to_four_yields_one_when_input_is_four() {
-        let target = RealFieldNormalizer::new(Interval::new(2.0, 4.0));
+        let target = RealNormalizer::new(Interval::new(2.0, 4.0));
         assert!(target.normalize(4.0) == 1.0)
     }
 
     #[quickcheck]
     fn normalize_two_to_four_yields_input_divided_by_two_minus_one(value: f64) -> bool {
-        let target = RealFieldNormalizer::new(Interval::new(2.0, 4.0));
+        let target = RealNormalizer::new(Interval::new(2.0, 4.0));
         target.normalize(value) == (value - 2.0) / 2.0
     }
 
@@ -124,7 +126,7 @@ mod test {
     fn normalize_and_clamp_two_to_four_yields_zero_when_input_less_than_or_equal_two(
         value: f64,
     ) -> bool {
-        let target = RealFieldNormalizer::new(Interval::new(2.0, 4.0));
+        let target = RealNormalizer::new(Interval::new(2.0, 4.0));
         target.normalize_and_clamp(value) == 0.0 || value > 2.0
     }
 
@@ -132,7 +134,7 @@ mod test {
     fn normalize_and_clamp_two_to_four_yields_one_when_input_greater_than_or_equal_four(
         value: f64,
     ) -> bool {
-        let target = RealFieldNormalizer::new(Interval::new(2.0, 4.0));
+        let target = RealNormalizer::new(Interval::new(2.0, 4.0));
         target.normalize_and_clamp(value) == 1.0 || value < 4.0
     }
 
@@ -140,7 +142,7 @@ mod test {
     fn normalize_and_clamp_two_to_four_yields_same_value_as_normalize_when_in_range(
         value: f64,
     ) -> bool {
-        let target = RealFieldNormalizer::new(Interval::new(2.0, 4.0));
+        let target = RealNormalizer::new(Interval::new(2.0, 4.0));
         target.normalize_and_clamp(value) == target.normalize(value) || value < 2.0 || value > 4.0
     }
 
@@ -150,9 +152,9 @@ mod test {
         b: Point3<f64>,
         c: Point3<f64>,
     ) -> bool {
-        let x_normalizer = RealFieldNormalizer::new(Interval::new(a.x.min(b.x), a.x.max(b.x)));
-        let y_normalizer = RealFieldNormalizer::new(Interval::new(a.y.min(b.y), a.y.max(b.y)));
-        let z_normalizer = dbg!(RealFieldNormalizer::new(Interval::new(
+        let x_normalizer = RealNormalizer::new(Interval::new(a.x.min(b.x), a.x.max(b.x)));
+        let y_normalizer = RealNormalizer::new(Interval::new(a.y.min(b.y), a.y.max(b.y)));
+        let z_normalizer = dbg!(RealNormalizer::new(Interval::new(
             a.z.min(b.z),
             a.z.max(b.z)
         )));
@@ -169,15 +171,15 @@ mod test {
         b: Point3<f64>,
         c: Point3<f64>,
     ) -> bool {
-        let x_normalizer = dbg!(RealFieldNormalizer::new(Interval::new(
+        let x_normalizer = dbg!(RealNormalizer::new(Interval::new(
             a.x.min(b.x),
             a.x.max(b.x)
         )));
-        let y_normalizer = dbg!(RealFieldNormalizer::new(Interval::new(
+        let y_normalizer = dbg!(RealNormalizer::new(Interval::new(
             a.y.min(b.y),
             a.y.max(b.y)
         )));
-        let z_normalizer = dbg!(RealFieldNormalizer::new(Interval::new(
+        let z_normalizer = dbg!(RealNormalizer::new(Interval::new(
             a.z.min(b.z),
             a.z.max(b.z)
         )));

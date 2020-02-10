@@ -1,4 +1,4 @@
-use nalgebra::{convert, Point3, RealField, Vector3};
+use nalgebra::{convert, Point3, Vector3};
 
 use super::colour::{ColourRgbF, NamedColour};
 use super::image::ImageRgbF;
@@ -7,9 +7,11 @@ use super::raycasting::Ray;
 use super::sampler::Sampler;
 use super::scene::Scene;
 
+use crate::Real;
+
 use std::sync::{Arc, Mutex};
 
-struct ImageSampler<T: RealField> {
+struct ImageSampler<T: Real> {
     image_height_pixels: u32,
     image_width_pixels: u32,
 
@@ -20,7 +22,7 @@ struct ImageSampler<T: RealField> {
     film_distance: T,
 }
 
-impl<T: RealField> ImageSampler<T> {
+impl<T: Real> ImageSampler<T> {
     pub fn new(width: u32, height: u32, camera_location: Point3<T>) -> ImageSampler<T> {
         let (film_width, film_height) = {
             let width: T = convert(width as f64);
@@ -64,13 +66,13 @@ impl<T: RealField> ImageSampler<T> {
     }
 }
 
-pub fn render_scene<T: RealField>(output_image: Arc<Mutex<ImageRgbF<T>>>, scene: Arc<Scene<T>>) {
+pub fn render_scene<T: Real>(output_image: Arc<Mutex<ImageRgbF<T>>>, scene: Arc<Scene<T>>) {
     let height = output_image.lock().unwrap().get_height();
     let width = output_image.lock().unwrap().get_width();
     partial_render_scene(output_image, scene, 0, height, 0, width, height, width)
 }
 
-pub fn partial_render_scene<T: RealField>(
+pub fn partial_render_scene<T: Real>(
     output_image: Arc<Mutex<ImageRgbF<T>>>,
     scene: Arc<Scene<T>>,
     row_start: u32,

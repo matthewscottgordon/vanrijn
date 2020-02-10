@@ -1,6 +1,7 @@
-use nalgebra::{Point3, RealField, Vector3};
+use nalgebra::{Point3, Vector3};
 
 use super::materials::Material;
+use crate::Real;
 
 use std::sync::Arc;
 
@@ -16,14 +17,13 @@ pub use triangle::Triangle;
 pub mod axis_aligned_bounding_box;
 pub use axis_aligned_bounding_box::BoundingBox;
 
-
 #[derive(Clone, Debug)]
-pub struct Ray<T: RealField> {
+pub struct Ray<T: Real> {
     pub origin: Point3<T>,
     pub direction: Vector3<T>,
 }
 
-impl<T: RealField> Ray<T> {
+impl<T: Real> Ray<T> {
     pub fn new(origin: Point3<T>, direction: Vector3<T>) -> Ray<T> {
         Ray {
             origin,
@@ -41,7 +41,7 @@ impl<T: RealField> Ray<T> {
 }
 
 #[derive(Debug)]
-pub struct IntersectionInfo<T: RealField> {
+pub struct IntersectionInfo<T: Real> {
     pub distance: T,
     pub location: Point3<T>,
     pub normal: Vector3<T>,
@@ -51,21 +51,21 @@ pub struct IntersectionInfo<T: RealField> {
     pub material: Arc<dyn Material<T>>,
 }
 
-pub trait Intersect<T: RealField>: Send + Sync {
+pub trait Intersect<T: Real>: Send + Sync {
     /// Test if the ray intersects the object, and return information about the object and intersection.
     fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>>;
 }
 
-pub trait IntersectP<T: RealField>: Send + Sync {
+pub trait IntersectP<T: Real>: Send + Sync {
     /// Test if the ray intersects the object, without calculating any extra information.
     fn intersect(&self, ray: &Ray<T>) -> bool;
 }
 
-pub trait HasBoundingBox<T: RealField>: Send + Sync {
+pub trait HasBoundingBox<T: Real>: Send + Sync {
     fn bounding_box(&self) -> BoundingBox<T>;
 }
 
-pub trait Primitive<T: RealField>: Intersect<T> + HasBoundingBox<T> {}
+pub trait Primitive<T: Real>: Intersect<T> + HasBoundingBox<T> {}
 
 #[cfg(test)]
 mod tests {
@@ -73,7 +73,7 @@ mod tests {
 
     use super::*;
     use quickcheck::{Arbitrary, Gen};
-    impl<T: Arbitrary + RealField> Arbitrary for Ray<T> {
+    impl<T: Arbitrary + Real> Arbitrary for Ray<T> {
         fn arbitrary<G: Gen>(g: &mut G) -> Ray<T> {
             let origin = <Point3<T> as Arbitrary>::arbitrary(g);
             let direction = <Vector3<T> as Arbitrary>::arbitrary(g);
@@ -98,9 +98,9 @@ mod tests {
         let p3 = ray.point_at(t3);
         let epsilon = [t1, t2, t3, ray.origin[0], ray.origin[1], ray.origin[2]]
             .iter()
-            .fold(0.0, |a, &b| a.max(b.abs()))
+            .fold(0.0f64, |a, &b| a.max(b.abs()))
             * std::f64::EPSILON
-            * 256.0;
+            * 256.0f64;
         (p2 - p1).cross(&(p3 - p2)).norm() < epsilon
     }
 

@@ -1,8 +1,10 @@
 use std::convert::TryInto;
 
-use nalgebra::{clamp, convert, RealField, Vector3};
+use nalgebra::{clamp, convert, Vector3};
 
 use super::colour::{ColourRgbF, ColourRgbU8};
+
+use crate::Real;
 
 pub struct ImageRgbU8 {
     pixel_data: Vec<u8>,
@@ -64,13 +66,13 @@ impl ImageRgbU8 {
     }
 }
 
-pub struct ImageRgbF<T: RealField> {
+pub struct ImageRgbF<T: Real> {
     pixel_data: Vec<T>,
     width: u32,
     height: u32,
 }
 
-impl<T: RealField> ImageRgbF<T> {
+impl<T: Real> ImageRgbF<T> {
     pub fn new(width: u32, height: u32) -> ImageRgbF<T> {
         ImageRgbF {
             width,
@@ -145,7 +147,7 @@ impl NormalizedAsByte for f64 {
     }
 }
 
-pub trait ToneMapper<T: RealField> {
+pub trait ToneMapper<T: Real> {
     fn apply_tone_mapping(&self, image_in: &ImageRgbF<T>, image_out: &mut ImageRgbU8);
 }
 
@@ -153,12 +155,12 @@ pub trait ToneMapper<T: RealField> {
 pub struct ClampingToneMapper {}
 
 impl ClampingToneMapper {
-    fn clamp<T: RealField + NormalizedAsByte>(v: &T) -> u8 {
+    fn clamp<T: Real + NormalizedAsByte>(v: &T) -> u8 {
         clamp(v, &T::zero(), &T::one()).normalized_to_byte()
     }
 }
 
-impl<T: RealField + NormalizedAsByte> ToneMapper<T> for ClampingToneMapper {
+impl<T: Real + NormalizedAsByte> ToneMapper<T> for ClampingToneMapper {
     fn apply_tone_mapping(&self, image_in: &ImageRgbF<T>, image_out: &mut ImageRgbU8) {
         assert!(image_in.get_width() == image_out.get_width());
         assert!(image_in.get_height() == image_out.get_height());
