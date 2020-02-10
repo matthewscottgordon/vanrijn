@@ -154,10 +154,7 @@ mod test {
     ) -> bool {
         let x_normalizer = RealNormalizer::new(Interval::new(a.x.min(b.x), a.x.max(b.x)));
         let y_normalizer = RealNormalizer::new(Interval::new(a.y.min(b.y), a.y.max(b.y)));
-        let z_normalizer = dbg!(RealNormalizer::new(Interval::new(
-            a.z.min(b.z),
-            a.z.max(b.z)
-        )));
+        let z_normalizer = RealNormalizer::new(Interval::new(a.z.min(b.z), a.z.max(b.z)));
         let xyz_normalizer = Point3Normalizer::new(BoundingBox::from_corners(a, b));
         let normalized_point = xyz_normalizer.normalize(c);
         x_normalizer.normalize(c.x) == normalized_point.x
@@ -171,21 +168,12 @@ mod test {
         b: Point3<f64>,
         c: Point3<f64>,
     ) -> bool {
-        let x_normalizer = dbg!(RealNormalizer::new(Interval::new(
-            a.x.min(b.x),
-            a.x.max(b.x)
-        )));
-        let y_normalizer = dbg!(RealNormalizer::new(Interval::new(
-            a.y.min(b.y),
-            a.y.max(b.y)
-        )));
-        let z_normalizer = dbg!(RealNormalizer::new(Interval::new(
-            a.z.min(b.z),
-            a.z.max(b.z)
-        )));
+        let x_normalizer = RealNormalizer::new(Interval::new(a.x.min(b.x), a.x.max(b.x)));
+        let y_normalizer = RealNormalizer::new(Interval::new(a.y.min(b.y), a.y.max(b.y)));
+        let z_normalizer = RealNormalizer::new(Interval::new(a.z.min(b.z), a.z.max(b.z)));
         let xyz_normalizer = dbg!(Point3Normalizer::new(BoundingBox::from_corners(a, b)));
         let normalized_point = xyz_normalizer.normalize_and_clamp(c);
-        dbg!(x_normalizer.normalize_and_clamp(c.x)) == dbg!(normalized_point.x)
+        x_normalizer.normalize_and_clamp(c.x) == normalized_point.x
             && y_normalizer.normalize_and_clamp(c.y) == normalized_point.y
             && z_normalizer.normalize_and_clamp(c.z) == normalized_point.z
     }
