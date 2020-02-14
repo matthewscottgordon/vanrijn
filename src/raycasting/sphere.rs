@@ -7,6 +7,7 @@ use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive,
 
 use std::sync::Arc;
 
+#[derive(Clone, Debug)]
 pub struct Sphere<T: Real> {
     centre: Point3<T>,
     radius: T,

@@ -94,4 +94,124 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
             BoundingVolumeHierarchy::None => BoundingBox::empty(),
         }
     }
+
+    pub fn count_leaves(&self) -> usize {
+        match self {
+            Self::Node {
+                bounds: _,
+                left,
+                right,
+            } => right.count_leaves() + left.count_leaves(),
+            Self::Leaf {
+                bounds: _,
+                primitive: _,
+            } => 1,
+            Self::None => 0,
+        }
+    }
+}
+
+pub struct FilterIterator<'a, T: Real> {
+    unsearched_subtrees: Vec<&'a BoundingVolumeHierarchy<T>>,
+    predicate: Box<dyn Fn(&BoundingBox<T>) -> bool>,
+}
+
+impl<'a, T: Real> FilterIterator<'a, T> {
+    pub fn new(
+        root: &'a BoundingVolumeHierarchy<T>,
+        predicate: Box<dyn Fn(&BoundingBox<T>) -> bool>,
+    ) -> Self {
+        FilterIterator {
+            unsearched_subtrees: vec![root],
+            predicate,
+        }
+    }
+}
+
+impl<T: Real> Iterator for FilterIterator<'_, T> {
+    type Item = Arc<dyn Primitive<T>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        //let mut result = Option::None;
+        while let Some(next_subtree) = self.unsearched_subtrees.pop() {
+            match next_subtree {
+                BoundingVolumeHierarchy::Node {
+                    bounds,
+                    left,
+                    right,
+                } => {
+                    if (self.predicate)(bounds) {
+                        self.unsearched_subtrees.push(right);
+                        self.unsearched_subtrees.push(left);
+                    }
+                }
+                BoundingVolumeHierarchy::Leaf { bounds, primitive } => {
+                    if (self.predicate)(bounds) {
+                        return Some(Arc::clone(primitive));
+                    }
+                }
+                BoundingVolumeHierarchy::None => {}
+            }
+        }
+        return Option::None;
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use quickcheck::{Arbitrary, Gen};
+    use quickcheck_macros::quickcheck;
+
+    use super::*;
+    use crate::materials::LambertianMaterial;
+    use crate::raycasting::{HasBoundingBox, Sphere};
+    use nalgebra::Point3;
+
+    impl<T: Arbitrary + Real> Arbitrary for Sphere<T> {
+        fn arbitrary<G: Gen>(g: &mut G) -> Sphere<T> {
+            let centre = <Point3<T> as Arbitrary>::arbitrary(g);
+            let radius = <T as Arbitrary>::arbitrary(g);
+            Sphere::new(centre, radius, Arc::new(LambertianMaterial::new_dummy()))
+        }
+    }
+
+    fn sphere_vec_to_primitive_arc_vec<T: Real>(
+        spheres: &Vec<Sphere<T>>,
+    ) -> Vec<Arc<dyn Primitive<T>>> {
+        let mut prims: Vec<Arc<dyn Primitive<T>>> = Vec::with_capacity(spheres.len());
+        for sphere in spheres {
+            prims.push(Arc::new(sphere.clone()));
+        }
+        prims
+    }
+
+    #[quickcheck]
+    fn contains_expected_number_of_primitives(spheres: Vec<Sphere<f32>>) -> bool {
+        let target =
+            BoundingVolumeHierarchy::build(sphere_vec_to_primitive_arc_vec(&spheres).iter());
+
+        target.count_leaves() == spheres.len()
+    }
+
+    #[quickcheck]
+    fn finds_expected_points(spheres: Vec<Sphere<f32>>, p: Point3<f32>) -> bool {
+        let primitives = sphere_vec_to_primitive_arc_vec(&spheres);
+        let target = BoundingVolumeHierarchy::build(primitives.iter());
+        let expected_hits: Vec<Arc<dyn Primitive<f32>>> = primitives
+            .iter()
+            .filter(|elem| elem.bounding_box().contains_point(p))
+            .cloned()
+            .collect();
+        let found_hits: Vec<Arc<dyn Primitive<f32>>> = FilterIterator::new(
+            &target,
+            Box::new(move |elem: &BoundingBox<f32>| elem.contains_point(p)),
+        )
+        .collect();
+        expected_hits.iter().all(|expected_hit| {
+            found_hits
+                .iter()
+                .any(|found_hit| Arc::ptr_eq(found_hit, expected_hit))
+        })
+    }
 }
