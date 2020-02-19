@@ -165,7 +165,7 @@ mod test {
 
     use super::*;
     use crate::materials::LambertianMaterial;
-    use crate::raycasting::{HasBoundingBox, Sphere};
+    use crate::raycasting::Sphere;
     use nalgebra::Point3;
 
     impl<T: Arbitrary + Real> Arbitrary for Sphere<T> {
