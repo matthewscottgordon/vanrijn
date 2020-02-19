@@ -13,7 +13,7 @@ fn spread_bits(v: u32) -> u32 {
     result
 }
 
-pub fn morton_order_value<T: Real>(p: Point3<T>) -> u32 {
+pub fn morton_order_value_3d<T: Real>(p: Point3<T>) -> u32 {
     let x = p.x.normalized_to_u32(10);
     let y = p.y.normalized_to_u32(10);
     let z = p.z.normalized_to_u32(10);

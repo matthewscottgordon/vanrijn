@@ -1,6 +1,6 @@
 use super::{BoundingBox, Primitive};
 
-use crate::util::morton::morton_order_value;
+use crate::util::morton::morton_order_value_3d;
 use crate::util::normalizer::Point3Normalizer;
 use crate::Real;
 
@@ -51,8 +51,8 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
         let normalizer = Point3Normalizer::new(overall_bounds);
         let mut nodes = nodes;
         nodes.sort_by(|(a, _), (b, _)| {
-            morton_order_value(normalizer.normalize(centre(a)))
-                .cmp(&morton_order_value(normalizer.normalize(centre(b))))
+            morton_order_value_3d(normalizer.normalize(centre(a)))
+                .cmp(&morton_order_value_3d(normalizer.normalize(centre(b))))
         });
         Self::from_sorted_nodes(nodes.as_slice())
     }
