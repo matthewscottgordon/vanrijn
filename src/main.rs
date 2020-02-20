@@ -7,20 +7,17 @@ use std::time::Duration;
 
 use nalgebra::{Point3, Vector3};
 
-use itertools::iproduct;
-
-use std::cmp::min;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-use std::thread;
 
 use vanrijn::camera::partial_render_scene;
 use vanrijn::colour::{ColourRgbF, NamedColour};
 use vanrijn::image::{ClampingToneMapper, ImageRgbF, ImageRgbU8, ToneMapper};
 use vanrijn::materials::{LambertianMaterial, PhongMaterial, ReflectiveMaterial};
 use vanrijn::mesh::load_obj;
-use vanrijn::raycasting::{Primitive, Plane, Sphere};
+use vanrijn::raycasting::{Plane, Primitive, Sphere};
 use vanrijn::scene::Scene;
+use vanrijn::util::TileIterator;
 
 fn update_texture(image: &ImageRgbU8, texture: &mut Texture) {
     texture
@@ -33,8 +30,8 @@ fn update_texture(image: &ImageRgbU8, texture: &mut Texture) {
 }
 
 fn init_canvas(
-    image_width: u32,
-    image_height: u32,
+    image_width: usize,
+    image_height: usize,
 ) -> Result<(Sdl, Canvas<sdl2::video::Window>), Box<dyn std::error::Error>> {
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
@@ -50,8 +47,8 @@ fn init_canvas(
 }
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let image_width = 1200;
-    let image_height = 900;
+    let image_width = 320usize;
+    let image_height = 240usize;
 
     let (sdl_context, mut canvas) = init_canvas(image_width, image_height)?;
 
@@ -117,67 +114,42 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let mut event_pump = sdl_context.event_pump()?;
-    let mut i = 0;
-    'running: loop {
-        let subtile_size = 16;
-        let tile_divisions = 4;
-        let tile_size = subtile_size * tile_divisions;
-        for tile_row in 0..=(image_height + 1) / tile_size {
-            for tile_column in 0..=(image_width + 1) / tile_size {
-                //let row_start = tile_row * tile_size;
-                //let row_end = min(tile_row * tile_size + tile_size, image_height);
-                //let column_start = tile_column * tile_size;
-                //let column_end = min(tile_column * tile_size + tile_size, image_width);
-                let join_handles: Vec<_> = iproduct!(0..tile_divisions, 0..tile_divisions)
-                    .map(|(tile_i, tile_j)| {
-                        let start_i = tile_row * tile_size + tile_i * subtile_size;
-                        let start_j = tile_column * tile_size + tile_j * subtile_size;
-                        (
-                            start_i,
-                            min(start_i + subtile_size, image_height),
-                            start_j,
-                            min(start_j + subtile_size, image_width),
-                        )
-                    })
-                    .map(|(i_min, i_max, j_min, j_max)| {
-                        let image_ptr = output_image.clone();
-                        let scene_ptr = scene.clone();
-                        thread::spawn(move || {
-                            partial_render_scene(
-                                image_ptr,
-                                scene_ptr,
-                                i_min,
-                                i_max,
-                                j_min,
-                                j_max,
-                                image_height,
-                                image_width,
-                            );
-                        })
-                    })
-                    .collect();
-                for h in join_handles {
-                    h.join();
-                }
-                let locked_image = output_image.lock().unwrap();
-                let mut output_image_rgbu8 = ImageRgbU8::new(image_width, image_height);
-                ClampingToneMapper {}.apply_tone_mapping(&locked_image, &mut output_image_rgbu8);
-                update_texture(&output_image_rgbu8, &mut rendered_image_texture);
-                canvas.copy(&rendered_image_texture, None, None)?;
-                canvas.present();
 
-                for event in event_pump.poll_iter() {
-                    match event {
-                        Event::Quit { .. }
-                        | Event::KeyDown {
-                            keycode: Some(Keycode::Escape),
-                            ..
-                        } => break 'running,
-                        _ => {}
-                    }
-                }
+    'running: for tile in TileIterator::new(image_width as usize, image_height as usize, 16) {
+        let image_ptr = output_image.clone();
+        let scene_ptr = scene.clone();
+        partial_render_scene(
+            image_ptr,
+            scene_ptr,
+            tile.start_row,
+            tile.end_row,
+            tile.start_column,
+            tile.end_column,
+            image_height,
+            image_width,
+        );
+
+        let locked_image = output_image.lock().unwrap();
+        let mut output_image_rgbu8 = ImageRgbU8::new(image_width, image_height);
+        ClampingToneMapper {}.apply_tone_mapping(&locked_image, &mut output_image_rgbu8);
+        update_texture(&output_image_rgbu8, &mut rendered_image_texture);
+        canvas.copy(&rendered_image_texture, None, None)?;
+        canvas.present();
+
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit { .. }
+                | Event::KeyDown {
+                    keycode: Some(Keycode::Escape),
+                    ..
+                } => break 'running,
+                _ => {}
             }
         }
+    }
+
+    let mut i = 0;
+    'running: loop {
         i = (i + 1) % 255;
         for event in event_pump.poll_iter() {
             match event {

@@ -12,8 +12,8 @@ use crate::Real;
 use std::sync::{Arc, Mutex};
 
 struct ImageSampler<T: Real> {
-    image_height_pixels: u32,
-    image_width_pixels: u32,
+    image_height_pixels: usize,
+    image_width_pixels: usize,
 
     film_width: T,
     film_height: T,
@@ -23,7 +23,7 @@ struct ImageSampler<T: Real> {
 }
 
 impl<T: Real> ImageSampler<T> {
-    pub fn new(width: u32, height: u32, camera_location: Point3<T>) -> ImageSampler<T> {
+    pub fn new(width: usize, height: usize, camera_location: Point3<T>) -> ImageSampler<T> {
         let (film_width, film_height) = {
             let width: T = convert(width as f64);
             let height: T = convert(height as f64);
@@ -44,7 +44,7 @@ impl<T: Real> ImageSampler<T> {
         }
     }
 
-    fn scale(i: u32, n: u32, l: T) -> T {
+    fn scale(i: usize, n: usize, l: T) -> T {
         let one: T = convert(1.0);
         let n: T = convert(n as f64);
         let i: T = convert(i as f64);
@@ -52,7 +52,7 @@ impl<T: Real> ImageSampler<T> {
         (i + convert(0.5)) * pixel_size
     }
 
-    fn ray_for_pixel(&self, row: u32, column: u32) -> Ray<T> {
+    fn ray_for_pixel(&self, row: usize, column: usize) -> Ray<T> {
         Ray::new(
             self.camera_location,
             Vector3::new(
@@ -75,12 +75,12 @@ pub fn render_scene<T: Real>(output_image: Arc<Mutex<ImageRgbF<T>>>, scene: Arc<
 pub fn partial_render_scene<T: Real>(
     output_image: Arc<Mutex<ImageRgbF<T>>>,
     scene: Arc<Scene<T>>,
-    row_start: u32,
-    row_end: u32,
-    column_start: u32,
-    column_end: u32,
-    height: u32,
-    width: u32,
+    row_start: usize,
+    row_end: usize,
+    column_start: usize,
+    column_end: usize,
+    height: usize,
+    width: usize,
 ) {
     let image_sampler = ImageSampler::new(width, height, scene.camera_location);
     let ambient_intensity: T = convert(0.0);

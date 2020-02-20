@@ -8,12 +8,12 @@ use crate::Real;
 
 pub struct ImageRgbU8 {
     pixel_data: Vec<u8>,
-    width: u32,
-    height: u32,
+    width: usize,
+    height: usize,
 }
 
 impl ImageRgbU8 {
-    pub fn new(width: u32, height: u32) -> ImageRgbU8 {
+    pub fn new(width: usize, height: usize) -> ImageRgbU8 {
         ImageRgbU8 {
             width,
             height,
@@ -28,7 +28,7 @@ impl ImageRgbU8 {
         self
     }
 
-    pub fn get_colour(&self, row: u32, column: u32) -> ColourRgbU8 {
+    pub fn get_colour(&self, row: usize, column: usize) -> ColourRgbU8 {
         assert!(row < self.height && column < self.width);
         let index = self.calculate_index(row, column);
         ColourRgbU8 {
@@ -38,7 +38,7 @@ impl ImageRgbU8 {
         }
     }
 
-    pub fn set_colour(&mut self, row: u32, column: u32, colour: ColourRgbU8) {
+    pub fn set_colour(&mut self, row: usize, column: usize, colour: ColourRgbU8) {
         assert!(row < self.height && column < self.width);
         let index = self.calculate_index(row, column);
         self.pixel_data[index..index + 3].copy_from_slice(&colour.values[..]);
@@ -48,19 +48,19 @@ impl ImageRgbU8 {
         &self.pixel_data
     }
 
-    pub fn get_width(&self) -> u32 {
+    pub fn get_width(&self) -> usize {
         self.width
     }
 
-    pub fn get_height(&self) -> u32 {
+    pub fn get_height(&self) -> usize {
         self.height
     }
 
-    pub fn num_channels() -> u32 {
+    pub fn num_channels() -> usize {
         3
     }
 
-    fn calculate_index(&self, row: u32, column: u32) -> usize {
+    fn calculate_index(&self, row: usize, column: usize) -> usize {
         assert!(row < self.height && column < self.width);
         (((self.height - (row + 1)) * self.width + column) * Self::num_channels()) as usize
     }
@@ -68,12 +68,12 @@ impl ImageRgbU8 {
 
 pub struct ImageRgbF<T: Real> {
     pixel_data: Vec<T>,
-    width: u32,
-    height: u32,
+    width: usize,
+    height: usize,
 }
 
 impl<T: Real> ImageRgbF<T> {
-    pub fn new(width: u32, height: u32) -> ImageRgbF<T> {
+    pub fn new(width: usize, height: usize) -> ImageRgbF<T> {
         ImageRgbF {
             width,
             height,
@@ -88,13 +88,13 @@ impl<T: Real> ImageRgbF<T> {
         self
     }
 
-    pub fn get_colour(&self, row: u32, column: u32) -> ColourRgbF<T> {
+    pub fn get_colour(&self, row: usize, column: usize) -> ColourRgbF<T> {
         assert!(row < self.height && column < self.width);
         let index = self.calculate_index(row, column);
         ColourRgbF::from_vector3(&Vector3::from_row_slice(&self.pixel_data[index..index + 3]))
     }
 
-    pub fn set_colour(&mut self, row: u32, column: u32, colour: ColourRgbF<T>) {
+    pub fn set_colour(&mut self, row: usize, column: usize, colour: ColourRgbF<T>) {
         assert!(row < self.height && column < self.width);
         let index = self.calculate_index(row, column);
         self.pixel_data[index..index + 3].copy_from_slice(&colour.as_vector3().as_slice());
@@ -104,19 +104,19 @@ impl<T: Real> ImageRgbF<T> {
         &self.pixel_data
     }
 
-    pub fn get_width(&self) -> u32 {
+    pub fn get_width(&self) -> usize {
         self.width
     }
 
-    pub fn get_height(&self) -> u32 {
+    pub fn get_height(&self) -> usize {
         self.height
     }
 
-    pub fn num_channels() -> u32 {
+    pub fn num_channels() -> usize {
         3
     }
 
-    fn calculate_index(&self, row: u32, column: u32) -> usize {
+    fn calculate_index(&self, row: usize, column: usize) -> usize {
         assert!(row < self.height && column < self.width);
         (((self.height - (row + 1)) * self.width + column) * Self::num_channels()) as usize
     }
