@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Tile {
     pub start_column: usize,
     pub end_column: usize,

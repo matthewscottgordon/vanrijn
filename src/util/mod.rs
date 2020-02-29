@@ -6,4 +6,4 @@ pub mod axis_aligned_bounding_box;
 pub mod morton;
 pub mod normalizer;
 mod tile_iterator;
-pub use tile_iterator::TileIterator;
+pub use tile_iterator::{Tile, TileIterator};

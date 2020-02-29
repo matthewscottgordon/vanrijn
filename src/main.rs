@@ -1,3 +1,5 @@
+use rayon::prelude::*;
+
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::PixelFormatEnum;
@@ -8,6 +10,7 @@ use std::time::Duration;
 use nalgebra::{Point3, Vector3};
 
 use std::path::Path;
+use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 
 use vanrijn::camera::partial_render_scene;
@@ -47,8 +50,8 @@ fn init_canvas(
 }
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let image_width = 320usize;
-    let image_height = 240usize;
+    let image_width = 640usize;
+    let image_height = 480usize;
 
     let (sdl_context, mut canvas) = init_canvas(image_width, image_height)?;
 
@@ -115,42 +118,46 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut event_pump = sdl_context.event_pump()?;
 
-    'running: for tile in TileIterator::new(image_width as usize, image_height as usize, 16) {
-        let image_ptr = output_image.clone();
-        let scene_ptr = scene.clone();
-        partial_render_scene(
-            image_ptr,
-            scene_ptr,
-            tile.start_row,
-            tile.end_row,
-            tile.start_column,
-            tile.end_column,
-            image_height,
-            image_width,
-        );
+    let (tile_tx, tile_rx) = mpsc::channel();
+    let mut tile_rx = Some(tile_rx);
 
-        let locked_image = output_image.lock().unwrap();
-        let mut output_image_rgbu8 = ImageRgbU8::new(image_width, image_height);
-        ClampingToneMapper {}.apply_tone_mapping(&locked_image, &mut output_image_rgbu8);
-        update_texture(&output_image_rgbu8, &mut rendered_image_texture);
-        canvas.copy(&rendered_image_texture, None, None)?;
-        canvas.present();
+    let output_image_workers = Arc::clone(&output_image);
+    let worker_boss = std::thread::spawn(move || {
+        TileIterator::new(image_width as usize, image_height as usize, 16)
+            .map(move |tile| (tile, tile_tx.clone()))
+            .par_bridge()
+            .try_for_each(|(tile, tx)| {
+                let image_ptr = Arc::clone(&output_image_workers);
+                let scene_ptr = scene.clone();
+                partial_render_scene(
+                    image_ptr,
+                    scene_ptr,
+                    tile.start_row,
+                    tile.end_row,
+                    tile.start_column,
+                    tile.end_column,
+                    image_height,
+                    image_width,
+                );
 
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => break 'running,
-                _ => {}
+                // There's nothing we can do if this fails, and we're already
+                // at the end of the function anyway, so just ignore result.
+                tx.send(tile).ok()
+            });
+    });
+
+    'running: loop {
+        if let Some(ref tile_rx) = tile_rx {
+            for tile in tile_rx.try_iter() {
+                let locked_image = output_image.lock().unwrap();
+                let mut output_image_rgbu8 = ImageRgbU8::new(image_width, image_height);
+                ClampingToneMapper {}.apply_tone_mapping(&locked_image, &mut output_image_rgbu8);
+                update_texture(&output_image_rgbu8, &mut rendered_image_texture);
+                canvas.copy(&rendered_image_texture, None, None).unwrap();
+                canvas.present();
             }
         }
-    }
 
-    let mut i = 0;
-    'running: loop {
-        i = (i + 1) % 255;
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
@@ -164,5 +171,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
+    drop(tile_rx.take());
+    worker_boss.join().expect("Couldn't join worker threads.");
     Ok(())
 }
