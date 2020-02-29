@@ -3,6 +3,7 @@ use rayon::prelude::*;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::PixelFormatEnum;
+use sdl2::rect::Rect;
 use sdl2::render::{Canvas, Texture};
 use sdl2::Sdl;
 use std::time::Duration;
@@ -11,21 +12,26 @@ use nalgebra::{Point3, Vector3};
 
 use std::path::Path;
 use std::sync::mpsc;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use vanrijn::camera::partial_render_scene;
 use vanrijn::colour::{ColourRgbF, NamedColour};
-use vanrijn::image::{ClampingToneMapper, ImageRgbF, ImageRgbU8, ToneMapper};
+use vanrijn::image::{ClampingToneMapper, ImageRgbU8, ToneMapper};
 use vanrijn::materials::{LambertianMaterial, PhongMaterial, ReflectiveMaterial};
 use vanrijn::mesh::load_obj;
 use vanrijn::raycasting::{Plane, Primitive, Sphere};
 use vanrijn::scene::Scene;
-use vanrijn::util::TileIterator;
+use vanrijn::util::{Tile, TileIterator};
 
-fn update_texture(image: &ImageRgbU8, texture: &mut Texture) {
+fn update_texture(tile: &Tile, image: &ImageRgbU8, texture: &mut Texture) {
     texture
         .update(
-            None,
+            Rect::new(
+                tile.start_column as i32,
+                texture.query().height as i32 - (tile.start_row as i32 + tile.height() as i32),
+                tile.width() as u32,
+                tile.height() as u32,
+            ),
             image.get_pixel_data().as_slice(),
             (image.get_width() * ImageRgbU8::num_channels()) as usize,
         )
@@ -61,7 +67,6 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         image_width as u32,
         image_height as u32,
     )?;
-    let output_image = Arc::new(Mutex::new(ImageRgbF::<f64>::new(image_width, image_height)));
 
     let scene = Arc::new(Scene {
         camera_location: Point3::new(-2.0, 1.0, -5.0),
@@ -121,38 +126,27 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (tile_tx, tile_rx) = mpsc::channel();
     let mut tile_rx = Some(tile_rx);
 
-    let output_image_workers = Arc::clone(&output_image);
     let worker_boss = std::thread::spawn(move || {
-        TileIterator::new(image_width as usize, image_height as usize, 16)
+        TileIterator::new(image_width as usize, image_height as usize, 8)
             .map(move |tile| (tile, tile_tx.clone()))
             .par_bridge()
             .try_for_each(|(tile, tx)| {
-                let image_ptr = Arc::clone(&output_image_workers);
                 let scene_ptr = scene.clone();
-                partial_render_scene(
-                    image_ptr,
-                    scene_ptr,
-                    tile.start_row,
-                    tile.end_row,
-                    tile.start_column,
-                    tile.end_column,
-                    image_height,
-                    image_width,
-                );
+                let rendered_tile =
+                    partial_render_scene(scene_ptr, tile, image_height, image_width);
 
                 // There's nothing we can do if this fails, and we're already
                 // at the end of the function anyway, so just ignore result.
-                tx.send(tile).ok()
+                tx.send(rendered_tile).ok()
             });
     });
 
     'running: loop {
         if let Some(ref tile_rx) = tile_rx {
-            for tile in tile_rx.try_iter() {
-                let locked_image = output_image.lock().unwrap();
-                let mut output_image_rgbu8 = ImageRgbU8::new(image_width, image_height);
-                ClampingToneMapper {}.apply_tone_mapping(&locked_image, &mut output_image_rgbu8);
-                update_texture(&output_image_rgbu8, &mut rendered_image_texture);
+            for (tile, tile_image) in tile_rx.try_iter() {
+                let mut tile_image_rgbu8 = ImageRgbU8::new(tile.width(), tile.height());
+                ClampingToneMapper {}.apply_tone_mapping(&tile_image, &mut tile_image_rgbu8);
+                update_texture(&tile, &tile_image_rgbu8, &mut rendered_image_texture);
                 canvas.copy(&rendered_image_texture, None, None).unwrap();
                 canvas.present();
             }

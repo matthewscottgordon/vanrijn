@@ -6,6 +6,15 @@ pub struct Tile {
     pub end_row: usize,
 }
 
+impl Tile {
+    pub fn width(&self) -> usize {
+        self.end_column - self.start_column
+    }
+    pub fn height(&self) -> usize {
+        self.end_row - self.start_row
+    }
+}
+
 pub struct TileIterator {
     tile_size: usize,
     total_height: usize,

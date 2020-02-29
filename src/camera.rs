@@ -6,10 +6,11 @@ use super::integrators::{DirectionalLight, Integrator, WhittedIntegrator};
 use super::raycasting::Ray;
 use super::sampler::Sampler;
 use super::scene::Scene;
+use super::util::Tile;
 
 use crate::Real;
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 struct ImageSampler<T: Real> {
     image_height_pixels: usize,
@@ -66,22 +67,13 @@ impl<T: Real> ImageSampler<T> {
     }
 }
 
-pub fn render_scene<T: Real>(output_image: Arc<Mutex<ImageRgbF<T>>>, scene: Arc<Scene<T>>) {
-    let height = output_image.lock().unwrap().get_height();
-    let width = output_image.lock().unwrap().get_width();
-    partial_render_scene(output_image, scene, 0, height, 0, width, height, width)
-}
-
 pub fn partial_render_scene<T: Real>(
-    output_image: Arc<Mutex<ImageRgbF<T>>>,
     scene: Arc<Scene<T>>,
-    row_start: usize,
-    row_end: usize,
-    column_start: usize,
-    column_end: usize,
+    tile: Tile,
     height: usize,
     width: usize,
-) {
+) -> (Tile, ImageRgbF<T>) {
+    let mut output_image_tile = ImageRgbF::new(tile.width(), tile.height());
     let image_sampler = ImageSampler::new(width, height, scene.camera_location);
     let ambient_intensity: T = convert(0.0);
     let directional_intensity1: T = convert(7.0);
@@ -105,18 +97,18 @@ pub fn partial_render_scene<T: Real>(
         ],
     };
     let sampler = Sampler { scene: &scene };
-    for column in column_start..column_end {
-        for row in row_start..row_end {
-            let ray = image_sampler.ray_for_pixel(row, column);
+    for column in 0..tile.width() {
+        for row in 0..tile.height() {
+            let ray = image_sampler.ray_for_pixel(tile.start_row + row, tile.end_column + column);
             let hit = sampler.sample(&ray);
             let colour = match hit {
                 None => ColourRgbF::from_named(NamedColour::Black),
                 Some(intersection_info) => integrator.integrate(&sampler, &intersection_info),
             };
-            let mut locked_image = output_image.lock().unwrap();
-            locked_image.set_colour(row, column, colour);
+            output_image_tile.set_colour(row, column, colour);
         }
     }
+    (tile, output_image_tile)
 }
 
 #[cfg(test)]
