@@ -9,7 +9,6 @@ fn spread_bits(v: u32) -> u32 {
     for power in 0..9 {
         result |= ((1 << power) & v) << power * 2;
     }
-    dbg!(format!("{:b}", result));
     result
 }
 
