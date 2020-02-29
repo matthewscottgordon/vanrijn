@@ -2,7 +2,7 @@ mod wavefront_obj {
     use crate::materials::Material;
     use crate::Real;
 
-    use crate::raycasting::Triangle;
+    use crate::raycasting::{Primitive, Triangle};
 
     use alga::general::SupersetOf;
     use nalgebra::{convert, Point3, Vector3};
@@ -67,7 +67,7 @@ mod wavefront_obj {
     pub fn load_obj<T: Real>(
         filename: &Path,
         material: Arc<dyn Material<T>>,
-    ) -> Result<Vec<Triangle<T>>>
+    ) -> Result<Vec<Arc<dyn Primitive<T>>>>
     where
         T: SupersetOf<f32>,
     {
@@ -79,6 +79,7 @@ mod wavefront_obj {
             .flat_map(|object| object.groups.iter())
             .flat_map(|group| group.polys.iter())
             .flat_map(|poly| get_triangles(poly, &obj.position, &obj.normal, material.clone()))
+            .map(|triangle| Arc::new(triangle) as Arc<dyn Primitive<T>>)
             .collect())
     }
 }

@@ -1,4 +1,4 @@
-use super::{BoundingBox, Primitive};
+use super::{BoundingBox, HasBoundingBox, Intersect, IntersectP, IntersectionInfo, Primitive, Ray};
 
 use crate::util::morton::morton_order_value_3d;
 use crate::util::normalizer::Point3Normalizer;
@@ -110,6 +110,55 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
         }
     }
 }
+
+fn closest_intersection<T: Real>(
+    a: Option<IntersectionInfo<T>>,
+    b: Option<IntersectionInfo<T>>,
+) -> Option<IntersectionInfo<T>> {
+    match (a, b) {
+        (Some(a), Some(b)) => {
+            if a.distance < b.distance {
+                Some(a)
+            } else {
+                Some(b)
+            }
+        }
+        (Some(a), None) => Some(a),
+        (None, Some(b)) => Some(b),
+        (None, None) => None,
+    }
+}
+
+impl<T: Real> Intersect<T> for BoundingVolumeHierarchy<T> {
+    fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
+        match self {
+            Self::Node {
+                bounds,
+                left,
+                right,
+            } => {
+                if bounds.intersect(ray) {
+                    closest_intersection(left.intersect(ray), right.intersect(ray))
+                } else {
+                    None
+                }
+            }
+            Self::Leaf {
+                bounds: _,
+                primitive,
+            } => primitive.intersect(ray),
+            Self::None => None,
+        }
+    }
+}
+
+impl<T: Real> HasBoundingBox<T> for BoundingVolumeHierarchy<T> {
+    fn bounding_box(&self) -> BoundingBox<T> {
+        self.get_bounds()
+    }
+}
+
+impl<T: Real> Primitive<T> for BoundingVolumeHierarchy<T> {}
 
 pub struct FilterIterator<'a, T: Real> {
     unsearched_subtrees: Vec<&'a BoundingVolumeHierarchy<T>>,

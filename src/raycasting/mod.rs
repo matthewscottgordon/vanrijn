@@ -18,6 +18,7 @@ pub mod axis_aligned_bounding_box;
 pub use axis_aligned_bounding_box::BoundingBox;
 
 pub mod bounding_volume_hierarchy;
+pub use bounding_volume_hierarchy::BoundingVolumeHierarchy;
 
 #[derive(Clone, Debug)]
 pub struct Ray<T: Real> {

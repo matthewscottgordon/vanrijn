@@ -19,7 +19,7 @@ use vanrijn::colour::{ColourRgbF, NamedColour};
 use vanrijn::image::{ClampingToneMapper, ImageRgbU8, ToneMapper};
 use vanrijn::materials::{LambertianMaterial, PhongMaterial, ReflectiveMaterial};
 use vanrijn::mesh::load_obj;
-use vanrijn::raycasting::{Plane, Primitive, Sphere};
+use vanrijn::raycasting::{BoundingVolumeHierarchy, Plane, Primitive, Sphere};
 use vanrijn::scene::Scene;
 use vanrijn::util::{Tile, TileIterator};
 
@@ -70,18 +70,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let scene = Arc::new(Scene {
         camera_location: Point3::new(-2.0, 1.0, -5.0),
-        objects: load_obj(
-            Path::new("/home/matthew/Downloads/bunny.obj"),
-            Arc::new(ReflectiveMaterial {
-                colour: ColourRgbF::from_named(NamedColour::Yellow),
-                diffuse_strength: 0.05,
-                reflection_strength: 0.9,
-            }),
-        )
-        .unwrap()
-        .into_iter()
-        .map(|triangle| Arc::new(triangle) as Arc<dyn Primitive<f64>>)
-        .chain(vec![
+        objects: vec![
             Arc::new(Plane::new(
                 Vector3::new(0.0, 1.0, 0.0),
                 -2.0,
@@ -117,8 +106,18 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     specular_strength: 1.0,
                 }),
             )),
-        ])
-        .collect(),
+            Arc::new(BoundingVolumeHierarchy::build(
+                &load_obj(
+                    Path::new("/home/matthew/Downloads/bunny.obj"),
+                    Arc::new(ReflectiveMaterial {
+                        colour: ColourRgbF::from_named(NamedColour::Yellow),
+                        diffuse_strength: 0.05,
+                        reflection_strength: 0.9,
+                    }),
+                )
+                .unwrap(),
+            )),
+        ],
     });
 
     let mut event_pump = sdl_context.event_pump()?;
@@ -127,7 +126,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut tile_rx = Some(tile_rx);
 
     let worker_boss = std::thread::spawn(move || {
-        TileIterator::new(image_width as usize, image_height as usize, 8)
+        TileIterator::new(image_width as usize, image_height as usize, 32)
             .map(move |tile| (tile, tile_tx.clone()))
             .par_bridge()
             .try_for_each(|(tile, tx)| {
