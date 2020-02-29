@@ -67,6 +67,8 @@ impl<T: Real> ImageSampler<T> {
     }
 }
 
+const RECURSION_LIMIT: u16 = 32;
+
 pub fn partial_render_scene<T: Real>(
     scene: Arc<Scene<T>>,
     tile: Tile,
@@ -103,7 +105,9 @@ pub fn partial_render_scene<T: Real>(
             let hit = sampler.sample(&ray);
             let colour = match hit {
                 None => ColourRgbF::from_named(NamedColour::Black),
-                Some(intersection_info) => integrator.integrate(&sampler, &intersection_info),
+                Some(intersection_info) => {
+                    integrator.integrate(&sampler, &intersection_info, RECURSION_LIMIT)
+                }
             };
             output_image_tile.set_colour(row, column, colour);
         }

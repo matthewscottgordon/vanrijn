@@ -8,7 +8,12 @@ use super::util::algebra_utils::try_change_of_basis_matrix;
 use crate::Real;
 
 pub trait Integrator<T: Real> {
-    fn integrate(&self, sampler: &Sampler<T>, info: &IntersectionInfo<T>) -> ColourRgbF<T>;
+    fn integrate(
+        &self,
+        sampler: &Sampler<T>,
+        info: &IntersectionInfo<T>,
+        recursion_limit: u16,
+    ) -> ColourRgbF<T>;
 }
 
 pub struct DirectionalLight<T: Real> {
@@ -24,7 +29,12 @@ pub struct WhittedIntegrator<T: Real> {
 // TODO: Get rid of the magic bias number, which should be calculated base on expected error
 // bounds and tangent direction
 impl<T: Real> Integrator<T> for WhittedIntegrator<T> {
-    fn integrate(&self, sampler: &Sampler<T>, info: &IntersectionInfo<T>) -> ColourRgbF<T> {
+    fn integrate(
+        &self,
+        sampler: &Sampler<T>,
+        info: &IntersectionInfo<T>,
+        recursion_limit: u16,
+    ) -> ColourRgbF<T> {
         let world_to_bsdf_space =
             try_change_of_basis_matrix(&info.tangent, &info.cotangent, &info.normal)
                 .expect("Normal, tangent and cotangent don't for a valid basis.");
@@ -58,11 +68,19 @@ impl<T: Real> Integrator<T> for WhittedIntegrator<T> {
                                 .bias(convert(0.000_000_1)),
                         ) {
                             Some(recursive_hit) => {
-                                info.material.bsdf()(
-                                    world_to_bsdf_space * info.retro,
-                                    *direction,
-                                    self.integrate(&sampler, &recursive_hit),
-                                ) * world_space_direction.dot(&info.normal).abs()
+                                if recursion_limit > 0 {
+                                    info.material.bsdf()(
+                                        world_to_bsdf_space * info.retro,
+                                        *direction,
+                                        self.integrate(
+                                            &sampler,
+                                            &recursive_hit,
+                                            recursion_limit - 1,
+                                        ),
+                                    ) * world_space_direction.dot(&info.normal).abs()
+                                } else {
+                                    ColourRgbF::new(T::zero(), T::zero(), T::zero())
+                                }
                             }
                             None => ColourRgbF::new(T::zero(), T::zero(), T::zero()),
                         }
