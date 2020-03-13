@@ -1,4 +1,4 @@
-use nalgebra::{Point3, Vector3};
+use nalgebra::{Point3, Transform3, Vector3};
 
 use super::materials::Material;
 use crate::Real;
@@ -66,6 +66,10 @@ pub trait IntersectP<T: Real>: Send + Sync {
 
 pub trait HasBoundingBox<T: Real>: Send + Sync {
     fn bounding_box(&self) -> BoundingBox<T>;
+}
+
+pub trait Transform<T: Real>: Send + Sync {
+    fn transform(&mut self, transformation: &Transform3<T>) -> &Self;
 }
 
 pub trait Primitive<T: Real>: Intersect<T> + HasBoundingBox<T> {}

@@ -1,9 +1,9 @@
-use nalgebra::{convert, Point3, Vector3};
+use nalgebra::{convert, Point3, Transform3, Vector3};
 
 use crate::materials::Material;
 use crate::Real;
 
-use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray};
+use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray, Transform};
 
 use std::sync::Arc;
 
@@ -21,6 +21,18 @@ impl<T: Real> Sphere<T> {
             radius,
             material,
         }
+    }
+}
+
+impl<T: Real> Transform<T> for Sphere<T> {
+    fn transform(&mut self, transformation: &Transform3<T>) -> &Self {
+        self.centre = transformation.transform_point(&self.centre);
+        // This is not the most efficient way of calculating the radius,
+        //but will work as long as the resulting shape is still a sphere.
+        self.radius = transformation
+            .transform_vector(&Vector3::new(self.radius, T::zero(), T::zero()))
+            .norm();
+        self
     }
 }
 
@@ -92,6 +104,8 @@ impl<T: Real> Primitive<T> for Sphere<T> {}
 mod tests {
     use quickcheck::TestResult;
     use quickcheck_macros::quickcheck;
+
+    use nalgebra::{Rotation3, Translation3};
 
     use super::*;
     use crate::materials::LambertianMaterial;
@@ -182,5 +196,70 @@ mod tests {
         );
         let bounding_box = target_sphere.bounding_box();
         bounding_box.contains_point(sphere_centre + radius_vector)
+    }
+
+    #[quickcheck]
+    fn translation_moves_centre(
+        sphere_centre: Point3<f64>,
+        radius: f64,
+        translation_vector: Vector3<f64>,
+    ) -> TestResult {
+        if radius <= 0.0 {
+            return TestResult::discard();
+        };
+        let mut sphere = Sphere::new(
+            sphere_centre,
+            radius,
+            Arc::new(LambertianMaterial::new_dummy()),
+        );
+        let expected_centre = sphere.centre + translation_vector;
+        let mut transformation = Transform3::identity();
+        transformation *= Translation3::from(translation_vector);
+        sphere.transform(&transformation);
+        TestResult::from_bool(expected_centre == sphere.centre)
+    }
+
+    #[quickcheck]
+    fn translation_does_not_change_radius(
+        sphere_centre: Point3<f64>,
+        radius: f64,
+        translation_vector: Vector3<f64>,
+    ) -> TestResult {
+        if radius <= 0.0 {
+            return TestResult::discard();
+        };
+        let mut sphere = Sphere::new(
+            sphere_centre,
+            radius,
+            Arc::new(LambertianMaterial::new_dummy()),
+        );
+        let expected_radius = sphere.radius;
+        let mut transformation = Transform3::identity();
+        transformation *= Translation3::from(translation_vector);
+        sphere.transform(&transformation);
+        TestResult::from_bool(expected_radius == sphere.radius)
+    }
+
+    #[quickcheck]
+    fn rotation_about_centre_does_not_move_centre(
+        sphere_centre: Point3<f64>,
+        radius: f64,
+        rotation_vector: Vector3<f64>,
+    ) -> TestResult {
+        if radius <= 0.0 {
+            return TestResult::discard();
+        };
+        let mut sphere = Sphere::new(
+            sphere_centre,
+            radius,
+            Arc::new(LambertianMaterial::new_dummy()),
+        );
+        let expected_centre = sphere.centre;
+        let mut transformation = Transform3::identity();
+        transformation *= Translation3::from(sphere.centre.coords)
+            * Rotation3::new(rotation_vector)
+            * Translation3::from(-sphere.centre.coords);
+        sphere.transform(&transformation);
+        TestResult::from_bool(dbg!((expected_centre - sphere.centre).norm() < 0.000000001))
     }
 }
