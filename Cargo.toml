@@ -4,9 +4,6 @@ version = "0.1.0"
 authors = ["Matthew Gordon <matthew.scott.gordon@gmail.com>"]
 edition = "2018"
 
-[features]
-slow_tests = []
-
 [dependencies]
 alga = "0.9"
 itertools = "0.8"
@@ -20,6 +17,12 @@ sdl2 = "0.32"
 version = "0.19"
 features = ["arbitrary"]
 
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "simple_scene"
+harness = false
 
 [profile.dev]
 opt-level = 3
