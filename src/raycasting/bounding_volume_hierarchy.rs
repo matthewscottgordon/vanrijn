@@ -12,8 +12,8 @@ use std::sync::Arc;
 pub enum BoundingVolumeHierarchy<T: Real> {
     Node {
         bounds: BoundingBox<T>,
-        left: Arc<BoundingVolumeHierarchy<T>>,
-        right: Arc<BoundingVolumeHierarchy<T>>,
+        left: Box<BoundingVolumeHierarchy<T>>,
+        right: Box<BoundingVolumeHierarchy<T>>,
     },
     Leaf {
         bounds: BoundingBox<T>,
@@ -60,8 +60,8 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
     fn from_sorted_nodes(nodes: &[(BoundingBox<T>, Arc<dyn Primitive<T>>)]) -> Self {
         if nodes.len() >= 2 {
             let midpoint = nodes.len() / 2;
-            let left = Arc::new(Self::from_sorted_nodes(&nodes[..midpoint]));
-            let right = Arc::new(Self::from_sorted_nodes(&nodes[midpoint..]));
+            let left = Box::new(Self::from_sorted_nodes(&nodes[..midpoint]));
+            let right = Box::new(Self::from_sorted_nodes(&nodes[midpoint..]));
             let bounds = left.get_bounds().union(&right.get_bounds());
             BoundingVolumeHierarchy::Node {
                 bounds,
