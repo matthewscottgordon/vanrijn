@@ -11,8 +11,7 @@ use std::time::Duration;
 use nalgebra::{Point3, Vector3};
 
 use std::path::Path;
-use std::sync::mpsc;
-use std::sync::Arc;
+use std::sync::{mpsc, Arc};
 
 use vanrijn::camera::partial_render_scene;
 use vanrijn::colour::{ColourRgbF, NamedColour};
@@ -68,18 +67,18 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         image_height as u32,
     )?;
 
-    let scene = Arc::new(Scene {
+    let scene = Scene {
         camera_location: Point3::new(-2.0, 1.0, -5.0),
         objects: vec![
-            Arc::new(Plane::new(
+            Box::new(Plane::new(
                 Vector3::new(0.0, 1.0, 0.0),
                 -2.0,
                 Arc::new(LambertianMaterial {
                     colour: ColourRgbF::new(0.55, 0.27, 0.04),
                     diffuse_strength: 0.1,
                 }),
-            )) as Arc<dyn Primitive<f64>>,
-            Arc::new(Sphere::new(
+            )) as Box<dyn Primitive<f64>>,
+            Box::new(Sphere::new(
                 Point3::new(-6.25, -0.5, 1.0),
                 1.0,
                 Arc::new(LambertianMaterial {
@@ -87,7 +86,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     diffuse_strength: 0.1,
                 }),
             )),
-            Arc::new(Sphere::new(
+            Box::new(Sphere::new(
                 Point3::new(-4.25, -0.5, 2.0),
                 1.0,
                 Arc::new(ReflectiveMaterial {
@@ -96,7 +95,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     reflection_strength: 0.99,
                 }),
             )),
-            Arc::new(Sphere::new(
+            Box::new(Sphere::new(
                 Point3::new(-5.0, 1.5, 1.0),
                 1.0,
                 Arc::new(PhongMaterial {
@@ -106,7 +105,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     specular_strength: 1.0,
                 }),
             )),
-            Arc::new(BoundingVolumeHierarchy::build(
+            Box::new(BoundingVolumeHierarchy::build(
                 &load_obj(
                     Path::new("/home/matthew/Downloads/bunny.obj"),
                     Arc::new(ReflectiveMaterial {
@@ -118,21 +117,19 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .unwrap(),
             )),
         ],
-    });
+    };
 
     let mut event_pump = sdl_context.event_pump()?;
 
     let (tile_tx, tile_rx) = mpsc::channel();
     let mut tile_rx = Some(tile_rx);
 
-    let worker_boss = std::thread::spawn(move || {
+    let worker_boss = std::thread::spawn(move|| {
         TileIterator::new(image_width as usize, image_height as usize, 32)
             .map(move |tile| (tile, tile_tx.clone()))
             .par_bridge()
             .try_for_each(|(tile, tx)| {
-                let scene_ptr = scene.clone();
-                let rendered_tile =
-                    partial_render_scene(scene_ptr, tile, image_height, image_width);
+                let rendered_tile = partial_render_scene(&scene, tile, image_height, image_width);
 
                 // There's nothing we can do if this fails, and we're already
                 // at the end of the function anyway, so just ignore result.

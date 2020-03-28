@@ -17,18 +17,18 @@ fn simple_scene(bencher: &mut Criterion) {
     let image_width = 6;
     let image_height = 6;
 
-    let scene = Arc::new(Scene {
+    let scene = Scene {
         camera_location: Point3::new(-2.0, 1.0, -5.0),
         objects: vec![
-            Arc::new(Plane::new(
+            Box::new(Plane::new(
                 Vector3::new(0.0, 1.0, 0.0),
                 -2.0,
                 Arc::new(LambertianMaterial {
                     colour: ColourRgbF::new(0.55, 0.27, 0.04),
                     diffuse_strength: 0.1,
                 }),
-            )) as Arc<dyn Primitive<f64>>,
-            Arc::new(Sphere::new(
+            )) as Box<dyn Primitive<f64>>,
+            Box::new(Sphere::new(
                 Point3::new(-6.25, -0.5, 1.0),
                 1.0,
                 Arc::new(LambertianMaterial {
@@ -36,7 +36,7 @@ fn simple_scene(bencher: &mut Criterion) {
                     diffuse_strength: 0.1,
                 }),
             )),
-            Arc::new(Sphere::new(
+            Box::new(Sphere::new(
                 Point3::new(-4.25, -0.5, 2.0),
                 1.0,
                 Arc::new(ReflectiveMaterial {
@@ -45,7 +45,7 @@ fn simple_scene(bencher: &mut Criterion) {
                     reflection_strength: 0.99,
                 }),
             )),
-            Arc::new(Sphere::new(
+            Box::new(Sphere::new(
                 Point3::new(-5.0, 1.5, 1.0),
                 1.0,
                 Arc::new(PhongMaterial {
@@ -55,7 +55,7 @@ fn simple_scene(bencher: &mut Criterion) {
                     specular_strength: 1.0,
                 }),
             )),
-            Arc::new(BoundingVolumeHierarchy::build(
+            Box::new(BoundingVolumeHierarchy::build(
                 &load_obj(
                     Path::new("/home/matthew/Downloads/bunny.obj"),
                     Arc::new(PhongMaterial {
@@ -68,19 +68,17 @@ fn simple_scene(bencher: &mut Criterion) {
                 .unwrap(),
             )),
         ],
-    });
+    };
 
-    bencher.bench_function("simple_scene", move |b| {
-        let scene = Arc::clone(&scene);
-        b.iter(move || {
-            let scene = Arc::clone(&scene);
+    bencher.bench_function("simple_scene", |b| {
+        b.iter(|| {
             let tile = Tile {
                 start_column: 0,
                 end_column: image_width,
                 start_row: 0,
                 end_row: image_height,
             };
-            partial_render_scene(scene, tile, image_height, image_width);
+            partial_render_scene(&scene, tile, image_height, image_width);
         })
     });
 }

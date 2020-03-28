@@ -10,8 +10,6 @@ use super::util::Tile;
 
 use crate::Real;
 
-use std::sync::Arc;
-
 struct ImageSampler<T: Real> {
     image_height_pixels: usize,
     image_width_pixels: usize,
@@ -70,7 +68,7 @@ impl<T: Real> ImageSampler<T> {
 const RECURSION_LIMIT: u16 = 32;
 
 pub fn partial_render_scene<T: Real>(
-    scene: Arc<Scene<T>>,
+    scene: &Scene<T>,
     tile: Tile,
     height: usize,
     width: usize,
