@@ -1,4 +1,4 @@
-use nalgebra::{convert, Point3, Transform3, Vector3};
+use nalgebra::{convert, Affine3, Point3, Vector3};
 
 use crate::materials::Material;
 use crate::Real;
@@ -25,7 +25,7 @@ impl<T: Real> Sphere<T> {
 }
 
 impl<T: Real> Transform<T> for Sphere<T> {
-    fn transform(&mut self, transformation: &Transform3<T>) -> &Self {
+    fn transform(&mut self, transformation: &Affine3<T>) -> &Self {
         self.centre = transformation.transform_point(&self.centre);
         // This is not the most efficient way of calculating the radius,
         //but will work as long as the resulting shape is still a sphere.
@@ -213,7 +213,7 @@ mod tests {
             Arc::new(LambertianMaterial::new_dummy()),
         );
         let expected_centre = sphere.centre + translation_vector;
-        let mut transformation = Transform3::identity();
+        let mut transformation = Affine3::identity();
         transformation *= Translation3::from(translation_vector);
         sphere.transform(&transformation);
         TestResult::from_bool(expected_centre == sphere.centre)
@@ -234,7 +234,7 @@ mod tests {
             Arc::new(LambertianMaterial::new_dummy()),
         );
         let expected_radius = sphere.radius;
-        let mut transformation = Transform3::identity();
+        let mut transformation = Affine3::identity();
         transformation *= Translation3::from(translation_vector);
         sphere.transform(&transformation);
         TestResult::from_bool(expected_radius == sphere.radius)
@@ -255,7 +255,7 @@ mod tests {
             Arc::new(LambertianMaterial::new_dummy()),
         );
         let expected_centre = sphere.centre;
-        let mut transformation = Transform3::identity();
+        let mut transformation = Affine3::identity();
         transformation *= Translation3::from(sphere.centre.coords)
             * Rotation3::new(rotation_vector)
             * Translation3::from(-sphere.centre.coords);
