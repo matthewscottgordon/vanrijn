@@ -69,11 +69,10 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
                 right,
             }
         } else if nodes.len() == 1 {
-            match nodes[0] {
-                (bounds, ref primitive) => BoundingVolumeHierarchy::Leaf {
-                    bounds,
-                    primitive: Arc::clone(primitive),
-                },
+            let (bounds, ref primitive) = nodes[0];
+            BoundingVolumeHierarchy::Leaf {
+                bounds,
+                primitive: Arc::clone(primitive),
             }
         } else {
             BoundingVolumeHierarchy::None
@@ -202,7 +201,7 @@ impl<T: Real> Iterator for FilterIterator<'_, T> {
                 BoundingVolumeHierarchy::None => {}
             }
         }
-        return Option::None;
+        Option::None
     }
 }
 

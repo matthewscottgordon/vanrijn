@@ -7,7 +7,7 @@ use crate::Real;
 fn spread_bits(v: u32) -> u32 {
     let mut result = 0;
     for power in 0..9 {
-        result |= ((1 << power) & v) << power * 2;
+        result |= ((1 << power) & v) << (power * 2);
     }
     result
 }

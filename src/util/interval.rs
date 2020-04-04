@@ -39,11 +39,11 @@ impl<T: Real> Interval<T> {
     }
 
     pub fn get_min(&self) -> T {
-        return self.min;
+        self.min
     }
 
     pub fn get_max(&self) -> T {
-        return self.max;
+        self.max
     }
 
     pub fn is_degenerate(self) -> bool {
