@@ -14,8 +14,8 @@ mod wavefront_obj {
 
     fn get_vertex_and_normal<T: Real>(
         index_tuple: &IndexTuple,
-        vertex_positions: &Vec<[f32; 3]>,
-        normal_positions: &Vec<[f32; 3]>,
+        vertex_positions: &[[f32; 3]],
+        normal_positions: &[[f32; 3]],
     ) -> (Point3<T>, Vector3<T>)
     where
         T: SupersetOf<f32>,
@@ -31,8 +31,8 @@ mod wavefront_obj {
 
     fn get_triangles<T: Real>(
         polygon: &SimplePolygon,
-        vertex_positions: &Vec<[f32; 3]>,
-        normal_positions: &Vec<[f32; 3]>,
+        vertex_positions: &[[f32; 3]],
+        normal_positions: &[[f32; 3]],
         material: Arc<dyn Material<T>>,
     ) -> Vec<Triangle<T>>
     where

@@ -139,7 +139,7 @@ fn signed_edge_function<T: Real>(a: &Vector3<T>, b: &Vector3<T>) -> T {
     a.x * b.y - b.x * a.y
 }
 
-fn signed_edge_functions<T: Real>(vertices: &Vec<Vector3<T>>) -> Vector3<T> {
+fn signed_edge_functions<T: Real>(vertices: &[Vector3<T>]) -> Vector3<T> {
     // Iterate over the inputs in such a way that each output element is calculated
     // from the twoother elements of the input. ( (y,z) -> x, (z,x) -> y, (x,y) -> z )
     Vector3::from_iterator(
