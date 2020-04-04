@@ -1,9 +1,9 @@
-use nalgebra::{convert, Point3, Vector3};
+use nalgebra::{convert, Affine3, Point3, Vector3};
 
 use crate::materials::Material;
 use crate::Real;
 
-use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray};
+use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray, Transform};
 
 use std::sync::Arc;
 
@@ -33,6 +33,18 @@ impl<T: Real> Plane<T> {
             distance_from_origin,
             material,
         }
+    }
+}
+
+impl<T: Real> Transform<T> for Plane<T> {
+    fn transform(&mut self, transformation: &Affine3<T>) -> &Self {
+        self.normal = transformation.transform_vector(&self.normal).normalize();
+        self.cotangent = transformation.transform_vector(&self.cotangent).normalize();
+        self.cotangent = self.normal.cross(&self.cotangent);
+        self.distance_from_origin = transformation
+            .transform_vector(&(self.normal * self.distance_from_origin))
+            .norm();
+        self
     }
 }
 
