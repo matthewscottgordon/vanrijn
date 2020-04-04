@@ -5,10 +5,10 @@ use crate::Real;
 
 use std::fmt::Debug;
 
-type Bsdf<'a, T> = Box<dyn Fn(Vector3<T>, Vector3<T>, ColourRgbF<T>) -> ColourRgbF<T> + 'a>;
+type Bsdf<T> = Box<dyn Fn(Vector3<T>, Vector3<T>, ColourRgbF<T>) -> ColourRgbF<T>>;
 
 pub trait Material<T: Real>: Debug + Sync + Send {
-    fn bsdf<'a>(&'a self) -> Bsdf<'a, T>;
+    fn bsdf(&self) -> Bsdf<T>;
 
     fn sample(&self, _w_o: &Vector3<T>) -> Vec<Vector3<T>> {
         vec![]
@@ -31,11 +31,10 @@ impl<T: Real> LambertianMaterial<T> {
 }
 
 impl<T: Real> Material<T> for LambertianMaterial<T> {
-    fn bsdf<'a>(&'a self) -> Bsdf<'a, T> {
+    fn bsdf(&self) -> Bsdf<T> {
+        let colour = self.colour * self.diffuse_strength;
         Box::new(
-            move |_w_o: Vector3<T>, _w_i: Vector3<T>, colour_in: ColourRgbF<T>| {
-                self.colour * colour_in * self.diffuse_strength
-            },
+            move |_w_o: Vector3<T>, _w_i: Vector3<T>, colour_in: ColourRgbF<T>| colour * colour_in,
         )
     }
 }
@@ -49,17 +48,20 @@ pub struct PhongMaterial<T: Real> {
 }
 
 impl<T: Real> Material<T> for PhongMaterial<T> {
-    fn bsdf<'a>(&'a self) -> Bsdf<'a, T> {
+    fn bsdf(&self) -> Bsdf<T> {
+        let smoothness = self.smoothness;
+        let specular_strength = self.specular_strength;
+        let colour = self.colour * self.diffuse_strength;
         Box::new(
             move |w_o: Vector3<T>, w_i: Vector3<T>, colour_in: ColourRgbF<T>| {
                 if w_i.z < T::zero() || w_o.z < T::zero() {
                     ColourRgbF::from_vector3(&Vector3::zeros())
                 } else {
                     let reflection_vector = Vector3::new(-w_i.x, -w_i.y, w_i.z);
-                    self.colour * colour_in * self.diffuse_strength
+                    colour * colour_in
                         + ColourRgbF::from_named(NamedColour::White)
-                            * w_o.dot(&reflection_vector).abs().powf(self.smoothness)
-                            * (self.specular_strength / w_i.dot(&Vector3::z_axis()))
+                            * w_o.dot(&reflection_vector).abs().powf(smoothness)
+                            * (specular_strength / w_i.dot(&Vector3::z_axis()))
                 }
             },
         )
@@ -74,15 +76,17 @@ pub struct ReflectiveMaterial<T: Real> {
 }
 
 impl<T: Real> Material<T> for ReflectiveMaterial<T> {
-    fn bsdf<'a>(&'a self) -> Bsdf<'a, T> {
+    fn bsdf(&self) -> Bsdf<T> {
+        let diffuse_colour_factor = self.colour * self.diffuse_strength;
+        let reflection_strength = self.reflection_strength;
         Box::new(
             move |w_o: Vector3<T>, w_i: Vector3<T>, colour_in: ColourRgbF<T>| {
                 if w_i.z < T::zero() || w_o.z < T::zero() {
                     ColourRgbF::new(T::zero(), T::one(), T::one())
                 } else {
                     let reflection_vector = Vector3::new(-w_o.x, -w_o.y, w_o.z);
-                    let reflection_colour = colour_in * self.reflection_strength;
-                    let diffuse_colour = self.colour * colour_in * self.diffuse_strength;
+                    let reflection_colour = colour_in * reflection_strength;
+                    let diffuse_colour = diffuse_colour_factor * colour_in;
                     let sigma: T = convert(0.05);
                     let two: T = convert(2.0);
                     // These are normalized vectors, but sometimes rounding errors cause the
