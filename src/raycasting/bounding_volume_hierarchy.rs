@@ -31,6 +31,8 @@ fn centre<T: Real>(bounds: &BoundingBox<T>) -> Point3<T> {
     )
 }
 
+struct PrimitiveInfo<T: Real>(BoundingBox<T>, Arc<dyn Primitive<T>>);
+
 impl<T: Real> BoundingVolumeHierarchy<T> {
     pub fn build<'a, I>(primitives: I) -> Self
     where
@@ -39,25 +41,25 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
         Self::from_node_vec(
             primitives
                 .into_iter()
-                .map(|primitive| (primitive.bounding_box(), Arc::clone(primitive)))
+                .map(|primitive| PrimitiveInfo(primitive.bounding_box(), Arc::clone(primitive)))
                 .collect(),
         )
     }
 
-    fn from_node_vec(nodes: Vec<(BoundingBox<T>, Arc<dyn Primitive<T>>)>) -> Self {
+    fn from_node_vec(nodes: Vec<PrimitiveInfo<T>>) -> Self {
         let overall_bounds = nodes
             .iter()
-            .fold(BoundingBox::empty(), |a, (b, _)| a.union(b));
+            .fold(BoundingBox::empty(), |a, PrimitiveInfo(b, _)| a.union(b));
         let normalizer = Point3Normalizer::new(overall_bounds);
         let mut nodes = nodes;
-        nodes.sort_by(|(a, _), (b, _)| {
+        nodes.sort_by(|PrimitiveInfo(a, _), PrimitiveInfo(b, _)| {
             morton_order_value_3d(normalizer.normalize(centre(a)))
                 .cmp(&morton_order_value_3d(normalizer.normalize(centre(b))))
         });
         Self::from_sorted_nodes(nodes.as_slice())
     }
 
-    fn from_sorted_nodes(nodes: &[(BoundingBox<T>, Arc<dyn Primitive<T>>)]) -> Self {
+    fn from_sorted_nodes(nodes: &[PrimitiveInfo<T>]) -> Self {
         if nodes.len() >= 2 {
             let midpoint = nodes.len() / 2;
             let left = Box::new(Self::from_sorted_nodes(&nodes[..midpoint]));
@@ -69,7 +71,7 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
                 right,
             }
         } else if nodes.len() == 1 {
-            let (bounds, ref primitive) = nodes[0];
+            let PrimitiveInfo(bounds, ref primitive) = nodes[0];
             BoundingVolumeHierarchy::Leaf {
                 bounds,
                 primitive: Arc::clone(primitive),
