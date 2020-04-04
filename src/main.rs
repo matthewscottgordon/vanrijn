@@ -67,6 +67,22 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         image_height as u32,
     )?;
 
+    let model_file_path =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("test_data/stanford_bunny.obj");
+    println!("Loading object...");
+    let model_object = load_obj(
+        &model_file_path,
+        Arc::new(PhongMaterial {
+            colour: ColourRgbF::from_named(NamedColour::Blue),
+            diffuse_strength: 0.05,
+            smoothness: 100.0,
+            specular_strength: 1.0,
+        }),
+    )?;
+    println!("Building BVH...");
+    let model_bvh = Box::new(BoundingVolumeHierarchy::build(&model_object));
+    println!("Constructing Scene...");
+
     let scene = Scene {
         camera_location: Point3::new(-2.0, 1.0, -5.0),
         objects: vec![
@@ -105,26 +121,17 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     specular_strength: 1.0,
                 }),
             )),
-            Box::new(BoundingVolumeHierarchy::build(
-                &load_obj(
-                    Path::new("/home/matthew/Downloads/bunny.obj"),
-                    Arc::new(ReflectiveMaterial {
-                        colour: ColourRgbF::from_named(NamedColour::Yellow),
-                        diffuse_strength: 0.05,
-                        reflection_strength: 0.9,
-                    }),
-                )
-                .unwrap(),
-            )),
+            model_bvh,
         ],
     };
+    println!("Done.");
 
     let mut event_pump = sdl_context.event_pump()?;
 
     let (tile_tx, tile_rx) = mpsc::channel();
     let mut tile_rx = Some(tile_rx);
 
-    let worker_boss = std::thread::spawn(move|| {
+    let worker_boss = std::thread::spawn(move || {
         TileIterator::new(image_width as usize, image_height as usize, 32)
             .map(move |tile| (tile, tile_tx.clone()))
             .par_bridge()
