@@ -17,6 +17,9 @@ fn simple_scene(bencher: &mut Criterion) {
     let image_width = 6;
     let image_height = 6;
 
+    let model_file_path =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("test_data/stanford_bunny.obj");
+
     let scene = Scene {
         camera_location: Point3::new(-2.0, 1.0, -5.0),
         objects: vec![
@@ -57,7 +60,7 @@ fn simple_scene(bencher: &mut Criterion) {
             )),
             Box::new(BoundingVolumeHierarchy::build(
                 &load_obj(
-                    Path::new("/home/matthew/Downloads/bunny.obj"),
+                    &model_file_path,
                     Arc::new(PhongMaterial {
                         colour: ColourRgbF::from_named(NamedColour::Yellow),
                         diffuse_strength: 0.05,
