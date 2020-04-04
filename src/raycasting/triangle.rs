@@ -1,8 +1,8 @@
 use crate::materials::Material;
 use crate::Real;
 
-use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray};
-use nalgebra::{Point3, Vector2, Vector3};
+use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray, Transform};
+use nalgebra::{Affine3, Point3, Vector2, Vector3};
 
 use std::sync::Arc;
 
@@ -11,6 +11,22 @@ pub struct Triangle<T: Real> {
     pub vertices: [Point3<T>; 3],
     pub normals: [Vector3<T>; 3],
     pub material: Arc<dyn Material<T>>,
+}
+
+impl<T: Real> Transform<T> for Triangle<T> {
+    fn transform(&mut self, transformation: &Affine3<T>) -> &Self {
+        for vertex in self.vertices.iter_mut() {
+            *vertex = transformation.transform_point(&vertex);
+        }
+        let normal_transformation = Affine3::from_matrix_unchecked(dbg!(dbg!(transformation)
+            .inverse()
+            .matrix()
+            .transpose()));
+        for normal in self.normals.iter_mut() {
+            *normal = dbg!(normal_transformation.transform_vector(dbg!(&normal)));
+        }
+        self
+    }
 }
 
 impl<T: Real> Intersect<T> for Triangle<T> {
@@ -144,6 +160,89 @@ fn barycentric_coordinates_from_signed_edge_functions<T: Real>(e: Vector3<T>) ->
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    mod triangle_transform {
+        use super::*;
+        use quickcheck_macros::quickcheck;
+
+        use nalgebra::Translation3;
+
+        use crate::materials::LambertianMaterial;
+
+        #[quickcheck]
+        fn transform_by_identity_does_not_change_values(
+            v0: Point3<f32>,
+            v1: Point3<f32>,
+            v2: Point3<f32>,
+            n0: Vector3<f32>,
+            n1: Vector3<f32>,
+            n2: Vector3<f32>,
+        ) -> bool {
+            let n0 = n0.normalize();
+            let n1 = n1.normalize();
+            let n2 = n2.normalize();
+            let mut target = Triangle {
+                vertices: [v0, v1, v2],
+                normals: [n0, n1, n2],
+                material: Arc::new(LambertianMaterial::new_dummy()),
+            };
+            target.transform(&Affine3::identity());
+            target.vertices[0] == v0
+                && target.vertices[1] == v1
+                && target.vertices[2] == v2
+                && target.normals[0] == n0
+                && target.normals[1] == n1
+                && target.normals[2] == n2
+        }
+
+        #[quickcheck]
+        fn translate_does_not_change_normals(
+            v0: Point3<f32>,
+            v1: Point3<f32>,
+            v2: Point3<f32>,
+            n0: Vector3<f32>,
+            n1: Vector3<f32>,
+            n2: Vector3<f32>,
+            translation: Vector3<f32>,
+        ) -> bool {
+            let n0 = n0.normalize();
+            let n1 = n1.normalize();
+            let n2 = n2.normalize();
+            let mut target = Triangle {
+                vertices: [v0, v1, v2],
+                normals: [n0, n1, n2],
+                material: Arc::new(LambertianMaterial::new_dummy()),
+            };
+            let transformation = Affine3::identity() * Translation3::from(translation);
+            target.transform(&transformation);
+            target.normals[0] == n0 && target.normals[1] == n1 && target.normals[2] == n2
+        }
+
+        #[quickcheck]
+        fn translate_translates_vertices(
+            v0: Point3<f32>,
+            v1: Point3<f32>,
+            v2: Point3<f32>,
+            n0: Vector3<f32>,
+            n1: Vector3<f32>,
+            n2: Vector3<f32>,
+            translation: Vector3<f32>,
+        ) -> bool {
+            let n0 = n0.normalize();
+            let n1 = n1.normalize();
+            let n2 = n2.normalize();
+            let mut target = Triangle {
+                vertices: [v0, v1, v2],
+                normals: [n0, n1, n2],
+                material: Arc::new(LambertianMaterial::new_dummy()),
+            };
+            let transformation = Affine3::identity() * Translation3::from(translation);
+            target.transform(&transformation);
+            target.vertices[0] == v0 + translation
+                && target.vertices[1] == v1 + translation
+                && target.vertices[2] == v2 + translation
+        }
+    }
 
     mod index_of_largest_element {
         use super::*;
