@@ -6,6 +6,7 @@ pub mod colour;
 pub mod image;
 pub mod integrators;
 pub mod materials;
+/// Import triangle meshes from model files such as .obj
 pub mod mesh;
 /// Core raycasting and geometry primitives
 pub mod raycasting;

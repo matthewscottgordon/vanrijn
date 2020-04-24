@@ -1,3 +1,4 @@
+/// Load a model from a Wavefront .obj file
 mod wavefront_obj {
     use crate::materials::Material;
     use crate::Real;
