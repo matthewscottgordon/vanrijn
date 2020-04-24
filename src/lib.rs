@@ -1,3 +1,6 @@
+#![feature(external_doc)]
+#![doc(include = "../README.md")]
+
 pub mod camera;
 pub mod colour;
 pub mod image;
