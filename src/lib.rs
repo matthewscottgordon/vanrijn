@@ -7,6 +7,7 @@ pub mod image;
 pub mod integrators;
 pub mod materials;
 pub mod mesh;
+/// Core raycasting and geometry primitives
 pub mod raycasting;
 pub mod realtype;
 pub mod sampler;
