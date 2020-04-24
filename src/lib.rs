@@ -1,7 +1,7 @@
 #![feature(external_doc)]
 #![doc(include = "../README.md")]
 
-pub mod camera;
+mod camera;
 pub mod colour;
 pub mod image;
 pub mod integrators;
@@ -12,6 +12,8 @@ pub mod realtype;
 pub mod sampler;
 pub mod scene;
 pub mod util;
+
+pub use camera::partial_render_scene;
 
 use realtype::Real;
 

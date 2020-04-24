@@ -13,7 +13,7 @@ use nalgebra::{Point3, Vector3};
 use std::path::Path;
 use std::sync::{mpsc, Arc};
 
-use vanrijn::camera::partial_render_scene;
+use vanrijn::partial_render_scene;
 use vanrijn::colour::{ColourRgbF, NamedColour};
 use vanrijn::image::{ClampingToneMapper, ImageRgbU8, ToneMapper};
 use vanrijn::materials::{LambertianMaterial, PhongMaterial, ReflectiveMaterial};
@@ -140,7 +140,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 // There's nothing we can do if this fails, and we're already
                 // at the end of the function anyway, so just ignore result.
-                tx.send(rendered_tile).ok()
+                tx.send((tile, rendered_tile)).ok()
             });
     });
 

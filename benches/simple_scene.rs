@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
-use vanrijn::camera::partial_render_scene;
+use vanrijn::partial_render_scene;
 use vanrijn::colour::{ColourRgbF, NamedColour};
 use vanrijn::materials::{LambertianMaterial, PhongMaterial, ReflectiveMaterial};
 use vanrijn::mesh::load_obj;

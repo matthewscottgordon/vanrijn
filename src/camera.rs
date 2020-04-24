@@ -72,7 +72,7 @@ pub fn partial_render_scene<T: Real>(
     tile: Tile,
     height: usize,
     width: usize,
-) -> (Tile, ImageRgbF<T>) {
+) -> ImageRgbF<T> {
     let mut output_image_tile = ImageRgbF::new(tile.width(), tile.height());
     let image_sampler = ImageSampler::new(width, height, scene.camera_location);
     let ambient_intensity: T = convert(0.0);
@@ -110,7 +110,7 @@ pub fn partial_render_scene<T: Real>(
             output_image_tile.set_colour(row, column, colour);
         }
     }
-    (tile, output_image_tile)
+    output_image_tile
 }
 
 #[cfg(test)]
