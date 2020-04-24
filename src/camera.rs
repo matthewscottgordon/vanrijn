@@ -67,6 +67,30 @@ impl<T: Real> ImageSampler<T> {
 
 const RECURSION_LIMIT: u16 = 32;
 
+/// Render a rectangular section of the image.
+///
+/// The contents and the image, along with the camera, are defined by `scene`.
+///
+/// Assuming an overall image size given by `width` and `height`, the part of the image
+/// defined by `tile` is rendered and returned. Rendering a tile at a time allows a partially-
+/// rendered image to be displayed to the user.
+///
+/// # Examples
+//
+/// ```
+/// # use nalgebra::Point3;
+/// # use vanrijn::scene::Scene;
+/// # use vanrijn::util::TileIterator;
+/// # use vanrijn::partial_render_scene;
+/// # let scene = Scene { camera_location: Point3::new(0.0f32, 0.0, 0.0), objects: vec![] };
+/// let image_width = 640;
+/// let image_height = 480;
+/// let time_size = 32;
+/// for tile in TileIterator::new(640, 480, 32) {
+///     let tile_image = partial_render_scene( &scene, tile, image_height, image_width );
+///     // display and/or save tile_image
+/// }
+/// ```
 pub fn partial_render_scene<T: Real>(
     scene: &Scene<T>,
     tile: Tile,
