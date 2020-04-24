@@ -8,6 +8,14 @@ use nalgebra::{convert, Point3};
 
 use std::sync::Arc;
 
+/// Stores a set of [Primitives](Primitive) and accelerates raycasting
+///
+/// Organizes the primitives into a binary tree based on their bounds, allowing the
+/// closest intersection with a ray to be found efficiently.
+///
+/// Each node knows the overall bounds of all it's children, which means that a ray that
+/// doesn't intersect the [BoundingBox](BoundingBox) of the node doesn't intersect any of
+/// the primitives stored in it's children.
 #[derive(Clone)]
 pub enum BoundingVolumeHierarchy<T: Real> {
     Node {
