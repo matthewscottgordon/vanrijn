@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 alga = "0.9"
-itertools = "0.8"
+itertools = "0.9"
 obj = "0.9"
 quickcheck = "0.9"
 quickcheck_macros = "0.8"
