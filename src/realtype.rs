@@ -1,10 +1,11 @@
+use simba::scalar::{SubsetOf,SupersetOf};
 use nalgebra::RealField;
 
 pub trait NormalizedToU32 {
     fn normalized_to_u32(self, num_bits: usize) -> u32;
 }
 
-pub trait Real: RealField + NormalizedToU32 {}
+pub trait Real: RealField + SupersetOf<f32> + SubsetOf<f32> + NormalizedToU32 {}
 
 impl NormalizedToU32 for f32 {
     fn normalized_to_u32(self, num_bits: usize) -> u32 {

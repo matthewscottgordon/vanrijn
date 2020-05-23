@@ -21,7 +21,7 @@ impl<T: Real> Plane<T> {
         distance_from_origin: T,
         material: Arc<dyn Material<T>>,
     ) -> Plane<T> {
-        normal.normalize();
+        let normal = normal.normalize();
         let mut axis_closest_to_tangent = Vector3::zeros();
         axis_closest_to_tangent[normal.iamin()] = T::one();
         let cotangent = normal.cross(&axis_closest_to_tangent).normalize();
