@@ -25,14 +25,16 @@ impl<T: Real> Sphere<T> {
 }
 
 impl<T: Real> Transform<T> for Sphere<T> {
-    fn transform(&mut self, transformation: &Affine3<T>) -> &Self {
-        self.centre = transformation.transform_point(&self.centre);
-        // This is not the most efficient way of calculating the radius,
-        //but will work as long as the resulting shape is still a sphere.
-        self.radius = transformation
-            .transform_vector(&Vector3::new(self.radius, T::zero(), T::zero()))
-            .norm();
-        self
+    fn transform(&self, transformation: &Affine3<T>) -> Self {
+        Sphere {
+            centre: transformation.transform_point(&self.centre),
+            // This is not the most efficient way of calculating the radius,
+            //but will work as long as the resulting shape is still a sphere.
+            radius: transformation
+                .transform_vector(&Vector3::new(self.radius, T::zero(), T::zero()))
+                .norm(),
+            material: Arc::clone(&self.material),
+        }
     }
 }
 
@@ -207,7 +209,7 @@ mod tests {
         if radius <= 0.0 {
             return TestResult::discard();
         };
-        let mut sphere = Sphere::new(
+        let sphere = Sphere::new(
             sphere_centre,
             radius,
             Arc::new(LambertianMaterial::new_dummy()),
@@ -215,7 +217,7 @@ mod tests {
         let expected_centre = sphere.centre + translation_vector;
         let mut transformation = Affine3::identity();
         transformation *= Translation3::from(translation_vector);
-        sphere.transform(&transformation);
+        let sphere = sphere.transform(&transformation);
         TestResult::from_bool(expected_centre == sphere.centre)
     }
 
@@ -228,7 +230,7 @@ mod tests {
         if radius <= 0.0 {
             return TestResult::discard();
         };
-        let mut sphere = Sphere::new(
+        let sphere = Sphere::new(
             sphere_centre,
             radius,
             Arc::new(LambertianMaterial::new_dummy()),
@@ -236,7 +238,7 @@ mod tests {
         let expected_radius = sphere.radius;
         let mut transformation = Affine3::identity();
         transformation *= Translation3::from(translation_vector);
-        sphere.transform(&transformation);
+        let sphere = sphere.transform(&transformation);
         TestResult::from_bool(expected_radius == sphere.radius)
     }
 
@@ -249,7 +251,7 @@ mod tests {
         if radius <= 0.0 {
             return TestResult::discard();
         };
-        let mut sphere = Sphere::new(
+        let sphere = Sphere::new(
             sphere_centre,
             radius,
             Arc::new(LambertianMaterial::new_dummy()),
@@ -259,7 +261,7 @@ mod tests {
         transformation *= Translation3::from(sphere.centre.coords)
             * Rotation3::new(rotation_vector)
             * Translation3::from(-sphere.centre.coords);
-        sphere.transform(&transformation);
+        let sphere = sphere.transform(&transformation);
         TestResult::from_bool(dbg!((expected_centre - sphere.centre).norm() < 0.000000001))
     }
 }

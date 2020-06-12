@@ -1,4 +1,6 @@
-use super::{BoundingBox, HasBoundingBox, Intersect, IntersectP, IntersectionInfo, Primitive, Ray};
+use super::{
+    Aggregate, BoundingBox, HasBoundingBox, Intersect, IntersectP, IntersectionInfo, Primitive, Ray,
+};
 
 use crate::util::morton::morton_order_value_3d;
 use crate::util::normalizer::Point3Normalizer;
@@ -6,7 +8,7 @@ use crate::Real;
 
 use nalgebra::{convert, Point3};
 
-use std::sync::Arc;
+use std::mem::swap;
 
 /// Stores a set of [Primitives](Primitive) and accelerates raycasting
 ///
@@ -16,7 +18,6 @@ use std::sync::Arc;
 /// Each node knows the overall bounds of all it's children, which means that a ray that
 /// doesn't intersect the [BoundingBox](BoundingBox) of the node doesn't intersect any of
 /// the primitives stored in it's children.
-#[derive(Clone)]
 pub enum BoundingVolumeHierarchy<T: Real> {
     Node {
         bounds: BoundingBox<T>,
@@ -25,7 +26,7 @@ pub enum BoundingVolumeHierarchy<T: Real> {
     },
     Leaf {
         bounds: BoundingBox<T>,
-        primitive: Arc<dyn Primitive<T>>,
+        primitive: Box<dyn Primitive<T>>,
     },
     None,
 }
@@ -39,17 +40,17 @@ fn centre<T: Real>(bounds: &BoundingBox<T>) -> Point3<T> {
     )
 }
 
-struct PrimitiveInfo<T: Real>(BoundingBox<T>, Arc<dyn Primitive<T>>);
+struct PrimitiveInfo<T: Real>(BoundingBox<T>, Option<Box<dyn Primitive<T>>>);
 
 impl<T: Real> BoundingVolumeHierarchy<T> {
     pub fn build<'a, I>(primitives: I) -> Self
     where
-        I: IntoIterator<Item = &'a Arc<dyn Primitive<T>>>,
+        I: IntoIterator<Item = Box<dyn Primitive<T>>>,
     {
         Self::from_node_vec(
             primitives
                 .into_iter()
-                .map(|primitive| PrimitiveInfo(primitive.bounding_box(), Arc::clone(primitive)))
+                .map(|primitive| PrimitiveInfo(primitive.bounding_box(), Some(primitive)))
                 .collect(),
         )
     }
@@ -64,14 +65,14 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
             morton_order_value_3d(normalizer.normalize(centre(a)))
                 .cmp(&morton_order_value_3d(normalizer.normalize(centre(b))))
         });
-        Self::from_sorted_nodes(nodes.as_slice())
+        Self::from_sorted_nodes(nodes.as_mut_slice())
     }
 
-    fn from_sorted_nodes(nodes: &[PrimitiveInfo<T>]) -> Self {
+    fn from_sorted_nodes(nodes: &mut [PrimitiveInfo<T>]) -> Self {
         if nodes.len() >= 2 {
             let midpoint = nodes.len() / 2;
-            let left = Box::new(Self::from_sorted_nodes(&nodes[..midpoint]));
-            let right = Box::new(Self::from_sorted_nodes(&nodes[midpoint..]));
+            let left = Box::new(Self::from_sorted_nodes(&mut nodes[..midpoint]));
+            let right = Box::new(Self::from_sorted_nodes(&mut nodes[midpoint..]));
             let bounds = left.get_bounds().union(&right.get_bounds());
             BoundingVolumeHierarchy::Node {
                 bounds,
@@ -79,11 +80,11 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
                 right,
             }
         } else if nodes.len() == 1 {
-            let PrimitiveInfo(bounds, ref primitive) = nodes[0];
-            BoundingVolumeHierarchy::Leaf {
-                bounds,
-                primitive: Arc::clone(primitive),
-            }
+            let PrimitiveInfo(bounds, ref mut primitive_src) = nodes[0];
+            let mut primitive = None;
+            swap(primitive_src, &mut primitive);
+            let primitive = primitive.unwrap();
+            BoundingVolumeHierarchy::Leaf { bounds, primitive }
         } else {
             BoundingVolumeHierarchy::None
         }
@@ -167,7 +168,7 @@ impl<T: Real> HasBoundingBox<T> for BoundingVolumeHierarchy<T> {
     }
 }
 
-impl<T: Real> Primitive<T> for BoundingVolumeHierarchy<T> {}
+impl<T: Real> Aggregate<T> for BoundingVolumeHierarchy<T> {}
 
 pub struct FilterIterator<'a, T: Real> {
     unsearched_subtrees: Vec<&'a BoundingVolumeHierarchy<T>>,
@@ -186,8 +187,8 @@ impl<'a, T: Real> FilterIterator<'a, T> {
     }
 }
 
-impl<T: Real> Iterator for FilterIterator<'_, T> {
-    type Item = Arc<dyn Primitive<T>>;
+impl<'a, T: Real> Iterator for FilterIterator<'a, T> {
+    type Item = &'a dyn Primitive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         //let mut result = Option::None;
@@ -203,9 +204,12 @@ impl<T: Real> Iterator for FilterIterator<'_, T> {
                         self.unsearched_subtrees.push(left);
                     }
                 }
-                BoundingVolumeHierarchy::Leaf { bounds, primitive } => {
+                BoundingVolumeHierarchy::Leaf {
+                    bounds,
+                    ref primitive,
+                } => {
                     if (self.predicate)(bounds) {
-                        return Some(Arc::clone(primitive));
+                        return Some(&**primitive);
                     }
                 }
                 BoundingVolumeHierarchy::None => {}
@@ -226,6 +230,8 @@ mod test {
     use crate::raycasting::Sphere;
     use nalgebra::Point3;
 
+    use std::sync::Arc;
+
     impl<T: Arbitrary + Real> Arbitrary for Sphere<T> {
         fn arbitrary<G: Gen>(g: &mut G) -> Sphere<T> {
             let centre = <Point3<T> as Arbitrary>::arbitrary(g);
@@ -234,42 +240,20 @@ mod test {
         }
     }
 
-    fn sphere_vec_to_primitive_arc_vec<T: Real>(
+    fn sphere_vec_to_primitive_box_vec<T: Real>(
         spheres: &Vec<Sphere<T>>,
-    ) -> Vec<Arc<dyn Primitive<T>>> {
-        let mut prims: Vec<Arc<dyn Primitive<T>>> = Vec::with_capacity(spheres.len());
+    ) -> Vec<Box<dyn Primitive<T>>> {
+        let mut prims: Vec<Box<dyn Primitive<T>>> = Vec::with_capacity(spheres.len());
         for sphere in spheres {
-            prims.push(Arc::new(sphere.clone()));
+            prims.push(Box::new(sphere.clone()));
         }
         prims
     }
 
     #[quickcheck]
     fn contains_expected_number_of_primitives(spheres: Vec<Sphere<f32>>) -> bool {
-        let target =
-            BoundingVolumeHierarchy::build(sphere_vec_to_primitive_arc_vec(&spheres).iter());
+        let target = BoundingVolumeHierarchy::build(sphere_vec_to_primitive_box_vec(&spheres));
 
         target.count_leaves() == spheres.len()
-    }
-
-    #[quickcheck]
-    fn finds_expected_points(spheres: Vec<Sphere<f32>>, p: Point3<f32>) -> bool {
-        let primitives = sphere_vec_to_primitive_arc_vec(&spheres);
-        let target = BoundingVolumeHierarchy::build(primitives.iter());
-        let expected_hits: Vec<Arc<dyn Primitive<f32>>> = primitives
-            .iter()
-            .filter(|elem| elem.bounding_box().contains_point(p))
-            .cloned()
-            .collect();
-        let found_hits: Vec<Arc<dyn Primitive<f32>>> = FilterIterator::new(
-            &target,
-            Box::new(move |elem: &BoundingBox<f32>| elem.contains_point(p)),
-        )
-        .collect();
-        expected_hits.iter().all(|expected_hit| {
-            found_hits
-                .iter()
-                .any(|found_hit| Arc::ptr_eq(found_hit, expected_hit))
-        })
     }
 }

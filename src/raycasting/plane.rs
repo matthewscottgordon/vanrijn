@@ -7,6 +7,7 @@ use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive,
 
 use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct Plane<T: Real> {
     normal: Vector3<T>,
     tangent: Vector3<T>,
@@ -37,14 +38,16 @@ impl<T: Real> Plane<T> {
 }
 
 impl<T: Real> Transform<T> for Plane<T> {
-    fn transform(&mut self, transformation: &Affine3<T>) -> &Self {
-        self.normal = transformation.transform_vector(&self.normal).normalize();
-        self.cotangent = transformation.transform_vector(&self.cotangent).normalize();
-        self.cotangent = self.normal.cross(&self.cotangent);
-        self.distance_from_origin = transformation
-            .transform_vector(&(self.normal * self.distance_from_origin))
-            .norm();
-        self
+    fn transform(&self, transformation: &Affine3<T>) -> Self {
+        Plane {
+            normal: transformation.transform_vector(&self.normal).normalize(),
+            cotangent: transformation.transform_vector(&self.cotangent).normalize(),
+            tangent: self.normal.cross(&self.cotangent),
+            distance_from_origin: transformation
+                .transform_vector(&(self.normal * self.distance_from_origin))
+                .norm(),
+            material: Arc::clone(&self.material),
+        }
     }
 }
 

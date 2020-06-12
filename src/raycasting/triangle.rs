@@ -6,7 +6,7 @@ use nalgebra::{Affine3, Point3, Vector2, Vector3};
 
 use std::sync::Arc;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Triangle<T: Real> {
     pub vertices: [Point3<T>; 3],
     pub normals: [Vector3<T>; 3],
@@ -14,18 +14,22 @@ pub struct Triangle<T: Real> {
 }
 
 impl<T: Real> Transform<T> for Triangle<T> {
-    fn transform(&mut self, transformation: &Affine3<T>) -> &Self {
-        for vertex in self.vertices.iter_mut() {
-            *vertex = transformation.transform_point(&vertex);
+    fn transform(&self, transformation: &Affine3<T>) -> Self {
+        let normal_transformation =
+            Affine3::from_matrix_unchecked(transformation.inverse().matrix().transpose());
+        Triangle {
+            vertices: [
+                transformation.transform_point(&self.vertices[0]),
+                transformation.transform_point(&self.vertices[1]),
+                transformation.transform_point(&self.vertices[2]),
+            ],
+            normals: [
+                normal_transformation.transform_vector(&self.normals[0]),
+                normal_transformation.transform_vector(&self.normals[1]),
+                normal_transformation.transform_vector(&self.normals[2]),
+            ],
+            material: Arc::clone(&self.material),
         }
-        let normal_transformation = Affine3::from_matrix_unchecked(dbg!(dbg!(transformation)
-            .inverse()
-            .matrix()
-            .transpose()));
-        for normal in self.normals.iter_mut() {
-            *normal = dbg!(normal_transformation.transform_vector(dbg!(&normal)));
-        }
-        self
     }
 }
 
@@ -181,12 +185,12 @@ mod tests {
             let n0 = n0.normalize();
             let n1 = n1.normalize();
             let n2 = n2.normalize();
-            let mut target = Triangle {
+            let target = Triangle {
                 vertices: [v0, v1, v2],
                 normals: [n0, n1, n2],
                 material: Arc::new(LambertianMaterial::new_dummy()),
             };
-            target.transform(&Affine3::identity());
+            let target = target.transform(&Affine3::identity());
             target.vertices[0] == v0
                 && target.vertices[1] == v1
                 && target.vertices[2] == v2
@@ -208,13 +212,13 @@ mod tests {
             let n0 = n0.normalize();
             let n1 = n1.normalize();
             let n2 = n2.normalize();
-            let mut target = Triangle {
+            let target = Triangle {
                 vertices: [v0, v1, v2],
                 normals: [n0, n1, n2],
                 material: Arc::new(LambertianMaterial::new_dummy()),
             };
             let transformation = Affine3::identity() * Translation3::from(translation);
-            target.transform(&transformation);
+            let target = target.transform(&transformation);
             target.normals[0] == n0 && target.normals[1] == n1 && target.normals[2] == n2
         }
 
@@ -231,13 +235,13 @@ mod tests {
             let n0 = n0.normalize();
             let n1 = n1.normalize();
             let n2 = n2.normalize();
-            let mut target = Triangle {
+            let target = Triangle {
                 vertices: [v0, v1, v2],
                 normals: [n0, n1, n2],
                 material: Arc::new(LambertianMaterial::new_dummy()),
             };
             let transformation = Affine3::identity() * Translation3::from(translation);
-            target.transform(&transformation);
+            let target = target.transform(&transformation);
             target.vertices[0] == v0 + translation
                 && target.vertices[1] == v1 + translation
                 && target.vertices[2] == v2 + translation

@@ -20,6 +20,8 @@ pub use axis_aligned_bounding_box::BoundingBox;
 pub mod bounding_volume_hierarchy;
 pub use bounding_volume_hierarchy::BoundingVolumeHierarchy;
 
+pub mod vec_aggregate;
+
 /// A ray, consisting or a start point and direction
 ///
 /// This is the basic ray struct used to define things like a line-of-sight
@@ -123,13 +125,19 @@ pub trait HasBoundingBox<T: Real>: Send + Sync {
 /// Any geometric object which can have an affine transformation applied to it
 ///
 /// Used for moving, rotating or scaling primitives
-pub trait Transform<T: Real>: Send + Sync {
+pub trait Transform<T: Real> {
     /// Create a new object by applying the transformation to this object.
-    fn transform(&mut self, transformation: &Affine3<T>) -> &Self;
+    fn transform(&self, transformation: &Affine3<T>) -> Self;
 }
 
 /// A basic geometric primitive such as a sphere or a triangle
-pub trait Primitive<T: Real>: Intersect<T> + HasBoundingBox<T> {}
+pub trait Primitive<T: Real>: Intersect<T> + HasBoundingBox<T> {
+    // / Create a new object by applying the transformation to this object.
+    //fn transform(&self, transformation: &Affine3<T>) -> dyn Primitive<T>;
+}
+
+/// Either a primitive or a collection of primitives
+pub trait Aggregate<T: Real>: Intersect<T> + HasBoundingBox<T> {}
 
 #[cfg(test)]
 mod tests {

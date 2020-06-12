@@ -68,7 +68,7 @@ mod wavefront_obj {
     pub fn load_obj<T: Real>(
         filename: &Path,
         material: Arc<dyn Material<T>>,
-    ) -> Result<Vec<Arc<dyn Primitive<T>>>>
+    ) -> Result<Vec<Box<dyn Primitive<T>>>>
     where
         T: SupersetOf<f32>,
     {
@@ -80,7 +80,7 @@ mod wavefront_obj {
             .flat_map(|object| object.groups.iter())
             .flat_map(|group| group.polys.iter())
             .flat_map(|poly| get_triangles(poly, &obj.position, &obj.normal, material.clone()))
-            .map(|triangle| Arc::new(triangle) as Arc<dyn Primitive<T>>)
+            .map(|triangle| Box::new(triangle) as Box<dyn Primitive<T>>)
             .collect())
     }
 }
