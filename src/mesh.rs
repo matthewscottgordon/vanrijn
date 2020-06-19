@@ -27,7 +27,7 @@ mod wavefront_obj {
             Some(normal_index) => convert(Vector3::from_row_slice(&normal_positions[normal_index])),
             None => Vector3::zeros(),
         };
-        (vertex, normal)
+        (vertex, normal.normalize())
     }
 
     fn get_triangles<T: Real>(
