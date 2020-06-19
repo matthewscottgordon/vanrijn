@@ -16,6 +16,9 @@ pub use phong_material::PhongMaterial;
 pub mod reflective_material;
 pub use reflective_material::ReflectiveMaterial;
 
+pub mod rgb_sampled_bsdf_material;
+pub use rgb_sampled_bsdf_material::RgbSampledBsdfMaterial;
+
 pub trait Material<T: Real>: Debug + Sync + Send {
     fn bsdf(&self) -> Bsdf<T>;
 
