@@ -19,8 +19,8 @@ impl<T: Real> Material<T> for ReflectiveMaterial<T> {
         let reflection_strength = self.reflection_strength;
         Box::new(
             move |w_o: Vector3<T>, w_i: Vector3<T>, colour_in: ColourRgbF<T>| {
-                if w_i.z < T::zero() || w_o.z < T::zero() {
-                    ColourRgbF::new(T::zero(), T::one(), T::one())
+                if w_i.z <= T::zero() || w_o.z <= T::zero() {
+                    ColourRgbF::new(T::zero(), T::zero(), T::zero())
                 } else {
                     let reflection_vector = Vector3::new(-w_o.x, -w_o.y, w_o.z);
                     let reflection_colour = colour_in * reflection_strength;
