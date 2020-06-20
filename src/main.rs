@@ -7,7 +7,7 @@ use sdl2::rect::Rect;
 use sdl2::render::{Canvas, Texture};
 use sdl2::Sdl;
 
-use nalgebra::{convert, Point3, Rotation3, Vector3};
+use nalgebra::{convert, Point3, Rotation3, Translation3, Vector3};
 
 use clap::Arg;
 
@@ -29,6 +29,7 @@ struct CommandLineParameters {
     width: usize,
     height: usize,
     output_file: Option<PathBuf>,
+    time: f64,
 }
 
 fn parse_args() -> CommandLineParameters {
@@ -52,15 +53,24 @@ fn parse_args() -> CommandLineParameters {
                 .takes_value(true)
                 .required(false),
         )
+        .arg(
+            Arg::with_name("time")
+                .long("time")
+                .value_name("SECONDS")
+                .takes_value(true)
+                .default_value("0"),
+        )
         .get_matches();
     let mut size_iter = matches.values_of("size").unwrap();
     let width = size_iter.next().unwrap().parse().unwrap();
     let height = size_iter.next().unwrap().parse().unwrap();
     let output_file = matches.value_of_os("output_png").map(|f| PathBuf::from(f));
+    let time = matches.value_of("time").unwrap().parse().unwrap();
     CommandLineParameters {
         width,
         height,
         output_file,
+        time,
     }
 }
 
@@ -136,7 +146,12 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         }),
     )
     .iter()
-    .map(|elem| elem.transform(&convert(Rotation3::from_euler_angles(0.0, 0.0, 1.0))))
+    .map(|elem| {
+        elem.transform(&convert(
+            Translation3::from(Vector3::new(0.25, 1.5, 2.5))
+                * Rotation3::from_euler_angles(0.0, parameters.time * 0.02, 0.0),
+        ))
+    })
     .map(|elem| Box::new(elem.clone()) as Box<dyn Primitive<f64>>)
     .collect();
     /*println!("Building BVH...");
