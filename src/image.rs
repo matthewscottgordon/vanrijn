@@ -1,4 +1,7 @@
 use std::convert::TryInto;
+use std::fs::File;
+use std::io::BufWriter;
+use std::path::Path;
 
 use nalgebra::{clamp, convert, Vector3};
 
@@ -58,6 +61,32 @@ impl ImageRgbU8 {
 
     pub fn num_channels() -> usize {
         3
+    }
+
+    pub fn update(&mut self, start_row: usize, start_column: usize, image: &ImageRgbU8) {
+        assert!(start_column + image.width <= self.width);
+        assert!(start_row + image.height <= self.height);
+        for row in 0..image.height {
+            let source_start = image.calculate_index(row, 0);
+            let source_end = image.calculate_index(row, image.width - 1) + 3;
+            let destination_start = self.calculate_index(start_row + row, start_column);
+            let destination_end =
+                self.calculate_index(start_row + row, start_column + image.width - 1) + 3;
+            self.pixel_data[destination_start..destination_end]
+                .copy_from_slice(&image.pixel_data[source_start..source_end]);
+        }
+    }
+
+    pub fn write_png(&self, filename: &Path) -> Result<(), std::io::Error> {
+        let file = File::create(filename)?;
+        let ref mut file_buffer = BufWriter::new(file);
+
+        let mut encoder = png::Encoder::new(file_buffer, self.width as u32, self.height as u32);
+        encoder.set_color(png::ColorType::RGB);
+        encoder.set_depth(png::BitDepth::Eight);
+        let mut writer = encoder.write_header()?;
+        writer.write_image_data(self.pixel_data.as_slice())?;
+        Ok(())
     }
 
     fn calculate_index(&self, row: usize, column: usize) -> usize {

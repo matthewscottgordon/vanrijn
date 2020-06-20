@@ -11,7 +11,7 @@ use nalgebra::{Point3, Vector3};
 
 use clap::Arg;
 
-use std::path::Path;
+use std::path::PathBuf;
 use std::sync::{mpsc, Arc};
 use std::time::Duration;
 
@@ -31,6 +31,7 @@ use vanrijn::util::{Tile, TileIterator};
 struct CommandLineParameters {
     width: usize,
     height: usize,
+    output_file: Option<PathBuf>,
 }
 
 fn parse_args() -> CommandLineParameters {
@@ -46,11 +47,24 @@ fn parse_args() -> CommandLineParameters {
                 .number_of_values(2)
                 .required(true),
         )
+        .arg(
+            Arg::with_name("output_png")
+                .long("out")
+                .value_name("FILENAME")
+                .help("Filename for output PNG.")
+                .takes_value(true)
+                .required(false),
+        )
         .get_matches();
     let mut size_iter = matches.values_of("size").unwrap();
     let width = size_iter.next().unwrap().parse().unwrap();
     let height = size_iter.next().unwrap().parse().unwrap();
-    CommandLineParameters { width, height }
+    let output_file = matches.value_of_os("output_png").map(|f| PathBuf::from(f));
+    CommandLineParameters {
+        width,
+        height,
+        output_file,
+    }
 }
 
 fn update_texture(tile: &Tile, image: &ImageRgbU8, texture: &mut Texture) {
@@ -66,6 +80,10 @@ fn update_texture(tile: &Tile, image: &ImageRgbU8, texture: &mut Texture) {
             (image.get_width() * ImageRgbU8::num_channels()) as usize,
         )
         .expect("Couldn't update texture.");
+}
+
+fn update_image(tile: &Tile, tile_image: &ImageRgbU8, image: &mut ImageRgbU8) {
+    image.update(tile.start_row, tile.start_column, tile_image);
 }
 
 fn init_canvas(
@@ -89,6 +107,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let parameters = parse_args();
     let image_width = parameters.width;
     let image_height = parameters.height;
+
+    let mut rendered_image = ImageRgbU8::new(image_width, image_height);
 
     let (sdl_context, mut canvas) = init_canvas(image_width, image_height)?;
 
@@ -165,6 +185,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut tile_rx = Some(tile_rx);
 
     let worker_boss = std::thread::spawn(move || {
+        let end_tx = tile_tx.clone();
         TileIterator::new(image_width as usize, image_height as usize, 32)
             .map(move |tile| (tile, tile_tx.clone()))
             .par_bridge()
@@ -173,18 +194,25 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 // There's nothing we can do if this fails, and we're already
                 // at the end of the function anyway, so just ignore result.
-                tx.send((tile, rendered_tile)).ok()
+                tx.send(Some((tile, rendered_tile))).ok()
             });
+        end_tx.send(None).ok();
     });
 
     'running: loop {
         if let Some(ref tile_rx) = tile_rx {
-            for (tile, tile_image) in tile_rx.try_iter() {
-                let mut tile_image_rgbu8 = ImageRgbU8::new(tile.width(), tile.height());
-                ClampingToneMapper {}.apply_tone_mapping(&tile_image, &mut tile_image_rgbu8);
-                update_texture(&tile, &tile_image_rgbu8, &mut rendered_image_texture);
-                canvas.copy(&rendered_image_texture, None, None).unwrap();
-                canvas.present();
+            for message in tile_rx.try_iter() {
+                if let Some((tile, tile_image)) = message {
+                    let mut tile_image_rgbu8 = ImageRgbU8::new(tile.width(), tile.height());
+                    ClampingToneMapper {}.apply_tone_mapping(&tile_image, &mut tile_image_rgbu8);
+                    update_texture(&tile, &tile_image_rgbu8, &mut rendered_image_texture);
+                    update_image(&tile, &tile_image_rgbu8, &mut rendered_image);
+                    canvas.copy(&rendered_image_texture, None, None).unwrap();
+                    canvas.present();
+                } else if let Some(image_filename) = parameters.output_file {
+                    rendered_image.write_png(&image_filename)?;
+                    break 'running;
+                }
             }
         }
 
