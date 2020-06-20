@@ -14,6 +14,7 @@ rayon = "1.3"
 sdl2 = "0.32"
 simba = "0.1.2"
 csv = "1.1.3"
+clap = "2.33"
 
 [dependencies.nalgebra]
 version = "0.21"

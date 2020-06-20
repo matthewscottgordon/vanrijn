@@ -6,12 +6,14 @@ use sdl2::pixels::PixelFormatEnum;
 use sdl2::rect::Rect;
 use sdl2::render::{Canvas, Texture};
 use sdl2::Sdl;
-use std::time::Duration;
 
 use nalgebra::{Point3, Vector3};
 
+use clap::Arg;
+
 use std::path::Path;
 use std::sync::{mpsc, Arc};
+use std::time::Duration;
 
 use vanrijn::colour::{ColourRgbF, NamedColour};
 use vanrijn::image::{ClampingToneMapper, ImageRgbU8, ToneMapper};
@@ -19,10 +21,37 @@ use vanrijn::materials::{LambertianMaterial, PhongMaterial, ReflectiveMaterial};
 use vanrijn::mesh::load_obj;
 use vanrijn::partial_render_scene;
 use vanrijn::raycasting::{
-    Aggregate, BoundingVolumeHierarchy, Plane, Primitive, Sphere,
+    Aggregate, BoundingVolumeHierarchy, Plane, Primitive, Sphere, Transform,
 };
 use vanrijn::scene::Scene;
+use vanrijn::util::polyhedra::generate_dodecahedron;
 use vanrijn::util::{Tile, TileIterator};
+
+#[derive(Debug)]
+struct CommandLineParameters {
+    width: usize,
+    height: usize,
+}
+
+fn parse_args() -> CommandLineParameters {
+    let matches = clap::App::new("vanrijn")
+        .version("alpha")
+        .author("Matthew Gordon <matthew@gordon.earth")
+        .arg(
+            Arg::with_name("size")
+                .long("size")
+                .value_name("SIZE")
+                .help("The width and height of the output image, in pixels.")
+                .takes_value(true)
+                .number_of_values(2)
+                .required(true),
+        )
+        .get_matches();
+    let mut size_iter = matches.values_of("size").unwrap();
+    let width = size_iter.next().unwrap().parse().unwrap();
+    let height = size_iter.next().unwrap().parse().unwrap();
+    CommandLineParameters { width, height }
+}
 
 fn update_texture(tile: &Tile, image: &ImageRgbU8, texture: &mut Texture) {
     texture
@@ -57,8 +86,9 @@ fn init_canvas(
 }
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let image_width = 640usize;
-    let image_height = 480usize;
+    let parameters = parse_args();
+    let image_width = parameters.width;
+    let image_height = parameters.height;
 
     let (sdl_context, mut canvas) = init_canvas(image_width, image_height)?;
 
