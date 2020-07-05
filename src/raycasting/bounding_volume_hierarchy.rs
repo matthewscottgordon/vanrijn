@@ -19,8 +19,7 @@ use std::mem::swap;
 /// Each node knows the overall bounds of all it's children, which means that a ray that
 /// doesn't intersect the [BoundingBox](BoundingBox) of the node doesn't intersect any of
 /// the primitives stored in it's children.
-pub type BoundingVolumeHierarchy<T: Real> =
-    BinaryTree<BoundingBox<T>, (BoundingBox<T>, Box<dyn Primitive<T>>)>;
+pub type BoundingVolumeHierarchy<T: Real> = BinaryTree<BoundingBox<T>, Box<dyn Primitive<T>>>;
 
 fn centre<T: Real>(bounds: &BoundingBox<T>) -> Point3<T> {
     let two = convert(2.0);
@@ -75,9 +74,7 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
             let mut primitive = None;
             swap(primitive_src, &mut primitive);
             let primitive = primitive.unwrap();
-            BoundingVolumeHierarchy::Leaf {
-                value: (bounds, primitive),
-            }
+            BoundingVolumeHierarchy::Leaf { value: primitive }
         } else {
             BoundingVolumeHierarchy::None
         }
@@ -90,20 +87,8 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
                 left: _,
                 right: _,
             } => *value,
-            BoundingVolumeHierarchy::Leaf { value: (bounds, _) } => *bounds,
+            BoundingVolumeHierarchy::Leaf { value } => value.bounding_box(),
             BoundingVolumeHierarchy::None => BoundingBox::empty(),
-        }
-    }
-
-    pub fn count_leaves(&self) -> usize {
-        match self {
-            Self::Branch {
-                value: _,
-                left,
-                right,
-            } => right.count_leaves() + left.count_leaves(),
-            Self::Leaf { value: _ } => 1,
-            Self::None => 0,
         }
     }
 }
@@ -140,9 +125,7 @@ impl<T: Real> Intersect<T> for BoundingVolumeHierarchy<T> {
                     None
                 }
             }
-            Self::Leaf {
-                value: (_, primitive),
-            } => primitive.intersect(ray),
+            Self::Leaf { value: primitive } => primitive.intersect(ray),
             Self::None => None,
         }
     }
@@ -155,54 +138,6 @@ impl<T: Real> HasBoundingBox<T> for BoundingVolumeHierarchy<T> {
 }
 
 impl<T: Real> Aggregate<T> for BoundingVolumeHierarchy<T> {}
-
-pub struct FilterIterator<'a, T: Real> {
-    unsearched_subtrees: Vec<&'a BoundingVolumeHierarchy<T>>,
-    predicate: Box<dyn Fn(&BoundingBox<T>) -> bool>,
-}
-
-impl<'a, T: Real> FilterIterator<'a, T> {
-    pub fn new(
-        root: &'a BoundingVolumeHierarchy<T>,
-        predicate: Box<dyn Fn(&BoundingBox<T>) -> bool>,
-    ) -> Self {
-        FilterIterator {
-            unsearched_subtrees: vec![root],
-            predicate,
-        }
-    }
-}
-
-impl<'a, T: Real> Iterator for FilterIterator<'a, T> {
-    type Item = &'a dyn Primitive<T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        //let mut result = Option::None;
-        while let Some(next_subtree) = self.unsearched_subtrees.pop() {
-            match next_subtree {
-                BoundingVolumeHierarchy::Branch {
-                    value: bounds,
-                    left,
-                    right,
-                } => {
-                    if (self.predicate)(bounds) {
-                        self.unsearched_subtrees.push(right);
-                        self.unsearched_subtrees.push(left);
-                    }
-                }
-                BoundingVolumeHierarchy::Leaf {
-                    value: (bounds, ref primitive),
-                } => {
-                    if (self.predicate)(bounds) {
-                        return Some(&**primitive);
-                    }
-                }
-                BoundingVolumeHierarchy::None => {}
-            }
-        }
-        Option::None
-    }
-}
 
 #[cfg(test)]
 mod test {
