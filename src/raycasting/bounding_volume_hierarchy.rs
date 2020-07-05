@@ -2,6 +2,7 @@ use super::{
     Aggregate, BoundingBox, HasBoundingBox, Intersect, IntersectP, IntersectionInfo, Primitive, Ray,
 };
 
+use crate::util::binary_tree::BinaryTree;
 use crate::util::morton::morton_order_value_3d;
 use crate::util::normalizer::Point3Normalizer;
 use crate::Real;
@@ -18,18 +19,8 @@ use std::mem::swap;
 /// Each node knows the overall bounds of all it's children, which means that a ray that
 /// doesn't intersect the [BoundingBox](BoundingBox) of the node doesn't intersect any of
 /// the primitives stored in it's children.
-pub enum BoundingVolumeHierarchy<T: Real> {
-    Node {
-        bounds: BoundingBox<T>,
-        left: Box<BoundingVolumeHierarchy<T>>,
-        right: Box<BoundingVolumeHierarchy<T>>,
-    },
-    Leaf {
-        bounds: BoundingBox<T>,
-        primitive: Box<dyn Primitive<T>>,
-    },
-    None,
-}
+pub type BoundingVolumeHierarchy<T: Real> =
+    BinaryTree<BoundingBox<T>, (BoundingBox<T>, Box<dyn Primitive<T>>)>;
 
 fn centre<T: Real>(bounds: &BoundingBox<T>) -> Point3<T> {
     let two = convert(2.0);
@@ -74,8 +65,8 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
             let left = Box::new(Self::from_sorted_nodes(&mut nodes[..midpoint]));
             let right = Box::new(Self::from_sorted_nodes(&mut nodes[midpoint..]));
             let bounds = left.get_bounds().union(&right.get_bounds());
-            BoundingVolumeHierarchy::Node {
-                bounds,
+            BoundingVolumeHierarchy::Branch {
+                value: bounds,
                 left,
                 right,
             }
@@ -84,7 +75,9 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
             let mut primitive = None;
             swap(primitive_src, &mut primitive);
             let primitive = primitive.unwrap();
-            BoundingVolumeHierarchy::Leaf { bounds, primitive }
+            BoundingVolumeHierarchy::Leaf {
+                value: (bounds, primitive),
+            }
         } else {
             BoundingVolumeHierarchy::None
         }
@@ -92,30 +85,24 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
 
     pub fn get_bounds(&self) -> BoundingBox<T> {
         match self {
-            BoundingVolumeHierarchy::Node {
-                bounds,
+            BoundingVolumeHierarchy::Branch {
+                value,
                 left: _,
                 right: _,
-            } => *bounds,
-            BoundingVolumeHierarchy::Leaf {
-                bounds,
-                primitive: _,
-            } => *bounds,
+            } => *value,
+            BoundingVolumeHierarchy::Leaf { value: (bounds, _) } => *bounds,
             BoundingVolumeHierarchy::None => BoundingBox::empty(),
         }
     }
 
     pub fn count_leaves(&self) -> usize {
         match self {
-            Self::Node {
-                bounds: _,
+            Self::Branch {
+                value: _,
                 left,
                 right,
             } => right.count_leaves() + left.count_leaves(),
-            Self::Leaf {
-                bounds: _,
-                primitive: _,
-            } => 1,
+            Self::Leaf { value: _ } => 1,
             Self::None => 0,
         }
     }
@@ -142,8 +129,8 @@ fn closest_intersection<T: Real>(
 impl<T: Real> Intersect<T> for BoundingVolumeHierarchy<T> {
     fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
         match self {
-            Self::Node {
-                bounds,
+            Self::Branch {
+                value: bounds,
                 left,
                 right,
             } => {
@@ -154,8 +141,7 @@ impl<T: Real> Intersect<T> for BoundingVolumeHierarchy<T> {
                 }
             }
             Self::Leaf {
-                bounds: _,
-                primitive,
+                value: (_, primitive),
             } => primitive.intersect(ray),
             Self::None => None,
         }
@@ -194,8 +180,8 @@ impl<'a, T: Real> Iterator for FilterIterator<'a, T> {
         //let mut result = Option::None;
         while let Some(next_subtree) = self.unsearched_subtrees.pop() {
             match next_subtree {
-                BoundingVolumeHierarchy::Node {
-                    bounds,
+                BoundingVolumeHierarchy::Branch {
+                    value: bounds,
                     left,
                     right,
                 } => {
@@ -205,8 +191,7 @@ impl<'a, T: Real> Iterator for FilterIterator<'a, T> {
                     }
                 }
                 BoundingVolumeHierarchy::Leaf {
-                    bounds,
-                    ref primitive,
+                    value: (bounds, ref primitive),
                 } => {
                     if (self.predicate)(bounds) {
                         return Some(&**primitive);

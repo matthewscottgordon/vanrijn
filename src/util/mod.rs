@@ -3,6 +3,7 @@ pub use interval::Interval;
 
 pub mod algebra_utils;
 pub mod axis_aligned_bounding_box;
+pub mod binary_tree;
 pub mod morton;
 pub mod normalizer;
 mod tile_iterator;
