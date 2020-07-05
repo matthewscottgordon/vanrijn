@@ -20,22 +20,21 @@ fn simple_scene(bencher: &mut Criterion) {
     let model_file_path =
         Path::new(env!("CARGO_MANIFEST_DIR")).join("test_data/stanford_bunny.obj");
 
-    let scene = Scene {
-        camera_location: Point3::new(-2.0, 1.0, -5.0),
-        objects: vec![Box::new(BoundingVolumeHierarchy::build(
-            load_obj(
-                &model_file_path,
-                Arc::new(ReflectiveMaterial {
-                    colour: ColourRgbF::from_named(NamedColour::Yellow),
-                    diffuse_strength: 0.05,
-                    reflection_strength: 0.9,
-                }),
-            )
-            .unwrap(),
-        ))],
-    };
-
     bencher.bench_function("simple_scene", |b| {
+        let scene = Scene {
+            camera_location: Point3::new(-2.0, 1.0, -5.0),
+            objects: vec![Box::new(BoundingVolumeHierarchy::build(
+                load_obj(
+                    &model_file_path,
+                    Arc::new(ReflectiveMaterial {
+                        colour: ColourRgbF::from_named(NamedColour::Yellow),
+                        diffuse_strength: 0.05,
+                        reflection_strength: 0.9,
+                    }),
+                )
+                .unwrap(),
+            ))],
+        };
         b.iter(|| {
             let tile = Tile {
                 start_column: 0,
