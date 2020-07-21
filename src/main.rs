@@ -7,21 +7,21 @@ use sdl2::rect::Rect;
 use sdl2::render::{Canvas, Texture};
 use sdl2::Sdl;
 
-use nalgebra::{convert, Point3, Rotation3, Translation3, Vector3};
+use nalgebra::{Point3, Vector3};
 
 use clap::Arg;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{mpsc, Arc};
 use std::time::Duration;
 
 use vanrijn::colour::{ColourRgbF, NamedColour};
 use vanrijn::image::{ClampingToneMapper, ImageRgbU8, ToneMapper};
 use vanrijn::materials::{LambertianMaterial, PhongMaterial, ReflectiveMaterial};
+use vanrijn::mesh::load_obj;
 use vanrijn::partial_render_scene;
-use vanrijn::raycasting::{Aggregate, Plane, Primitive, Sphere, Transform};
+use vanrijn::raycasting::{Aggregate, BoundingVolumeHierarchy, Plane, Primitive, Sphere};
 use vanrijn::scene::Scene;
-use vanrijn::util::polyhedra::generate_dodecahedron;
 use vanrijn::util::{Tile, TileIterator};
 
 #[derive(Debug)]
@@ -126,37 +126,20 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         image_height as u32,
     )?;
 
-    /*let model_file_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("test_data/stanford_bunny.obj");
-        println!("Loading object...");
-        let model_object = load_obj(
-            &model_file_path,
-            Arc::new(ReflectiveMaterial {
-                colour: ColourRgbF::from_named(NamedColour::Yellow),
-                diffuse_strength: 0.05,
-                reflection_strength: 0.9,
-            }),
-    )?;*/
-    let model_object: Vec<_> = generate_dodecahedron(
-        Point3::new(0.25, 1.5, 2.5),
-        1.0,
-        Arc::new(LambertianMaterial {
-            colour: ColourRgbF::from_named(NamedColour::Green),
-            diffuse_strength: 0.1,
+    let model_file_path =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("test_data/stanford_bunny.obj");
+    println!("Loading object...");
+    let model_object = load_obj(
+        &model_file_path,
+        Arc::new(ReflectiveMaterial {
+            colour: ColourRgbF::from_named(NamedColour::Yellow),
+            diffuse_strength: 0.05,
+            reflection_strength: 0.9,
         }),
-    )
-    .iter()
-    .map(|elem| {
-        elem.transform(&convert(
-            Translation3::from(Vector3::new(0.25, 1.5, 2.5))
-                * Rotation3::from_euler_angles(0.0, parameters.time * 0.02, 0.0),
-        ))
-    })
-    .map(|elem| Box::new(elem.clone()) as Box<dyn Primitive<f64>>)
-    .collect();
-    /*println!("Building BVH...");
+    )?;
+    println!("Building BVH...");
     let model_bvh: Box<dyn Aggregate<_>> = Box::new(BoundingVolumeHierarchy::build(model_object));
-    println!("Constructing Scene...");*/
+    println!("Constructing Scene...");
 
     let scene = Scene {
         camera_location: Point3::new(-2.0, 1.0, -5.0),
@@ -198,7 +181,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }),
                 )),
             ]) as Box<dyn Aggregate<f64>>,
-            Box::new(model_object),
+            model_bvh,
         ],
     };
     println!("Done.");
