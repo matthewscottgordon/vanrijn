@@ -11,6 +11,8 @@ use nalgebra::{convert, Point3};
 
 use std::mem::swap;
 
+type Tree<T> = BinaryTree<BoundingBox<T>, Box<dyn Primitive<T>>>;
+
 /// Stores a set of [Primitives](Primitive) and accelerates raycasting
 ///
 /// Organizes the primitives into a binary tree based on their bounds, allowing the
@@ -19,7 +21,9 @@ use std::mem::swap;
 /// Each node knows the overall bounds of all it's children, which means that a ray that
 /// doesn't intersect the [BoundingBox](BoundingBox) of the node doesn't intersect any of
 /// the primitives stored in it's children.
-pub type BoundingVolumeHierarchy<T: Real> = BinaryTree<BoundingBox<T>, Box<dyn Primitive<T>>>;
+pub struct BoundingVolumeHierarchy<T: Real> {
+    tree: Tree<T>,
+}
 
 fn centre<T: Real>(bounds: &BoundingBox<T>) -> Point3<T> {
     let two = convert(2.0);
@@ -37,15 +41,16 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
     where
         I: IntoIterator<Item = Box<dyn Primitive<T>>>,
     {
-        Self::from_node_vec(
+        let tree = Self::from_node_vec(
             primitives
                 .into_iter()
                 .map(|primitive| PrimitiveInfo(primitive.bounding_box(), Some(primitive)))
                 .collect(),
-        )
+        );
+        Self { tree }
     }
 
-    fn from_node_vec(nodes: Vec<PrimitiveInfo<T>>) -> Self {
+    fn from_node_vec(nodes: Vec<PrimitiveInfo<T>>) -> Tree<T> {
         let overall_bounds = nodes
             .iter()
             .fold(BoundingBox::empty(), |a, PrimitiveInfo(b, _)| a.union(b));
@@ -58,37 +63,37 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
         Self::from_sorted_nodes(nodes.as_mut_slice())
     }
 
-    fn from_sorted_nodes(nodes: &mut [PrimitiveInfo<T>]) -> Self {
+    fn from_sorted_nodes(nodes: &mut [PrimitiveInfo<T>]) -> Tree<T> {
         if nodes.len() >= 2 {
             let midpoint = nodes.len() / 2;
             let left = Box::new(Self::from_sorted_nodes(&mut nodes[..midpoint]));
             let right = Box::new(Self::from_sorted_nodes(&mut nodes[midpoint..]));
-            let bounds = left.get_bounds().union(&right.get_bounds());
-            BoundingVolumeHierarchy::Branch {
+            let bounds = Self::get_bounds(&left).union(&Self::get_bounds(&right));
+            Tree::Branch {
                 value: bounds,
                 left,
                 right,
             }
         } else if nodes.len() == 1 {
-            let PrimitiveInfo(bounds, ref mut primitive_src) = nodes[0];
+            let PrimitiveInfo(_, ref mut primitive_src) = nodes[0];
             let mut primitive = None;
             swap(primitive_src, &mut primitive);
             let primitive = primitive.unwrap();
-            BoundingVolumeHierarchy::Leaf { value: primitive }
+            Tree::Leaf { value: primitive }
         } else {
-            BoundingVolumeHierarchy::None
+            Tree::None
         }
     }
 
-    pub fn get_bounds(&self) -> BoundingBox<T> {
-        match self {
-            BoundingVolumeHierarchy::Branch {
+    pub fn get_bounds(tree: &Tree<T>) -> BoundingBox<T> {
+        match tree {
+            Tree::Branch {
                 value,
                 left: _,
                 right: _,
             } => *value,
-            BoundingVolumeHierarchy::Leaf { value } => value.bounding_box(),
-            BoundingVolumeHierarchy::None => BoundingBox::empty(),
+            Tree::Leaf { value } => value.bounding_box(),
+            Tree::None => BoundingBox::empty(),
         }
     }
 }
@@ -111,10 +116,10 @@ fn closest_intersection<T: Real>(
     }
 }
 
-impl<T: Real> Intersect<T> for BoundingVolumeHierarchy<T> {
+impl<T: Real> Intersect<T> for Tree<T> {
     fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
         match self {
-            Self::Branch {
+            Tree::Branch {
                 value: bounds,
                 left,
                 right,
@@ -125,15 +130,21 @@ impl<T: Real> Intersect<T> for BoundingVolumeHierarchy<T> {
                     None
                 }
             }
-            Self::Leaf { value: primitive } => primitive.intersect(ray),
-            Self::None => None,
+            Tree::Leaf { value: primitive } => primitive.intersect(ray),
+            Tree::None => None,
         }
+    }
+}
+
+impl<T: Real> Intersect<T> for BoundingVolumeHierarchy<T> {
+    fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
+        self.tree.intersect(ray)
     }
 }
 
 impl<T: Real> HasBoundingBox<T> for BoundingVolumeHierarchy<T> {
     fn bounding_box(&self) -> BoundingBox<T> {
-        self.get_bounds()
+        Self::get_bounds(&self.tree)
     }
 }
 
@@ -174,6 +185,6 @@ mod test {
     fn contains_expected_number_of_primitives(spheres: Vec<Sphere<f32>>) -> bool {
         let target = BoundingVolumeHierarchy::build(sphere_vec_to_primitive_box_vec(&spheres));
 
-        target.count_leaves() == spheres.len()
+        target.tree.count_leaves() == spheres.len()
     }
 }
