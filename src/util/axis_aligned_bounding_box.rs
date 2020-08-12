@@ -72,6 +72,31 @@ impl<T: Real> BoundingBox<T> {
             ],
         }
     }
+
+    pub fn largest_dimension(&self) -> usize {
+        let (dimension, _) = self
+            .bounds
+            .iter()
+            .enumerate()
+            .map(|(index, elem)| {
+                (
+                    index,
+                    if elem.is_degenerate() {
+                        -T::one()
+                    } else {
+                        elem.get_max() - elem.get_min()
+                    },
+                )
+            })
+            .fold((0, T::zero()), |(acc, acc_size), (elem, elem_size)| {
+                if elem_size > acc_size {
+                    (elem, elem_size)
+                } else {
+                    (acc, acc_size)
+                }
+            });
+        dimension
+    }
 }
 
 #[cfg(test)]
@@ -175,5 +200,46 @@ mod tests {
             && points.iter().any(|elem| elem.z >= p.z)
             && points.iter().any(|elem| elem.z <= p.z);
         target.contains_point(p) == is_in_bounds
+    }
+
+    #[quickcheck]
+    fn no_dimension_is_larger_than_largest_dimension(
+        a: f64,
+        b: f64,
+        c: f64,
+        d: f64,
+        e: f64,
+        f: f64,
+    ) -> bool {
+        let target = BoundingBox {
+            bounds: [
+                if a > b {
+                    Interval::empty()
+                } else {
+                    Interval::new(a, b)
+                },
+                if c > d {
+                    Interval::empty()
+                } else {
+                    Interval::new(c, d)
+                },
+                if e > f {
+                    Interval::empty()
+                } else {
+                    Interval::new(e, f)
+                },
+            ],
+        };
+        let largest_dimension = target.largest_dimension();
+        let largest_bounds = target.bounds[largest_dimension];
+        if largest_bounds.is_empty() {
+            target.bounds.iter().all(|elem| elem.is_empty())
+        } else {
+            let largest_size = largest_bounds.get_max() - largest_bounds.get_min();
+            target
+                .bounds
+                .iter()
+                .all(|elem| elem.is_empty() || !(largest_size < elem.get_max() - elem.get_min()))
+        }
     }
 }
