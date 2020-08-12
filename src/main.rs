@@ -129,7 +129,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let model_file_path =
         Path::new(env!("CARGO_MANIFEST_DIR")).join("test_data/stanford_bunny.obj");
     println!("Loading object...");
-    let model_object = load_obj(
+    let mut model_object = load_obj(
         &model_file_path,
         Arc::new(ReflectiveMaterial {
             colour: ColourRgbF::from_named(NamedColour::Yellow),
@@ -138,7 +138,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         }),
     )?;
     println!("Building BVH...");
-    let model_bvh: Box<dyn Aggregate<_>> = Box::new(BoundingVolumeHierarchy::build(model_object));
+    let model_bvh: Box<dyn Aggregate<_>> =
+        Box::new(BoundingVolumeHierarchy::build(model_object.as_mut_slice()));
     println!("Constructing Scene...");
 
     let scene = Scene {

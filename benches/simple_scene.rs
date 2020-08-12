@@ -32,7 +32,8 @@ fn simple_scene(bencher: &mut Criterion) {
                         reflection_strength: 0.9,
                     }),
                 )
-                .unwrap(),
+                .unwrap()
+                .as_mut_slice(),
             ))],
         };
         b.iter(|| {
