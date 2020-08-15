@@ -6,7 +6,7 @@ pub mod colour;
 pub mod image;
 pub mod integrators;
 pub mod materials;
-pub mod matrix;
+pub mod math;
 pub mod mesh;
 pub mod raycasting;
 pub mod realtype;
