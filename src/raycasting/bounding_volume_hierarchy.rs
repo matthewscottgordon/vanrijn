@@ -61,7 +61,7 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
             .iter()
             .fold(BoundingBox::empty(), |acc, p| acc.union(&p.bounding_box()));
         if primitives.len() <= 1 {
-            let primitives = primitives.iter().cloned().collect();
+            let primitives = primitives.to_vec();
             BoundingVolumeHierarchy::Leaf { bounds, primitives }
         } else {
             let pivot = heuristic_split(primitives, &bounds);
@@ -116,7 +116,7 @@ impl<T: Real> Intersect<T> for BoundingVolumeHierarchy<T> {
                     primitives
                         .iter()
                         .map(|elem| elem.intersect(&ray))
-                        .fold(None, |acc, elem| closest_intersection(acc, elem))
+                        .fold(None, closest_intersection)
                 } else {
                     None
                 }

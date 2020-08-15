@@ -64,7 +64,7 @@ fn parse_args() -> CommandLineParameters {
     let mut size_iter = matches.values_of("size").unwrap();
     let width = size_iter.next().unwrap().parse().unwrap();
     let height = size_iter.next().unwrap().parse().unwrap();
-    let output_file = matches.value_of_os("output_png").map(|f| PathBuf::from(f));
+    let output_file = matches.value_of_os("output_png").map(PathBuf::from);
     let time = matches.value_of("time").unwrap().parse().unwrap();
     CommandLineParameters {
         width,
