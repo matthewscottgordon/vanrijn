@@ -4,7 +4,7 @@ use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(PartialEq, Debug)]
 pub struct Vec3 {
-    coords: [f64; 3],
+    pub coords: [f64; 3],
 }
 
 impl Vec3 {
