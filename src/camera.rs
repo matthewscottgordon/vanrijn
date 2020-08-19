@@ -123,7 +123,7 @@ pub fn partial_render_scene<T: Real>(
     let sampler = Sampler { scene: &scene };
     for column in 0..tile.width() {
         for row in 0..tile.height() {
-            let ray = image_sampler.ray_for_pixel(tile.start_row + row, tile.end_column + column);
+            let ray = image_sampler.ray_for_pixel(tile.start_row + row, tile.start_column + column);
             let hit = sampler.sample(&ray);
             let colour = match hit {
                 None => ColourRgbF::from_named(NamedColour::Black),
