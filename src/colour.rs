@@ -1,61 +1,56 @@
-use nalgebra::{convert, Vector3};
-
-use crate::Real;
+use nalgebra::Vector3;
 
 use std::ops::{Add, Mul};
 
 #[derive(Copy, Clone, Debug)]
-pub struct ColourRgbF<T: Real> {
-    values: Vector3<T>,
+pub struct ColourRgbF {
+    values: Vector3<f64>,
 }
 
-impl<T: Real> ColourRgbF<T> {
-    pub fn new(red: T, green: T, blue: T) -> ColourRgbF<T> {
+impl ColourRgbF {
+    pub fn new(red: f64, green: f64, blue: f64) -> ColourRgbF {
         ColourRgbF {
             values: Vector3::new(red, green, blue),
         }
     }
 
-    pub fn from_named(name: NamedColour) -> ColourRgbF<T> {
-        let zero: T = convert(0.0);
-        let half: T = convert(0.5);
-        let one: T = convert(1.0);
+    pub fn from_named(name: NamedColour) -> ColourRgbF {
         match name {
-            NamedColour::Black => ColourRgbF::new(zero, zero, zero),
-            NamedColour::White => ColourRgbF::new(one, one, one),
-            NamedColour::Red => ColourRgbF::new(one, zero, zero),
-            NamedColour::Lime => ColourRgbF::new(zero, one, zero),
-            NamedColour::Blue => ColourRgbF::new(zero, zero, one),
-            NamedColour::Yellow => ColourRgbF::new(one, one, zero),
-            NamedColour::Cyan => ColourRgbF::new(zero, one, one),
-            NamedColour::Magenta => ColourRgbF::new(one, zero, one),
-            NamedColour::Gray => ColourRgbF::new(half, half, half),
-            NamedColour::Maroon => ColourRgbF::new(half, zero, zero),
-            NamedColour::Olive => ColourRgbF::new(half, half, zero),
-            NamedColour::Green => ColourRgbF::new(zero, half, zero),
-            NamedColour::Purple => ColourRgbF::new(half, zero, half),
-            NamedColour::Teal => ColourRgbF::new(zero, half, half),
-            NamedColour::Navy => ColourRgbF::new(zero, zero, half),
+            NamedColour::Black => ColourRgbF::new(0.0, 0.0, 0.0),
+            NamedColour::White => ColourRgbF::new(1.0, 1.0, 1.0),
+            NamedColour::Red => ColourRgbF::new(1.0, 0.0, 0.0),
+            NamedColour::Lime => ColourRgbF::new(0.0, 1.0, 0.0),
+            NamedColour::Blue => ColourRgbF::new(0.0, 0.0, 1.0),
+            NamedColour::Yellow => ColourRgbF::new(1.0, 1.0, 0.0),
+            NamedColour::Cyan => ColourRgbF::new(0.0, 1.0, 1.0),
+            NamedColour::Magenta => ColourRgbF::new(1.0, 0.0, 1.0),
+            NamedColour::Gray => ColourRgbF::new(0.5, 0.5, 0.5),
+            NamedColour::Maroon => ColourRgbF::new(0.5, 0.0, 0.0),
+            NamedColour::Olive => ColourRgbF::new(0.5, 0.5, 0.0),
+            NamedColour::Green => ColourRgbF::new(0.0, 0.5, 0.0),
+            NamedColour::Purple => ColourRgbF::new(0.5, 0.0, 0.5),
+            NamedColour::Teal => ColourRgbF::new(0.0, 0.5, 0.5),
+            NamedColour::Navy => ColourRgbF::new(0.0, 0.0, 0.5),
         }
     }
 
-    pub fn from_vector3(v: &Vector3<T>) -> ColourRgbF<T> {
+    pub fn from_vector3(v: &Vector3<f64>) -> ColourRgbF {
         ColourRgbF { values: *v }
     }
 
-    pub fn red(&self) -> T {
+    pub fn red(&self) -> f64 {
         self.values[0]
     }
 
-    pub fn green(&self) -> T {
+    pub fn green(&self) -> f64 {
         self.values[1]
     }
 
-    pub fn blue(&self) -> T {
+    pub fn blue(&self) -> f64 {
         self.values[2]
     }
 
-    pub fn as_vector3(&self) -> &Vector3<T> {
+    pub fn as_vector3(&self) -> &Vector3<f64> {
         &self.values
     }
 }
@@ -82,27 +77,27 @@ pub enum NamedColour {
     Navy,
 }
 
-impl<T: Real> Add<ColourRgbF<T>> for ColourRgbF<T> {
-    type Output = ColourRgbF<T>;
-    fn add(self, rhs: ColourRgbF<T>) -> ColourRgbF<T> {
+impl Add<ColourRgbF> for ColourRgbF {
+    type Output = ColourRgbF;
+    fn add(self, rhs: ColourRgbF) -> ColourRgbF {
         ColourRgbF {
             values: self.values + rhs.values,
         }
     }
 }
 
-impl<T: Real> Mul<T> for ColourRgbF<T> {
-    type Output = ColourRgbF<T>;
-    fn mul(self, rhs: T) -> ColourRgbF<T> {
+impl Mul<f64> for ColourRgbF {
+    type Output = ColourRgbF;
+    fn mul(self, rhs: f64) -> ColourRgbF {
         ColourRgbF {
             values: self.values * rhs,
         }
     }
 }
 
-impl<T: Real> Mul<ColourRgbF<T>> for ColourRgbF<T> {
-    type Output = ColourRgbF<T>;
-    fn mul(self, rhs: ColourRgbF<T>) -> ColourRgbF<T> {
+impl Mul<ColourRgbF> for ColourRgbF {
+    type Output = ColourRgbF;
+    fn mul(self, rhs: ColourRgbF) -> ColourRgbF {
         ColourRgbF {
             values: self.values.component_mul(&rhs.values),
         }
@@ -117,9 +112,9 @@ mod tests {
         use super::*;
         use quickcheck::{Arbitrary, Gen};
         use quickcheck_macros::quickcheck;
-        impl<T: Arbitrary + Real> Arbitrary for ColourRgbF<T> {
-            fn arbitrary<G: Gen>(g: &mut G) -> ColourRgbF<T> {
-                let values = <Vector3<T> as Arbitrary>::arbitrary(g);
+        impl Arbitrary for ColourRgbF {
+            fn arbitrary<G: Gen>(g: &mut G) -> ColourRgbF {
+                let values = <Vector3<f64> as Arbitrary>::arbitrary(g);
                 ColourRgbF { values }
             }
         }
@@ -140,7 +135,7 @@ mod tests {
         }
 
         #[quickcheck]
-        fn any_colour_multiplied_by_zero_is_black(colour: ColourRgbF<f64>) {
+        fn any_colour_multiplied_by_zero_is_black(colour: ColourRgbF) {
             let target = colour * 0.0;
             assert!(target.red() == 0.0);
             assert!(target.green() == 0.0);
@@ -148,17 +143,14 @@ mod tests {
         }
 
         #[quickcheck]
-        fn red_channel_multiplied_by_scalar_yields_correct_result(
-            colour: ColourRgbF<f64>,
-            scalar: f64,
-        ) {
+        fn red_channel_multiplied_by_scalar_yields_correct_result(colour: ColourRgbF, scalar: f64) {
             let target = colour * scalar;
             assert!(target.red() == colour.red() * scalar);
         }
 
         #[quickcheck]
         fn green_channel_multiplied_by_scalar_yields_correct_result(
-            colour: ColourRgbF<f64>,
+            colour: ColourRgbF,
             scalar: f64,
         ) {
             let target = colour * scalar;
@@ -167,7 +159,7 @@ mod tests {
 
         #[quickcheck]
         fn blue_channel_multiplied_by_scalar_yields_correct_result(
-            colour: ColourRgbF<f64>,
+            colour: ColourRgbF,
             scalar: f64,
         ) {
             let target = colour * scalar;
@@ -175,10 +167,7 @@ mod tests {
         }
 
         #[quickcheck]
-        fn adding_colourrgbf_adds_individual_channels(
-            colour1: ColourRgbF<f64>,
-            colour2: ColourRgbF<f64>,
-        ) {
+        fn adding_colourrgbf_adds_individual_channels(colour1: ColourRgbF, colour2: ColourRgbF) {
             let target = colour1 + colour2;
             assert!(target.red() == colour1.red() + colour2.red());
             assert!(target.green() == colour1.green() + colour2.green());
@@ -187,8 +176,8 @@ mod tests {
 
         #[quickcheck]
         fn multiplying_colourrgbf_adds_individual_channels(
-            colour1: ColourRgbF<f64>,
-            colour2: ColourRgbF<f64>,
+            colour1: ColourRgbF,
+            colour2: ColourRgbF,
         ) {
             let target = colour1 * colour2;
             assert!(target.red() == colour1.red() * colour2.red());

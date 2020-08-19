@@ -1,14 +1,12 @@
 use super::raycasting::{IntersectionInfo, Ray};
 use super::scene::Scene;
 
-use crate::Real;
-
-pub struct Sampler<'a, T: Real> {
-    pub scene: &'a Scene<T>,
+pub struct Sampler<'a> {
+    pub scene: &'a Scene,
 }
 
-impl<'a, T: Real> Sampler<'a, T> {
-    pub fn sample(&self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
+impl<'a> Sampler<'a> {
+    pub fn sample(&self, ray: &Ray) -> Option<IntersectionInfo> {
         self.scene
             .objects
             .iter()

@@ -1,17 +1,16 @@
 use nalgebra::Point3;
 
 use crate::util::Interval;
-use crate::Real;
 
 use itertools::izip;
 
 #[derive(Debug, Clone, Copy)]
-pub struct BoundingBox<T: Real> {
-    pub bounds: [Interval<T>; 3],
+pub struct BoundingBox {
+    pub bounds: [Interval; 3],
 }
 
-impl<T: Real> BoundingBox<T> {
-    pub fn from_corners(a: Point3<T>, b: Point3<T>) -> Self {
+impl BoundingBox {
+    pub fn from_corners(a: Point3<f64>, b: Point3<f64>) -> Self {
         let mut result = BoundingBox {
             bounds: [Interval::infinite(); 3],
         };
@@ -27,7 +26,7 @@ impl<T: Real> BoundingBox<T> {
         }
     }
 
-    pub fn from_point(p: Point3<T>) -> Self {
+    pub fn from_point(p: Point3<f64>) -> Self {
         BoundingBox {
             bounds: [
                 Interval::degenerate(p.x),
@@ -39,14 +38,14 @@ impl<T: Real> BoundingBox<T> {
 
     pub fn from_points<'a, I>(points: I) -> Self
     where
-        I: IntoIterator<Item = &'a Point3<T>>,
+        I: IntoIterator<Item = &'a Point3<f64>>,
     {
         points
             .into_iter()
             .fold(BoundingBox::empty(), |acc, p| acc.expand_to_point(p))
     }
 
-    pub fn expand_to_point(&self, p: &Point3<T>) -> Self {
+    pub fn expand_to_point(&self, p: &Point3<f64>) -> Self {
         BoundingBox {
             bounds: [
                 self.bounds[0].expand_to_value(p.x),
@@ -56,14 +55,14 @@ impl<T: Real> BoundingBox<T> {
         }
     }
 
-    pub fn contains_point(&self, p: Point3<T>) -> bool {
+    pub fn contains_point(&self, p: Point3<f64>) -> bool {
         self.bounds
             .iter()
             .zip(p.iter())
             .all(|(interval, &value)| interval.contains_value(value))
     }
 
-    pub fn union(&self, other: &BoundingBox<T>) -> BoundingBox<T> {
+    pub fn union(&self, other: &BoundingBox) -> BoundingBox {
         BoundingBox {
             bounds: [
                 self.bounds[0].union(other.bounds[0]),
@@ -82,13 +81,13 @@ impl<T: Real> BoundingBox<T> {
                 (
                     index,
                     if elem.is_degenerate() {
-                        -T::one()
+                        -1.0
                     } else {
                         elem.get_max() - elem.get_min()
                     },
                 )
             })
-            .fold((0, T::zero()), |(acc, acc_size), (elem, elem_size)| {
+            .fold((0, 0.0), |(acc, acc_size), (elem, elem_size)| {
                 if elem_size > acc_size {
                     (elem, elem_size)
                 } else {

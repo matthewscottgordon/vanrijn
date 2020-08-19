@@ -1,15 +1,11 @@
-use nalgebra::convert;
-
-use crate::Real;
-
 #[derive(Debug, Clone, Copy)]
-pub struct Interval<T: Real> {
-    min: T,
-    max: T,
+pub struct Interval {
+    min: f64,
+    max: f64,
 }
 
-impl<T: Real> Interval<T> {
-    pub fn new(a: T, b: T) -> Self {
+impl Interval {
+    pub fn new(a: f64, b: f64) -> Self {
         if a > b {
             Interval { min: b, max: a }
         } else {
@@ -19,30 +15,30 @@ impl<T: Real> Interval<T> {
 
     pub fn empty() -> Self {
         Interval {
-            min: convert(std::f64::INFINITY),
-            max: convert(std::f64::NEG_INFINITY),
+            min: std::f64::INFINITY,
+            max: std::f64::NEG_INFINITY,
         }
     }
 
     pub fn infinite() -> Self {
         Interval {
-            min: convert(std::f64::NEG_INFINITY),
-            max: convert(std::f64::INFINITY),
+            min: std::f64::NEG_INFINITY,
+            max: std::f64::INFINITY,
         }
     }
 
-    pub fn degenerate(value: T) -> Self {
+    pub fn degenerate(value: f64) -> Self {
         Interval {
             min: value,
             max: value,
         }
     }
 
-    pub fn get_min(&self) -> T {
+    pub fn get_min(&self) -> f64 {
         self.min
     }
 
-    pub fn get_max(&self) -> T {
+    pub fn get_max(&self) -> f64 {
         self.max
     }
 
@@ -54,7 +50,7 @@ impl<T: Real> Interval<T> {
         self.min > self.max
     }
 
-    pub fn contains_value(&self, value: T) -> bool {
+    pub fn contains_value(&self, value: f64) -> bool {
         value >= self.min && value <= self.max
     }
 
@@ -78,7 +74,7 @@ impl<T: Real> Interval<T> {
         }
     }
 
-    pub fn expand_to_value(self, v: T) -> Self {
+    pub fn expand_to_value(self, v: f64) -> Self {
         if self.is_empty() {
             Interval::degenerate(v)
         } else {
@@ -120,7 +116,7 @@ mod tests {
 
     #[test]
     fn empty_is_empty() {
-        let target: Interval<f64> = Interval::empty();
+        let target: Interval = Interval::empty();
         assert!(target.is_empty());
     }
 
@@ -240,7 +236,7 @@ mod tests {
 
     #[test]
     fn intersection_with_infinite_is_self() {
-        let target = Interval::new(5f32, 10f32);
+        let target = Interval::new(5.0, 10.0);
         let result = target.intersection(Interval::infinite());
         assert!(target.min == result.min);
         assert!(target.max == result.max);

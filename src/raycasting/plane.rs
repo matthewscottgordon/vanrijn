@@ -1,30 +1,29 @@
-use nalgebra::{convert, Affine3, Point3, Vector3};
+use nalgebra::{Affine3, Point3, Vector3};
 
 use crate::materials::Material;
-use crate::Real;
 
 use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray, Transform};
 
 use std::sync::Arc;
 
 #[derive(Clone)]
-pub struct Plane<T: Real> {
-    normal: Vector3<T>,
-    tangent: Vector3<T>,
-    cotangent: Vector3<T>,
-    distance_from_origin: T,
-    material: Arc<dyn Material<T>>,
+pub struct Plane {
+    normal: Vector3<f64>,
+    tangent: Vector3<f64>,
+    cotangent: Vector3<f64>,
+    distance_from_origin: f64,
+    material: Arc<dyn Material>,
 }
 
-impl<T: Real> Plane<T> {
+impl Plane {
     pub fn new(
-        normal: Vector3<T>,
-        distance_from_origin: T,
-        material: Arc<dyn Material<T>>,
-    ) -> Plane<T> {
+        normal: Vector3<f64>,
+        distance_from_origin: f64,
+        material: Arc<dyn Material>,
+    ) -> Plane {
         let normal = normal.normalize();
         let mut axis_closest_to_tangent = Vector3::zeros();
-        axis_closest_to_tangent[normal.iamin()] = T::one();
+        axis_closest_to_tangent[normal.iamin()] = 1.0;
         let cotangent = normal.cross(&axis_closest_to_tangent).normalize();
         let tangent = normal.cross(&cotangent);
         Plane {
@@ -37,8 +36,8 @@ impl<T: Real> Plane<T> {
     }
 }
 
-impl<T: Real> Transform<T> for Plane<T> {
-    fn transform(&self, transformation: &Affine3<T>) -> Self {
+impl Transform for Plane {
+    fn transform(&self, transformation: &Affine3<f64>) -> Self {
         Plane {
             normal: transformation.transform_vector(&self.normal).normalize(),
             cotangent: transformation.transform_vector(&self.cotangent).normalize(),
@@ -51,21 +50,21 @@ impl<T: Real> Transform<T> for Plane<T> {
     }
 }
 
-impl<T: Real> Intersect<T> for Plane<T> {
-    fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
+impl Intersect for Plane {
+    fn intersect<'a>(&'a self, ray: &Ray) -> Option<IntersectionInfo> {
         let ray_direction_dot_plane_normal = ray.direction.dot(&self.normal);
         let point_on_plane = self.normal * self.distance_from_origin;
         let point_on_plane_minus_ray_origin_dot_normal =
             (point_on_plane - ray.origin.coords).dot(&self.normal);
-        if ray_direction_dot_plane_normal == convert(0.0) {
+        if ray_direction_dot_plane_normal == 0.0 {
             //Ray is parallel to plane
-            if point_on_plane_minus_ray_origin_dot_normal != convert(0.0) {
+            if point_on_plane_minus_ray_origin_dot_normal != 0.0 {
                 //Ray is not in plane
                 return None;
             }
         }
         let t = point_on_plane_minus_ray_origin_dot_normal / ray_direction_dot_plane_normal;
-        if t < convert(0.0) {
+        if t < 0.0 {
             return None;
         }
         Some(IntersectionInfo {
@@ -80,18 +79,14 @@ impl<T: Real> Intersect<T> for Plane<T> {
     }
 }
 
-impl<T: Real> HasBoundingBox<T> for Plane<T> {
-    fn bounding_box(&self) -> BoundingBox<T> {
+impl HasBoundingBox for Plane {
+    fn bounding_box(&self) -> BoundingBox {
         let p0 = Point3::from(self.normal * self.distance_from_origin);
-        let f = |v: Vector3<T>| {
-            let infinity: T = convert(std::f64::INFINITY);
-            Vector3::from_iterator(v.iter().map(|&elem| {
-                if elem == T::zero() {
-                    T::zero()
-                } else {
-                    infinity
-                }
-            }))
+        let f = |v: Vector3<f64>| {
+            Vector3::from_iterator(
+                v.iter()
+                    .map(|&elem| if elem == 0.0 { 0.0 } else { std::f64::INFINITY }),
+            )
         };
         let tangent = f(self.tangent);
         let cotangent = f(self.cotangent);
@@ -103,7 +98,7 @@ impl<T: Real> HasBoundingBox<T> for Plane<T> {
     }
 }
 
-impl<T: Real> Primitive<T> for Plane<T> {}
+impl Primitive for Plane {}
 
 #[cfg(test)]
 mod tests {

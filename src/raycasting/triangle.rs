@@ -1,5 +1,4 @@
 use crate::materials::Material;
-use crate::Real;
 
 use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray, Transform};
 use nalgebra::{Affine3, Point3, Vector2, Vector3};
@@ -7,14 +6,14 @@ use nalgebra::{Affine3, Point3, Vector2, Vector3};
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
-pub struct Triangle<T: Real> {
-    pub vertices: [Point3<T>; 3],
-    pub normals: [Vector3<T>; 3],
-    pub material: Arc<dyn Material<T>>,
+pub struct Triangle {
+    pub vertices: [Point3<f64>; 3],
+    pub normals: [Vector3<f64>; 3],
+    pub material: Arc<dyn Material>,
 }
 
-impl<T: Real> Transform<T> for Triangle<T> {
-    fn transform(&self, transformation: &Affine3<T>) -> Self {
+impl Transform for Triangle {
+    fn transform(&self, transformation: &Affine3<f64>) -> Self {
         let normal_transformation =
             Affine3::from_matrix_unchecked(transformation.inverse().matrix().transpose());
         Triangle {
@@ -33,13 +32,13 @@ impl<T: Real> Transform<T> for Triangle<T> {
     }
 }
 
-impl<T: Real> Intersect<T> for Triangle<T> {
-    fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
+impl Intersect for Triangle {
+    fn intersect<'a>(&'a self, ray: &Ray) -> Option<IntersectionInfo> {
         let translation = -ray.origin.coords;
         let indices = indices_with_index_of_largest_element_last(&ray.direction);
         let permuted_ray_direction = permute_vector_elements(&ray.direction, &indices);
         let shear_slopes = calculate_shear_to_z_axis(&permuted_ray_direction);
-        let transformed_vertices: Vec<Vector3<T>> = self
+        let transformed_vertices: Vec<Vector3<f64>> = self
             .vertices
             .iter()
             .map(|elem| {
@@ -60,17 +59,17 @@ impl<T: Real> Intersect<T> for Triangle<T> {
                 .iter()
                 .zip(transformed_vertices.iter())
                 .map(|(&coord, vertex)| vertex.z * coord)
-                .fold(T::zero(), |acc, z| acc + z);
-            if transformed_z.is_positive() != permuted_ray_direction.z.is_positive() {
+                .fold(0.0, |acc, z| acc + z);
+            if transformed_z.is_sign_positive() != permuted_ray_direction.z.is_sign_positive() {
                 return None;
             }
-            let location: Point3<T> = barycentric_coordinates
+            let location = barycentric_coordinates
                 .iter()
                 .zip(self.vertices.iter())
                 .map(|(&barycentric_coord, vertex)| vertex.coords * barycentric_coord)
-                .fold(Point3::new(T::zero(), T::zero(), T::zero()), |a, e| a + e);
+                .fold(Point3::new(0.0, 0.0, 0.0), |a, e| a + e);
             let distance = (ray.origin - location).norm();
-            let normal: Vector3<T> = barycentric_coordinates
+            let normal: Vector3<f64> = barycentric_coordinates
                 .iter()
                 .zip(self.normals.iter())
                 .fold(Vector3::zeros(), |acc, (&coord, vertex)| {
@@ -98,15 +97,15 @@ impl<T: Real> Intersect<T> for Triangle<T> {
     }
 }
 
-impl<T: Real> HasBoundingBox<T> for Triangle<T> {
-    fn bounding_box(&self) -> BoundingBox<T> {
+impl HasBoundingBox for Triangle {
+    fn bounding_box(&self) -> BoundingBox {
         BoundingBox::from_points(&self.vertices)
     }
 }
 
-impl<T: Real> Primitive<T> for Triangle<T> {}
+impl Primitive for Triangle {}
 
-fn indices_with_index_of_largest_element_last<T: Real>(v: &Vector3<T>) -> [usize; 3] {
+fn indices_with_index_of_largest_element_last(v: &Vector3<f64>) -> [usize; 3] {
     if v.x > v.y {
         if v.z > v.x {
             [0, 1, 2]
@@ -126,24 +125,24 @@ fn is_valid_permutation(indices: &[usize; 3]) -> bool {
     (0..2).all(|i: usize| indices.iter().any(|&j| j == i))
 }
 
-fn permute_vector_elements<T: Real>(v: &Vector3<T>, indices: &[usize; 3]) -> Vector3<T> {
+fn permute_vector_elements(v: &Vector3<f64>, indices: &[usize; 3]) -> Vector3<f64> {
     debug_assert!(is_valid_permutation(&indices));
     Vector3::new(v[indices[0]], v[indices[1]], v[indices[2]])
 }
 
-fn calculate_shear_to_z_axis<T: Real>(v: &Vector3<T>) -> Vector2<T> {
+fn calculate_shear_to_z_axis(v: &Vector3<f64>) -> Vector2<f64> {
     Vector2::new(-v.x / v.z, -v.y / v.z)
 }
 
-fn apply_shear_to_z_axis<T: Real>(v: &Vector3<T>, s: &Vector2<T>) -> Vector3<T> {
+fn apply_shear_to_z_axis(v: &Vector3<f64>, s: &Vector2<f64>) -> Vector3<f64> {
     Vector3::new(v.x + s.x * v.z, v.y + s.y * v.z, v.z)
 }
 
-fn signed_edge_function<T: Real>(a: &Vector3<T>, b: &Vector3<T>) -> T {
+fn signed_edge_function(a: &Vector3<f64>, b: &Vector3<f64>) -> f64 {
     a.x * b.y - b.x * a.y
 }
 
-fn signed_edge_functions<T: Real>(vertices: &[Vector3<T>]) -> Vector3<T> {
+fn signed_edge_functions(vertices: &[Vector3<f64>]) -> Vector3<f64> {
     // Iterate over the inputs in such a way that each output element is calculated
     // from the twoother elements of the input. ( (y,z) -> x, (z,x) -> y, (x,y) -> z )
     Vector3::from_iterator(
@@ -157,8 +156,8 @@ fn signed_edge_functions<T: Real>(vertices: &[Vector3<T>]) -> Vector3<T> {
     )
 }
 
-fn barycentric_coordinates_from_signed_edge_functions<T: Real>(e: Vector3<T>) -> Vector3<T> {
-    e * (T::one() / e.iter().fold(T::zero(), |a, &b| a + b))
+fn barycentric_coordinates_from_signed_edge_functions(e: Vector3<f64>) -> Vector3<f64> {
+    e * (1.0 / e.iter().fold(0.0, |a, &b| a + b))
 }
 
 #[cfg(test)]
@@ -175,12 +174,12 @@ mod tests {
 
         #[quickcheck]
         fn transform_by_identity_does_not_change_values(
-            v0: Point3<f32>,
-            v1: Point3<f32>,
-            v2: Point3<f32>,
-            n0: Vector3<f32>,
-            n1: Vector3<f32>,
-            n2: Vector3<f32>,
+            v0: Point3<f64>,
+            v1: Point3<f64>,
+            v2: Point3<f64>,
+            n0: Vector3<f64>,
+            n1: Vector3<f64>,
+            n2: Vector3<f64>,
         ) -> bool {
             let n0 = n0.normalize();
             let n1 = n1.normalize();
@@ -201,13 +200,13 @@ mod tests {
 
         #[quickcheck]
         fn translate_does_not_change_normals(
-            v0: Point3<f32>,
-            v1: Point3<f32>,
-            v2: Point3<f32>,
-            n0: Vector3<f32>,
-            n1: Vector3<f32>,
-            n2: Vector3<f32>,
-            translation: Vector3<f32>,
+            v0: Point3<f64>,
+            v1: Point3<f64>,
+            v2: Point3<f64>,
+            n0: Vector3<f64>,
+            n1: Vector3<f64>,
+            n2: Vector3<f64>,
+            translation: Vector3<f64>,
         ) -> bool {
             let n0 = n0.normalize();
             let n1 = n1.normalize();
@@ -224,13 +223,13 @@ mod tests {
 
         #[quickcheck]
         fn translate_translates_vertices(
-            v0: Point3<f32>,
-            v1: Point3<f32>,
-            v2: Point3<f32>,
-            n0: Vector3<f32>,
-            n1: Vector3<f32>,
-            n2: Vector3<f32>,
-            translation: Vector3<f32>,
+            v0: Point3<f64>,
+            v1: Point3<f64>,
+            v2: Point3<f64>,
+            n0: Vector3<f64>,
+            n1: Vector3<f64>,
+            n2: Vector3<f64>,
+            translation: Vector3<f64>,
         ) -> bool {
             let n0 = n0.normalize();
             let n1 = n1.normalize();
@@ -253,43 +252,43 @@ mod tests {
         use quickcheck_macros::quickcheck;
 
         #[quickcheck]
-        fn result_is_valid_permutation(v: Vector3<f32>) -> bool {
+        fn result_is_valid_permutation(v: Vector3<f64>) -> bool {
             let indices = indices_with_index_of_largest_element_last(&v);
             is_valid_permutation(&indices)
         }
 
         #[quickcheck]
-        fn result_includes_x(v: Vector3<f32>) -> bool {
+        fn result_includes_x(v: Vector3<f64>) -> bool {
             let indices = indices_with_index_of_largest_element_last(&v);
             indices.iter().any(|&i| i == 0)
         }
 
         #[quickcheck]
-        fn result_includes_y(v: Vector3<f32>) -> bool {
+        fn result_includes_y(v: Vector3<f64>) -> bool {
             let indices = indices_with_index_of_largest_element_last(&v);
             indices.iter().any(|&i| i == 1)
         }
 
         #[quickcheck]
-        fn result_includes_z(v: Vector3<f32>) -> bool {
+        fn result_includes_z(v: Vector3<f64>) -> bool {
             let indices = indices_with_index_of_largest_element_last(&v);
             indices.iter().any(|&i| i == 2)
         }
 
         #[quickcheck]
-        fn last_index_is_greater_than_or_equal_to_x(v: Vector3<f32>) -> bool {
+        fn last_index_is_greater_than_or_equal_to_x(v: Vector3<f64>) -> bool {
             let indices = indices_with_index_of_largest_element_last(&v);
             v[indices[2]] >= v.x
         }
 
         #[quickcheck]
-        fn last_index_is_greater_than_or_equal_to_y(v: Vector3<f32>) -> bool {
+        fn last_index_is_greater_than_or_equal_to_y(v: Vector3<f64>) -> bool {
             let indices = indices_with_index_of_largest_element_last(&v);
             v[indices[2]] >= v.y
         }
 
         #[quickcheck]
-        fn last_index_is_greater_than_or_equal_to_z(v: Vector3<f32>) -> bool {
+        fn last_index_is_greater_than_or_equal_to_z(v: Vector3<f64>) -> bool {
             let indices = indices_with_index_of_largest_element_last(&v);
             v[indices[2]] >= v.z
         }
@@ -300,19 +299,19 @@ mod tests {
         use quickcheck_macros::quickcheck;
 
         #[quickcheck]
-        fn last_index_is_greater_than_or_equal_to_x(v: Vector3<f32>) -> bool {
+        fn last_index_is_greater_than_or_equal_to_x(v: Vector3<f64>) -> bool {
             let p = permute_vector_elements(&v, &indices_with_index_of_largest_element_last(&v));
             p.z >= v.x
         }
 
         #[quickcheck]
-        fn last_index_is_greater_than_or_equal_to_y(v: Vector3<f32>) -> bool {
+        fn last_index_is_greater_than_or_equal_to_y(v: Vector3<f64>) -> bool {
             let p = permute_vector_elements(&v, &indices_with_index_of_largest_element_last(&v));
             p.z >= v.y
         }
 
         #[quickcheck]
-        fn last_index_is_greater_than_or_equal_to_z(v: Vector3<f32>) -> bool {
+        fn last_index_is_greater_than_or_equal_to_z(v: Vector3<f64>) -> bool {
             let p = permute_vector_elements(&v, &indices_with_index_of_largest_element_last(&v));
             p.z >= v.z
         }
@@ -323,19 +322,19 @@ mod tests {
         use quickcheck_macros::quickcheck;
 
         #[quickcheck]
-        fn shear_to_z_axis_makes_x_zero(v: Vector3<f32>) -> bool {
+        fn shear_to_z_axis_makes_x_zero(v: Vector3<f64>) -> bool {
             let s = calculate_shear_to_z_axis(&v);
             apply_shear_to_z_axis(&v, &s).x.abs() < 0.00001
         }
 
         #[quickcheck]
-        fn shear_to_z_axis_makes_y_zero(v: Vector3<f32>) -> bool {
+        fn shear_to_z_axis_makes_y_zero(v: Vector3<f64>) -> bool {
             let s = calculate_shear_to_z_axis(&v);
             apply_shear_to_z_axis(&v, &s).y.abs() < 0.00001
         }
 
         #[quickcheck]
-        fn shear_to_z_axis_leaves_z_unchanged(v: Vector3<f32>) -> bool {
+        fn shear_to_z_axis_leaves_z_unchanged(v: Vector3<f64>) -> bool {
             let s = calculate_shear_to_z_axis(&v);
             apply_shear_to_z_axis(&v, &s).z == v.z
         }
@@ -348,8 +347,8 @@ mod tests {
 
         #[quickcheck]
         fn sign_of_signed_edge_function_matches_winding(
-            a: Vector3<f32>,
-            b: Vector3<f32>,
+            a: Vector3<f64>,
+            b: Vector3<f64>,
         ) -> TestResult {
             let a_2d = Vector2::new(a.x, a.y);
             let b_2d = Vector2::new(b.x, b.y);
@@ -366,9 +365,9 @@ mod tests {
 
         #[quickcheck]
         fn signed_edge_functions_has_same_result_as_signed_edge_function(
-            a: Vector3<f32>,
-            b: Vector3<f32>,
-            c: Vector3<f32>,
+            a: Vector3<f64>,
+            b: Vector3<f64>,
+            c: Vector3<f64>,
         ) -> bool {
             let es = signed_edge_functions(&vec![a, b, c]);
             es[0] == signed_edge_function(&b, &c)
@@ -499,7 +498,7 @@ mod tests {
         }
 
         fn intersect_with_centroid_and_test_result<
-            F: Fn(Option<IntersectionInfo<f64>>, Point3<f64>) -> bool,
+            F: Fn(Option<IntersectionInfo>, Point3<f64>) -> bool,
         >(
             vertex0: Point3<f64>,
             vertex1: Point3<f64>,
@@ -675,7 +674,7 @@ mod tests {
         }
 
         fn intersect_with_barycentric_and_test_result<
-            F: Fn(Option<IntersectionInfo<f64>>, Point3<f64>) -> bool,
+            F: Fn(Option<IntersectionInfo>, Point3<f64>) -> bool,
         >(
             vertex0: Point3<f64>,
             vertex1: Point3<f64>,

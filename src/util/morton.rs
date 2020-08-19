@@ -1,8 +1,5 @@
+use crate::realtype::NormalizedToU32;
 use nalgebra::Point3;
-
-use crate::Real;
-
-//use std::cmp::Ordering;
 
 fn spread_bits(v: u32) -> u32 {
     let mut result = 0;
@@ -12,7 +9,7 @@ fn spread_bits(v: u32) -> u32 {
     result
 }
 
-pub fn morton_order_value_3d<T: Real>(p: Point3<T>) -> u32 {
+pub fn morton_order_value_3d(p: Point3<f64>) -> u32 {
     let x = p.x.normalized_to_u32(10);
     let y = p.y.normalized_to_u32(10);
     let z = p.z.normalized_to_u32(10);

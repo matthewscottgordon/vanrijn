@@ -1,16 +1,15 @@
 use super::{Aggregate, BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray};
-use crate::Real;
 
-impl<T: Real> HasBoundingBox<T> for Vec<Box<dyn Primitive<T>>> {
-    fn bounding_box(&self) -> BoundingBox<T> {
+impl HasBoundingBox for Vec<Box<dyn Primitive>> {
+    fn bounding_box(&self) -> BoundingBox {
         self.iter().fold(BoundingBox::empty(), |acc, elem| {
             acc.union(&elem.bounding_box())
         })
     }
 }
 
-impl<T: Real> Intersect<T> for Vec<Box<dyn Primitive<T>>> {
-    fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
+impl Intersect for Vec<Box<dyn Primitive>> {
+    fn intersect<'a>(&'a self, ray: &Ray) -> Option<IntersectionInfo> {
         self.iter()
             .flat_map(|primitive| primitive.intersect(&ray))
             .min_by(
@@ -22,19 +21,18 @@ impl<T: Real> Intersect<T> for Vec<Box<dyn Primitive<T>>> {
     }
 }
 
-impl<T: Real> Aggregate<T> for Vec<Box<dyn Primitive<T>>> {}
+impl Aggregate for Vec<Box<dyn Primitive>> {}
 
-
-impl<T: Real> HasBoundingBox<T> for Vec<Box<dyn Aggregate<T>>> {
-    fn bounding_box(&self) -> BoundingBox<T> {
+impl HasBoundingBox for Vec<Box<dyn Aggregate>> {
+    fn bounding_box(&self) -> BoundingBox {
         self.iter().fold(BoundingBox::empty(), |acc, elem| {
             acc.union(&elem.bounding_box())
         })
     }
 }
 
-impl<T: Real> Intersect<T> for Vec<Box<dyn Aggregate<T>>> {
-    fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
+impl Intersect for Vec<Box<dyn Aggregate>> {
+    fn intersect<'a>(&'a self, ray: &Ray) -> Option<IntersectionInfo> {
         self.iter()
             .flat_map(|aggregate| aggregate.intersect(&ray))
             .min_by(
@@ -46,4 +44,4 @@ impl<T: Real> Intersect<T> for Vec<Box<dyn Aggregate<T>>> {
     }
 }
 
-impl<T: Real> Aggregate<T> for Vec<Box<dyn Aggregate<T>>> {}
+impl Aggregate for Vec<Box<dyn Aggregate>> {}

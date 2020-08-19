@@ -8,25 +8,23 @@ use super::sampler::Sampler;
 use super::scene::Scene;
 use super::util::Tile;
 
-use crate::Real;
-
-struct ImageSampler<T: Real> {
+struct ImageSampler {
     image_height_pixels: usize,
     image_width_pixels: usize,
 
-    film_width: T,
-    film_height: T,
+    film_width: f64,
+    film_height: f64,
 
-    camera_location: Point3<T>,
-    film_distance: T,
+    camera_location: Point3<f64>,
+    film_distance: f64,
 }
 
-impl<T: Real> ImageSampler<T> {
-    pub fn new(width: usize, height: usize, camera_location: Point3<T>) -> ImageSampler<T> {
+impl ImageSampler {
+    pub fn new(width: usize, height: usize, camera_location: Point3<f64>) -> ImageSampler {
         let (film_width, film_height) = {
-            let width: T = convert(width as f64);
-            let height: T = convert(height as f64);
-            let film_size: T = convert(1.0);
+            let width = width as f64;
+            let height = height as f64;
+            let film_size = 1.0;
             if width > height {
                 (width / height, film_size)
             } else {
@@ -43,22 +41,21 @@ impl<T: Real> ImageSampler<T> {
         }
     }
 
-    fn scale(i: usize, n: usize, l: T) -> T {
-        let one: T = convert(1.0);
-        let n: T = convert(n as f64);
-        let i: T = convert(i as f64);
-        let pixel_size: T = l * (one / n);
-        (i + convert(0.5)) * pixel_size
+    fn scale(i: usize, n: usize, l: f64) -> f64 {
+        let n = n as f64;
+        let i = i as f64;
+        let pixel_size = l * (1.0 / n);
+        (i + 0.5) * pixel_size
     }
 
-    fn ray_for_pixel(&self, row: usize, column: usize) -> Ray<T> {
+    fn ray_for_pixel(&self, row: usize, column: usize) -> Ray {
         Ray::new(
             self.camera_location,
             Vector3::new(
                 Self::scale(column, self.image_width_pixels, self.film_width)
-                    - self.film_width * convert(0.5),
+                    - self.film_width * 0.5,
                 Self::scale(row, self.image_height_pixels, self.film_height)
-                    - self.film_height * convert(0.5),
+                    - self.film_height * 0.5,
                 self.film_distance,
             ),
         )
@@ -82,7 +79,7 @@ const RECURSION_LIMIT: u16 = 32;
 /// # use vanrijn::scene::Scene;
 /// # use vanrijn::util::TileIterator;
 /// # use vanrijn::partial_render_scene;
-/// # let scene = Scene { camera_location: Point3::new(0.0f32, 0.0, 0.0), objects: vec![] };
+/// # let scene = Scene { camera_location: Point3::new(0.0, 0.0, 0.0), objects: vec![] };
 /// let image_width = 640;
 /// let image_height = 480;
 /// let time_size = 32;
@@ -91,19 +88,14 @@ const RECURSION_LIMIT: u16 = 32;
 ///     // display and/or save tile_image
 /// }
 /// ```
-pub fn partial_render_scene<T: Real>(
-    scene: &Scene<T>,
-    tile: Tile,
-    height: usize,
-    width: usize,
-) -> ImageRgbF<T> {
+pub fn partial_render_scene(scene: &Scene, tile: Tile, height: usize, width: usize) -> ImageRgbF {
     let mut output_image_tile = ImageRgbF::new(tile.width(), tile.height());
     let image_sampler = ImageSampler::new(width, height, scene.camera_location);
-    let ambient_intensity: T = convert(0.0);
-    let directional_intensity1: T = convert(7.0);
-    let directional_intensity2: T = convert(3.0);
-    let directional_intensity3: T = convert(2.0);
-    let integrator = WhittedIntegrator::<T> {
+    let ambient_intensity = 0.0;
+    let directional_intensity1 = 7.0;
+    let directional_intensity2 = 3.0;
+    let directional_intensity3 = 2.0;
+    let integrator = WhittedIntegrator {
         ambient_light: ColourRgbF::from_named(NamedColour::White) * ambient_intensity,
         lights: vec![
             DirectionalLight {
@@ -167,7 +159,7 @@ mod tests {
             let film_plane = Plane::new(
                 Vector3::new(0.0, 0.0, 1.0),
                 target.film_distance,
-                Arc::new(LambertianMaterial::<f64>::new_dummy()),
+                Arc::new(LambertianMaterial::new_dummy()),
             );
             let point_on_film_plane = match film_plane.intersect(&ray) {
                 Some(IntersectionInfo {

@@ -15,5 +15,3 @@ pub mod scene;
 pub mod util;
 
 pub use camera::partial_render_scene;
-
-use realtype::Real;

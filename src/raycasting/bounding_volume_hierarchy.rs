@@ -2,9 +2,7 @@ use super::{
     Aggregate, BoundingBox, HasBoundingBox, Intersect, IntersectP, IntersectionInfo, Primitive, Ray,
 };
 
-use crate::Real;
-
-use nalgebra::{convert, Point3};
+use nalgebra::Point3;
 
 use std::cmp::Ordering;
 use std::sync::Arc;
@@ -17,31 +15,27 @@ use std::sync::Arc;
 /// Each node knows the overall bounds of all it's children, which means that a ray that
 /// doesn't intersect the [BoundingBox](BoundingBox) of the node doesn't intersect any of
 /// the primitives stored in it's children.
-pub enum BoundingVolumeHierarchy<T: Real> {
+pub enum BoundingVolumeHierarchy {
     Node {
-        bounds: BoundingBox<T>,
-        left: Box<BoundingVolumeHierarchy<T>>,
-        right: Box<BoundingVolumeHierarchy<T>>,
+        bounds: BoundingBox,
+        left: Box<BoundingVolumeHierarchy>,
+        right: Box<BoundingVolumeHierarchy>,
     },
     Leaf {
-        bounds: BoundingBox<T>,
-        primitives: Vec<Arc<dyn Primitive<T>>>,
+        bounds: BoundingBox,
+        primitives: Vec<Arc<dyn Primitive>>,
     },
 }
 
-fn centre<T: Real>(bounds: &BoundingBox<T>) -> Point3<T> {
-    let two = convert(2.0);
+fn centre(bounds: &BoundingBox) -> Point3<f64> {
     Point3::new(
-        (bounds.bounds[0].get_min() + bounds.bounds[0].get_max()) / two,
-        (bounds.bounds[1].get_min() + bounds.bounds[1].get_max()) / two,
-        (bounds.bounds[2].get_min() + bounds.bounds[2].get_max()) / two,
+        (bounds.bounds[0].get_min() + bounds.bounds[0].get_max()) / 2.00,
+        (bounds.bounds[1].get_min() + bounds.bounds[1].get_max()) / 2.0,
+        (bounds.bounds[2].get_min() + bounds.bounds[2].get_max()) / 2.0,
     )
 }
 
-fn heuristic_split<T: Real>(
-    primitives: &mut [Arc<dyn Primitive<T>>],
-    bounds: &BoundingBox<T>,
-) -> usize {
+fn heuristic_split(primitives: &mut [Arc<dyn Primitive>], bounds: &BoundingBox) -> usize {
     let largest_dimension = bounds.largest_dimension();
     primitives.sort_unstable_by(|a, b| {
         centre(&a.bounding_box())[largest_dimension]
@@ -51,12 +45,12 @@ fn heuristic_split<T: Real>(
     primitives.len() / 2
 }
 
-impl<T: Real> BoundingVolumeHierarchy<T> {
-    pub fn build(primitives: &mut [Arc<dyn Primitive<T>>]) -> Self {
+impl BoundingVolumeHierarchy {
+    pub fn build(primitives: &mut [Arc<dyn Primitive>]) -> Self {
         BoundingVolumeHierarchy::build_from_slice(primitives)
     }
 
-    pub fn build_from_slice(primitives: &mut [Arc<dyn Primitive<T>>]) -> Self {
+    pub fn build_from_slice(primitives: &mut [Arc<dyn Primitive>]) -> Self {
         let bounds = primitives
             .iter()
             .fold(BoundingBox::empty(), |acc, p| acc.union(&p.bounding_box()));
@@ -80,10 +74,10 @@ impl<T: Real> BoundingVolumeHierarchy<T> {
     }
 }
 
-fn closest_intersection<T: Real>(
-    a: Option<IntersectionInfo<T>>,
-    b: Option<IntersectionInfo<T>>,
-) -> Option<IntersectionInfo<T>> {
+fn closest_intersection(
+    a: Option<IntersectionInfo>,
+    b: Option<IntersectionInfo>,
+) -> Option<IntersectionInfo> {
     match a {
         None => b,
         Some(a_info) => match b {
@@ -97,8 +91,8 @@ fn closest_intersection<T: Real>(
     }
 }
 
-impl<T: Real> Intersect<T> for BoundingVolumeHierarchy<T> {
-    fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
+impl Intersect for BoundingVolumeHierarchy {
+    fn intersect<'a>(&'a self, ray: &Ray) -> Option<IntersectionInfo> {
         match self {
             BoundingVolumeHierarchy::Node {
                 bounds,
@@ -125,13 +119,13 @@ impl<T: Real> Intersect<T> for BoundingVolumeHierarchy<T> {
     }
 }
 
-impl<T: Real> HasBoundingBox<T> for BoundingVolumeHierarchy<T> {
-    fn bounding_box(&self) -> BoundingBox<T> {
+impl HasBoundingBox for BoundingVolumeHierarchy {
+    fn bounding_box(&self) -> BoundingBox {
         BoundingBox::empty()
     }
 }
 
-impl<T: Real> Aggregate<T> for BoundingVolumeHierarchy<T> {}
+impl Aggregate for BoundingVolumeHierarchy {}
 
 #[cfg(test)]
 mod test {}

@@ -1,41 +1,39 @@
 use super::axis_aligned_bounding_box::BoundingBox;
 use super::Interval;
 
-use crate::Real;
-
 use nalgebra::{clamp, Point3};
 
 use itertools::izip;
 
 #[derive(Debug, Copy, Clone)]
-pub struct RealNormalizer<T: Real> {
-    min: T,
-    range: T,
+pub struct RealNormalizer {
+    min: f64,
+    range: f64,
 }
 
-impl<T: Real> RealNormalizer<T> {
-    pub fn new(interval: Interval<T>) -> Self {
+impl RealNormalizer {
+    pub fn new(interval: Interval) -> Self {
         let min = interval.get_min();
         let range = interval.get_max() - min;
         Self { min, range }
     }
 
-    pub fn normalize(&self, value: T) -> T {
+    pub fn normalize(&self, value: f64) -> f64 {
         (value - self.min) / self.range
     }
 
-    pub fn normalize_and_clamp(&self, value: T) -> T {
-        clamp((value - self.min) / self.range, T::zero(), T::one())
+    pub fn normalize_and_clamp(&self, value: f64) -> f64 {
+        clamp((value - self.min) / self.range, 0.0, 1.0)
     }
 }
 
 #[derive(Debug)]
-pub struct Point3Normalizer<T: Real> {
-    dimension_normalizers: [RealNormalizer<T>; 3],
+pub struct Point3Normalizer {
+    dimension_normalizers: [RealNormalizer; 3],
 }
 
-impl<T: Real> Point3Normalizer<T> {
-    pub fn new(bounds: BoundingBox<T>) -> Self {
+impl Point3Normalizer {
+    pub fn new(bounds: BoundingBox) -> Self {
         let mut normalizer = Point3Normalizer {
             dimension_normalizers: [RealNormalizer::new(Interval::empty()); 3],
         };
@@ -49,8 +47,8 @@ impl<T: Real> Point3Normalizer<T> {
         normalizer
     }
 
-    pub fn normalize(&self, point: Point3<T>) -> Point3<T> {
-        let mut result = Point3::new(T::zero(), T::zero(), T::zero());
+    pub fn normalize(&self, point: Point3<f64>) -> Point3<f64> {
+        let mut result = Point3::new(0.0, 0.0, 0.0);
         for (value_out, &value_in, normalizer) in izip!(
             result.iter_mut(),
             point.iter(),
@@ -61,8 +59,8 @@ impl<T: Real> Point3Normalizer<T> {
         result
     }
 
-    pub fn normalize_and_clamp(&self, point: Point3<T>) -> Point3<T> {
-        let mut result = Point3::new(T::zero(), T::zero(), T::zero());
+    pub fn normalize_and_clamp(&self, point: Point3<f64>) -> Point3<f64> {
+        let mut result = Point3::new(0.0, 0.0, 0.0);
         for (value_out, &value_in, normalizer) in izip!(
             result.iter_mut(),
             point.iter(),

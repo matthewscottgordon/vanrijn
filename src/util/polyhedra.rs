@@ -3,15 +3,14 @@ use nalgebra::{convert, Point3, Vector3};
 
 use crate::materials::Material;
 use crate::raycasting::Triangle;
-use crate::Real;
 
 use std::sync::Arc;
 
-pub fn triangulate_polygon<T: Real>(
-    vertices: &Vec<Point3<T>>,
-    normal: &Vector3<T>,
-    material: Arc<dyn Material<T>>,
-) -> Vec<Triangle<T>> {
+pub fn triangulate_polygon(
+    vertices: &Vec<Point3<f64>>,
+    normal: &Vector3<f64>,
+    material: Arc<dyn Material>,
+) -> Vec<Triangle> {
     assert!(vertices.len() >= 3);
     let hinge = vertices[0];
     izip!(vertices.iter().skip(1), vertices.iter().skip(2))
@@ -23,104 +22,102 @@ pub fn triangulate_polygon<T: Real>(
         .collect()
 }
 
-pub fn generate_dodecahedron<T: Real>(
-    centre: Point3<T>,
-    size: T,
-    material: Arc<dyn Material<T>>,
-) -> Vec<Triangle<T>> {
+pub fn generate_dodecahedron(
+    centre: Point3<f64>,
+    size: f64,
+    material: Arc<dyn Material>,
+) -> Vec<Triangle> {
     let phi = convert((1.0 + (5.0_f64).sqrt()) / 2.0);
-    let phi_inv = T::one() / phi;
-    let one = T::one();
-    let zero = T::zero();
+    let phi_inv = 1.0 / phi;
 
     let faces = vec![
         vec![
-            Vector3::new(phi_inv, zero, phi),
-            Vector3::new(-phi_inv, zero, phi),
-            Vector3::new(-one, -one, one),
-            Vector3::new(zero, -phi, phi_inv),
-            Vector3::new(one, -one, one),
+            Vector3::new(phi_inv, 0.0, phi),
+            Vector3::new(-phi_inv, 0.0, phi),
+            Vector3::new(-1.0, -1.0, 1.0),
+            Vector3::new(0.0, -phi, phi_inv),
+            Vector3::new(1.0, -1.0, 1.0),
         ],
         vec![
-            Vector3::new(phi_inv, zero, phi),
-            Vector3::new(-phi_inv, zero, phi),
-            Vector3::new(-one, one, one),
-            Vector3::new(zero, phi, phi_inv),
-            Vector3::new(one, one, one),
+            Vector3::new(phi_inv, 0.0, phi),
+            Vector3::new(-phi_inv, 0.0, phi),
+            Vector3::new(-1.0, 1.0, 1.0),
+            Vector3::new(0.0, phi, phi_inv),
+            Vector3::new(1.0, 1.0, 1.0),
         ],
         vec![
-            Vector3::new(phi_inv, zero, phi),
-            Vector3::new(one, -one, one),
-            Vector3::new(phi, -phi_inv, zero),
-            Vector3::new(phi, phi_inv, zero),
-            Vector3::new(one, one, one),
+            Vector3::new(phi_inv, 0.0, phi),
+            Vector3::new(1.0, -1.0, 1.0),
+            Vector3::new(phi, -phi_inv, 0.0),
+            Vector3::new(phi, phi_inv, 0.0),
+            Vector3::new(1.0, 1.0, 1.0),
         ],
         vec![
-            Vector3::new(-phi_inv, zero, phi),
-            Vector3::new(-one, -one, one),
-            Vector3::new(-phi, -phi_inv, zero),
-            Vector3::new(-phi, phi_inv, zero),
-            Vector3::new(-one, one, one),
+            Vector3::new(-phi_inv, 0.0, phi),
+            Vector3::new(-1.0, -1.0, 1.0),
+            Vector3::new(-phi, -phi_inv, 0.0),
+            Vector3::new(-phi, phi_inv, 0.0),
+            Vector3::new(-1.0, 1.0, 1.0),
         ],
         vec![
-            Vector3::new(-one, -one, one),
-            Vector3::new(-phi, -phi_inv, zero),
-            Vector3::new(-one, -one, -one),
-            Vector3::new(zero, -phi, -phi_inv),
-            Vector3::new(zero, -phi, phi_inv),
+            Vector3::new(-1.0, -1.0, 1.0),
+            Vector3::new(-phi, -phi_inv, 0.0),
+            Vector3::new(-1.0, -1.0, -1.0),
+            Vector3::new(0.0, -phi, -phi_inv),
+            Vector3::new(0.0, -phi, phi_inv),
         ],
         vec![
-            Vector3::new(zero, -phi, phi_inv),
-            Vector3::new(zero, -phi, -phi_inv),
-            Vector3::new(one, -one, -one),
-            Vector3::new(phi, -phi_inv, zero),
-            Vector3::new(one, -one, one),
+            Vector3::new(0.0, -phi, phi_inv),
+            Vector3::new(0.0, -phi, -phi_inv),
+            Vector3::new(1.0, -1.0, -1.0),
+            Vector3::new(phi, -phi_inv, 0.0),
+            Vector3::new(1.0, -1.0, 1.0),
         ],
         vec![
-            Vector3::new(zero, phi, phi_inv),
-            Vector3::new(zero, phi, -phi_inv),
-            Vector3::new(-one, one, -one),
-            Vector3::new(-phi, phi_inv, zero),
-            Vector3::new(-one, one, one),
+            Vector3::new(0.0, phi, phi_inv),
+            Vector3::new(0.0, phi, -phi_inv),
+            Vector3::new(-1.0, 1.0, -1.0),
+            Vector3::new(-phi, phi_inv, 0.0),
+            Vector3::new(-1.0, 1.0, 1.0),
         ],
         vec![
-            Vector3::new(one, one, one),
-            Vector3::new(phi, phi_inv, zero),
-            Vector3::new(one, one, -one),
-            Vector3::new(zero, phi, -phi_inv),
-            Vector3::new(zero, phi, phi_inv),
+            Vector3::new(1.0, 1.0, 1.0),
+            Vector3::new(phi, phi_inv, 0.0),
+            Vector3::new(1.0, 1.0, -1.0),
+            Vector3::new(0.0, phi, -phi_inv),
+            Vector3::new(0.0, phi, phi_inv),
         ],
         vec![
-            Vector3::new(one, -one, -one),
-            Vector3::new(zero, -phi, -phi_inv),
-            Vector3::new(-one, -one, -one),
-            Vector3::new(-phi_inv, zero, -phi),
-            Vector3::new(phi_inv, zero, -phi),
+            Vector3::new(1.0, -1.0, -1.0),
+            Vector3::new(0.0, -phi, -phi_inv),
+            Vector3::new(-1.0, -1.0, -1.0),
+            Vector3::new(-phi_inv, 0.0, -phi),
+            Vector3::new(phi_inv, 0.0, -phi),
         ],
         vec![
-            Vector3::new(one, one, -one),
-            Vector3::new(zero, phi, -phi_inv),
-            Vector3::new(-one, one, -one),
-            Vector3::new(-phi_inv, zero, -phi),
-            Vector3::new(phi_inv, zero, -phi),
+            Vector3::new(1.0, 1.0, -1.0),
+            Vector3::new(0.0, phi, -phi_inv),
+            Vector3::new(-1.0, 1.0, -1.0),
+            Vector3::new(-phi_inv, 0.0, -phi),
+            Vector3::new(phi_inv, 0.0, -phi),
         ],
         vec![
-            Vector3::new(one, one, -one),
-            Vector3::new(phi, phi_inv, zero),
-            Vector3::new(phi, -phi_inv, zero),
-            Vector3::new(one, -one, -one),
-            Vector3::new(phi_inv, zero, -phi),
+            Vector3::new(1.0, 1.0, -1.0),
+            Vector3::new(phi, phi_inv, 0.0),
+            Vector3::new(phi, -phi_inv, 0.0),
+            Vector3::new(1.0, -1.0, -1.0),
+            Vector3::new(phi_inv, 0.0, -phi),
         ],
         vec![
-            Vector3::new(-one, one, -one),
-            Vector3::new(-phi, phi_inv, zero),
-            Vector3::new(-phi, -phi_inv, zero),
-            Vector3::new(-one, -one, -one),
-            Vector3::new(-phi_inv, zero, -phi),
+            Vector3::new(-1.0, 1.0, -1.0),
+            Vector3::new(-phi, phi_inv, 0.0),
+            Vector3::new(-phi, -phi_inv, 0.0),
+            Vector3::new(-1.0, -1.0, -1.0),
+            Vector3::new(-phi_inv, 0.0, -phi),
         ],
     ];
 
-    let scale = size * convert(3f64.sqrt() / 2.0);
+    let scale = size * 3f64.sqrt() / 2.0;
     faces
         .iter()
         .flat_map(|face| {

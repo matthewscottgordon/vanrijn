@@ -5,36 +5,34 @@ use super::raycasting::{IntersectionInfo, Ray};
 use super::sampler::Sampler;
 use super::util::algebra_utils::try_change_of_basis_matrix;
 
-use crate::Real;
-
-pub trait Integrator<T: Real> {
+pub trait Integrator {
     fn integrate(
         &self,
-        sampler: &Sampler<T>,
-        info: &IntersectionInfo<T>,
+        sampler: &Sampler,
+        info: &IntersectionInfo,
         recursion_limit: u16,
-    ) -> ColourRgbF<T>;
+    ) -> ColourRgbF;
 }
 
-pub struct DirectionalLight<T: Real> {
-    pub direction: Vector3<T>,
-    pub colour: ColourRgbF<T>,
+pub struct DirectionalLight {
+    pub direction: Vector3<f64>,
+    pub colour: ColourRgbF,
 }
 
-pub struct WhittedIntegrator<T: Real> {
-    pub ambient_light: ColourRgbF<T>,
-    pub lights: Vec<DirectionalLight<T>>,
+pub struct WhittedIntegrator {
+    pub ambient_light: ColourRgbF,
+    pub lights: Vec<DirectionalLight>,
 }
 
 // TODO: Get rid of the magic bias number, which should be calculated base on expected error
 // bounds and tangent direction
-impl<T: Real> Integrator<T> for WhittedIntegrator<T> {
+impl Integrator for WhittedIntegrator {
     fn integrate(
         &self,
-        sampler: &Sampler<T>,
-        info: &IntersectionInfo<T>,
+        sampler: &Sampler,
+        info: &IntersectionInfo,
         recursion_limit: u16,
-    ) -> ColourRgbF<T> {
+    ) -> ColourRgbF {
         let world_to_bsdf_space =
             try_change_of_basis_matrix(&info.tangent, &info.cotangent, &info.normal)
                 .expect("Normal, tangent and cotangent don't for a valid basis.");
@@ -79,10 +77,10 @@ impl<T: Real> Integrator<T> for WhittedIntegrator<T> {
                                         ),
                                     ) * world_space_direction.dot(&info.normal).abs()
                                 } else {
-                                    ColourRgbF::new(T::zero(), T::zero(), T::zero())
+                                    ColourRgbF::new(0.0, 0.0, 0.0)
                                 }
                             }
-                            None => ColourRgbF::new(T::zero(), T::zero(), T::zero()),
+                            None => ColourRgbF::new(0.0, 0.0, 0.0),
                         }
                     }),
             )

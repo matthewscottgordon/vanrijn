@@ -138,7 +138,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         }),
     )?;
     println!("Building BVH...");
-    let model_bvh: Box<dyn Aggregate<_>> =
+    let model_bvh: Box<dyn Aggregate> =
         Box::new(BoundingVolumeHierarchy::build(model_object.as_mut_slice()));
     println!("Constructing Scene...");
 
@@ -153,7 +153,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                         colour: ColourRgbF::new(0.55, 0.27, 0.04),
                         diffuse_strength: 0.1,
                     }),
-                )) as Box<dyn Primitive<f64>>,
+                )) as Box<dyn Primitive>,
                 Box::new(Sphere::new(
                     Point3::new(-6.25, -0.5, 1.0),
                     1.0,
@@ -181,7 +181,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                         specular_strength: 1.0,
                     }),
                 )),
-            ]) as Box<dyn Aggregate<f64>>,
+            ]) as Box<dyn Aggregate>,
             model_bvh,
         ],
     };

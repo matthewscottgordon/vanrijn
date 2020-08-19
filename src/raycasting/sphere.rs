@@ -1,21 +1,20 @@
-use nalgebra::{convert, Affine3, Point3, Vector3};
+use nalgebra::{Affine3, Point3, Vector3};
 
 use crate::materials::Material;
-use crate::Real;
 
 use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray, Transform};
 
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]
-pub struct Sphere<T: Real> {
-    centre: Point3<T>,
-    radius: T,
-    material: Arc<dyn Material<T>>,
+pub struct Sphere {
+    centre: Point3<f64>,
+    radius: f64,
+    material: Arc<dyn Material>,
 }
 
-impl<T: Real> Sphere<T> {
-    pub fn new(centre: Point3<T>, radius: T, material: Arc<dyn Material<T>>) -> Sphere<T> {
+impl Sphere {
+    pub fn new(centre: Point3<f64>, radius: f64, material: Arc<dyn Material>) -> Sphere {
         Sphere {
             centre,
             radius,
@@ -24,54 +23,52 @@ impl<T: Real> Sphere<T> {
     }
 }
 
-impl<T: Real> Transform<T> for Sphere<T> {
-    fn transform(&self, transformation: &Affine3<T>) -> Self {
+impl Transform for Sphere {
+    fn transform(&self, transformation: &Affine3<f64>) -> Self {
         Sphere {
             centre: transformation.transform_point(&self.centre),
             // This is not the most efficient way of calculating the radius,
             //but will work as long as the resulting shape is still a sphere.
             radius: transformation
-                .transform_vector(&Vector3::new(self.radius, T::zero(), T::zero()))
+                .transform_vector(&Vector3::new(self.radius, 0.0, 0.0))
                 .norm(),
             material: Arc::clone(&self.material),
         }
     }
 }
 
-impl<T: Real> Intersect<T> for Sphere<T> {
-    fn intersect<'a>(&'a self, ray: &Ray<T>) -> Option<IntersectionInfo<T>> {
-        let two: T = convert(2.0);
-        let four: T = convert(4.0);
+impl Intersect for Sphere {
+    fn intersect<'a>(&'a self, ray: &Ray) -> Option<IntersectionInfo> {
         let r_o = ray.origin.coords;
         let centre_coords = self.centre.coords;
         let a = ray
             .direction
             .component_mul(&ray.direction)
             .iter()
-            .fold(T::zero(), |a, b| a + *b);
+            .fold(0.0, |a, b| a + *b);
         let b = ((r_o.component_mul(&ray.direction) - centre_coords.component_mul(&ray.direction))
-            * two)
+            * 2.0)
             .iter()
-            .fold(T::zero(), |a, b| a + *b);
+            .fold(0.0, |a, b| a + *b);
         let c = (r_o.component_mul(&r_o) + centre_coords.component_mul(&centre_coords)
-            - centre_coords.component_mul(&r_o) * two)
+            - centre_coords.component_mul(&r_o) * 2.0)
             .iter()
-            .fold(T::zero(), |a, b| a + *b)
+            .fold(0.0, |a, b| a + *b)
             - self.radius * self.radius;
-        let delta_squared: T = b * b - four * a * c;
-        if delta_squared < T::zero() {
+        let delta_squared = b * b - 4.0 * a * c;
+        if delta_squared < 0.0 {
             None
         } else {
             let delta = delta_squared.sqrt();
-            let one_over_2_a = T::one() / (two * a);
+            let one_over_2_a = 1.0 / (2.0 * a);
             let t1 = (-b - delta) * one_over_2_a;
             let t2 = (-b + delta) * one_over_2_a;
-            let distance = if t1 < T::zero() || (t2 >= T::zero() && t1 >= t2) {
+            let distance = if t1 < 0.0 || (t2 >= 0.0 && t1 >= t2) {
                 t2
             } else {
                 t1
             };
-            if distance <= T::zero() {
+            if distance <= 0.0 {
                 None
             } else {
                 let location = ray.point_at(distance);
@@ -93,14 +90,14 @@ impl<T: Real> Intersect<T> for Sphere<T> {
     }
 }
 
-impl<T: Real> HasBoundingBox<T> for Sphere<T> {
-    fn bounding_box(&self) -> BoundingBox<T> {
+impl HasBoundingBox for Sphere {
+    fn bounding_box(&self) -> BoundingBox {
         let radius_xyz = Vector3::new(self.radius, self.radius, self.radius);
         BoundingBox::from_corners(self.centre + radius_xyz, self.centre - radius_xyz)
     }
 }
 
-impl<T: Real> Primitive<T> for Sphere<T> {}
+impl Primitive for Sphere {}
 
 #[cfg(test)]
 mod tests {

@@ -1,5 +1,3 @@
-use crate::Real;
-
 use crate::util::Interval;
 
 use super::{IntersectP, Ray};
@@ -8,8 +6,8 @@ use itertools::izip;
 
 pub use crate::util::axis_aligned_bounding_box::BoundingBox;
 
-impl<T: Real> IntersectP<T> for BoundingBox<T> {
-    fn intersect(&self, ray: &Ray<T>) -> bool {
+impl IntersectP for BoundingBox {
+    fn intersect(&self, ray: &Ray) -> bool {
         let mut t_interval_in_bounds = Interval::infinite();
         for (&ray_origin, &ray_direction, bounds) in
             izip!(ray.origin.iter(), ray.direction.iter(), self.bounds.iter())
@@ -35,7 +33,7 @@ mod tests {
 
     use nalgebra::{Point3, Vector3};
 
-    fn wrap_value_in_interval(value: f64, interval: Interval<f64>) -> f64 {
+    fn wrap_value_in_interval(value: f64, interval: Interval) -> f64 {
         let distance_from_start = (value - interval.get_min()).abs();
         let range = interval.get_max() - interval.get_min();
         let multiple_of_range = distance_from_start / range;
@@ -48,7 +46,7 @@ mod tests {
         interval.contains_value(wrap_value_in_interval(v, interval))
     }
 
-    fn wrap_point_into_bounding_box(point: Point3<f64>, bounds: &BoundingBox<f64>) -> Point3<f64> {
+    fn wrap_point_into_bounding_box(point: Point3<f64>, bounds: &BoundingBox) -> Point3<f64> {
         Point3::from(Vector3::from_iterator(
             point
                 .iter()

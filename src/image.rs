@@ -7,8 +7,6 @@ use nalgebra::{clamp, convert, Vector3};
 
 use super::colour::{ColourRgbF, ColourRgbU8};
 
-use crate::Real;
-
 pub struct ImageRgbU8 {
     pixel_data: Vec<u8>,
     width: usize,
@@ -95,14 +93,14 @@ impl ImageRgbU8 {
     }
 }
 
-pub struct ImageRgbF<T: Real> {
-    pixel_data: Vec<T>,
+pub struct ImageRgbF {
+    pixel_data: Vec<f64>,
     width: usize,
     height: usize,
 }
 
-impl<T: Real> ImageRgbF<T> {
-    pub fn new(width: usize, height: usize) -> ImageRgbF<T> {
+impl ImageRgbF {
+    pub fn new(width: usize, height: usize) -> ImageRgbF {
         ImageRgbF {
             width,
             height,
@@ -110,26 +108,26 @@ impl<T: Real> ImageRgbF<T> {
         }
     }
 
-    pub fn clear(&mut self) -> &mut ImageRgbF<T> {
+    pub fn clear(&mut self) -> &mut ImageRgbF {
         for elem in self.pixel_data.iter_mut() {
-            *elem = T::zero();
+            *elem = 0.0;
         }
         self
     }
 
-    pub fn get_colour(&self, row: usize, column: usize) -> ColourRgbF<T> {
+    pub fn get_colour(&self, row: usize, column: usize) -> ColourRgbF {
         assert!(row < self.height && column < self.width);
         let index = self.calculate_index(row, column);
         ColourRgbF::from_vector3(&Vector3::from_row_slice(&self.pixel_data[index..index + 3]))
     }
 
-    pub fn set_colour(&mut self, row: usize, column: usize, colour: ColourRgbF<T>) {
+    pub fn set_colour(&mut self, row: usize, column: usize, colour: ColourRgbF) {
         assert!(row < self.height && column < self.width);
         let index = self.calculate_index(row, column);
         self.pixel_data[index..index + 3].copy_from_slice(&colour.as_vector3().as_slice());
     }
 
-    pub fn get_pixel_data(&self) -> &Vec<T> {
+    pub fn get_pixel_data(&self) -> &Vec<f64> {
         &self.pixel_data
     }
 
@@ -176,21 +174,21 @@ impl NormalizedAsByte for f64 {
     }
 }
 
-pub trait ToneMapper<T: Real> {
-    fn apply_tone_mapping(&self, image_in: &ImageRgbF<T>, image_out: &mut ImageRgbU8);
+pub trait ToneMapper {
+    fn apply_tone_mapping(&self, image_in: &ImageRgbF, image_out: &mut ImageRgbU8);
 }
 
 #[derive(Default)]
 pub struct ClampingToneMapper {}
 
 impl ClampingToneMapper {
-    fn clamp<T: Real + NormalizedAsByte>(v: &T) -> u8 {
-        clamp(v, &T::zero(), &T::one()).normalized_to_byte()
+    fn clamp(v: &f64) -> u8 {
+        clamp(v, &0.0, &1.0).normalized_to_byte()
     }
 }
 
-impl<T: Real + NormalizedAsByte> ToneMapper<T> for ClampingToneMapper {
-    fn apply_tone_mapping(&self, image_in: &ImageRgbF<T>, image_out: &mut ImageRgbU8) {
+impl ToneMapper for ClampingToneMapper {
+    fn apply_tone_mapping(&self, image_in: &ImageRgbF, image_out: &mut ImageRgbU8) {
         assert!(image_in.get_width() == image_out.get_width());
         assert!(image_in.get_height() == image_out.get_height());
         for column in 0..image_in.get_width() {
