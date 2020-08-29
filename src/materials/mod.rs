@@ -1,10 +1,10 @@
-use nalgebra::Vector3;
+use crate::math::Vec3;
 
 use super::colour::ColourRgbF;
 
 use std::fmt::Debug;
 
-type Bsdf = Box<dyn Fn(Vector3<f64>, Vector3<f64>, ColourRgbF) -> ColourRgbF>;
+type Bsdf = Box<dyn Fn(Vec3, Vec3, ColourRgbF) -> ColourRgbF>;
 
 pub mod lambertian_material;
 pub use lambertian_material::LambertianMaterial;
@@ -21,7 +21,7 @@ pub use rgb_sampled_bsdf_material::RgbSampledBsdfMaterial;
 pub trait Material: Debug + Sync + Send {
     fn bsdf(&self) -> Bsdf;
 
-    fn sample(&self, _w_o: &Vector3<f64>) -> Vec<Vector3<f64>> {
+    fn sample(&self, _w_o: &Vec3) -> Vec<Vec3> {
         vec![]
     }
 }

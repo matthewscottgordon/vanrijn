@@ -1,4 +1,4 @@
-#![feature(external_doc)]
+#![feature(external_doc, clamp)]
 #![doc(include = "../README.md")]
 
 mod camera;

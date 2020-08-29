@@ -1,8 +1,8 @@
+use crate::math::Vec3;
+
 use super::{
     Aggregate, BoundingBox, HasBoundingBox, Intersect, IntersectP, IntersectionInfo, Primitive, Ray,
 };
-
-use nalgebra::Point3;
 
 use std::cmp::Ordering;
 use std::sync::Arc;
@@ -27,8 +27,8 @@ pub enum BoundingVolumeHierarchy {
     },
 }
 
-fn centre(bounds: &BoundingBox) -> Point3<f64> {
-    Point3::new(
+fn centre(bounds: &BoundingBox) -> Vec3 {
+    Vec3::new(
         (bounds.bounds[0].get_min() + bounds.bounds[0].get_max()) / 2.00,
         (bounds.bounds[1].get_min() + bounds.bounds[1].get_max()) / 2.0,
         (bounds.bounds[2].get_min() + bounds.bounds[2].get_max()) / 2.0,

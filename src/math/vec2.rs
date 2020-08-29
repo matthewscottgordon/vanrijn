@@ -2,7 +2,7 @@ use itertools::izip;
 
 use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Vec2 {
     coords: [f64; 2],
 }
@@ -26,6 +26,10 @@ impl Vec2 {
             .zip(rhs.coords.iter())
             .map(|(a_elem, b_elem)| a_elem * b_elem)
             .sum()
+    }
+
+    pub fn perp(&self, rhs: &Vec2) -> f64 {
+        self.x() * rhs.y() - self.y() * rhs.x()
     }
 }
 
@@ -92,6 +96,13 @@ impl MulAssign<f64> for Vec2 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use quickcheck::{Arbitrary, Gen};
+
+    impl Arbitrary for Vec2 {
+        fn arbitrary<G: Gen>(g: &mut G) -> Vec2 {
+            Vec2::new(f64::arbitrary(g), f64::arbitrary(g))
+        }
+    }
 
     #[test]
     fn x_returns_first_element() {

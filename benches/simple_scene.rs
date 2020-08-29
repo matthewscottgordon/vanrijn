@@ -2,13 +2,12 @@ use criterion::{criterion_group, criterion_main, Criterion};
 
 use vanrijn::colour::{ColourRgbF, NamedColour};
 use vanrijn::materials::ReflectiveMaterial;
+use vanrijn::math::Vec3;
 use vanrijn::mesh::load_obj;
 use vanrijn::partial_render_scene;
 use vanrijn::raycasting::BoundingVolumeHierarchy;
 use vanrijn::scene::Scene;
 use vanrijn::util::Tile;
-
-use nalgebra::Point3;
 
 use std::path::Path;
 use std::sync::Arc;
@@ -22,7 +21,7 @@ fn simple_scene(bencher: &mut Criterion) {
 
     bencher.bench_function("simple_scene", |b| {
         let scene = Scene {
-            camera_location: Point3::new(-2.0, 1.0, -5.0),
+            camera_location: Vec3::new(-2.0, 1.0, -5.0),
             objects: vec![Box::new(BoundingVolumeHierarchy::build(
                 load_obj(
                     &model_file_path,

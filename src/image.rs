@@ -3,9 +3,8 @@ use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
 
-use nalgebra::{clamp, convert, Vector3};
-
-use super::colour::{ColourRgbF, ColourRgbU8};
+use crate::colour::{ColourRgbF, ColourRgbU8};
+use crate::math::Vec3;
 
 pub struct ImageRgbU8 {
     pixel_data: Vec<u8>,
@@ -104,7 +103,7 @@ impl ImageRgbF {
         ImageRgbF {
             width,
             height,
-            pixel_data: vec![convert(0.0); (width * height * 3) as usize],
+            pixel_data: vec![0.0; width * height * 3 as usize],
         }
     }
 
@@ -118,13 +117,13 @@ impl ImageRgbF {
     pub fn get_colour(&self, row: usize, column: usize) -> ColourRgbF {
         assert!(row < self.height && column < self.width);
         let index = self.calculate_index(row, column);
-        ColourRgbF::from_vector3(&Vector3::from_row_slice(&self.pixel_data[index..index + 3]))
+        ColourRgbF::from_vec3(&Vec3::from_slice(&self.pixel_data[index..index + 3]))
     }
 
     pub fn set_colour(&mut self, row: usize, column: usize, colour: ColourRgbF) {
         assert!(row < self.height && column < self.width);
         let index = self.calculate_index(row, column);
-        self.pixel_data[index..index + 3].copy_from_slice(&colour.as_vector3().as_slice());
+        self.pixel_data[index..index + 3].copy_from_slice(&colour.as_vec3().as_slice());
     }
 
     pub fn get_pixel_data(&self) -> &Vec<f64> {
@@ -183,7 +182,7 @@ pub struct ClampingToneMapper {}
 
 impl ClampingToneMapper {
     fn clamp(v: &f64) -> u8 {
-        clamp(v, &0.0, &1.0).normalized_to_byte()
+        v.clamp(0.0, 1.0).normalized_to_byte()
     }
 }
 

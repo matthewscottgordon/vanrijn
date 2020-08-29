@@ -2,7 +2,9 @@ use super::Vec3;
 
 use std::ops::{Mul, MulAssign};
 
-#[derive(PartialEq, Debug)]
+use nalgebra::Matrix3;
+
+#[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Mat3 {
     elements: [[f64; 3]; 3],
 }
@@ -21,6 +23,12 @@ impl Mat3 {
     ) -> Mat3 {
         Mat3 {
             elements: [[m00, m01, m02], [m10, m11, m12], [m20, m21, m22]],
+        }
+    }
+
+    pub fn identity() -> Mat3 {
+        Mat3 {
+            elements: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
         }
     }
 
@@ -50,6 +58,40 @@ impl Mat3 {
             *coord = row[column];
         }
         Vec3 { coords }
+    }
+
+    fn from_nalgebra(m: &Matrix3<f64>) -> Mat3 {
+        Mat3::new(
+            *m.get((0, 0)).unwrap(),
+            *m.get((0, 1)).unwrap(),
+            *m.get((0, 2)).unwrap(),
+            *m.get((1, 0)).unwrap(),
+            *m.get((1, 1)).unwrap(),
+            *m.get((1, 2)).unwrap(),
+            *m.get((2, 0)).unwrap(),
+            *m.get((2, 1)).unwrap(),
+            *m.get((2, 2)).unwrap(),
+        )
+    }
+
+    fn to_nalgebra(&self) -> Matrix3<f64> {
+        Matrix3::new(
+            self.elements[0][0],
+            self.elements[0][1],
+            self.elements[0][2],
+            self.elements[1][0],
+            self.elements[1][1],
+            self.elements[1][2],
+            self.elements[2][0],
+            self.elements[2][1],
+            self.elements[2][2],
+        )
+    }
+
+    pub fn try_inverse(&self) -> Option<Self> {
+        self.to_nalgebra()
+            .try_inverse()
+            .map(|elem| Self::from_nalgebra(&elem))
     }
 }
 
@@ -83,6 +125,18 @@ impl Mul<Vec3> for Mat3 {
     type Output = Vec3;
 
     fn mul(self, rhs: Vec3) -> Vec3 {
+        let mut coords = [0.0; 3];
+        for (coord, row) in coords.iter_mut().zip(self.elements.iter()) {
+            *coord = Vec3 { coords: *row }.dot(&rhs);
+        }
+        Vec3 { coords }
+    }
+}
+
+impl Mul<&Vec3> for Mat3 {
+    type Output = Vec3;
+
+    fn mul(self, rhs: &Vec3) -> Vec3 {
         let mut coords = [0.0; 3];
         for (coord, row) in coords.iter_mut().zip(self.elements.iter()) {
             *coord = Vec3 { coords: *row }.dot(&rhs);

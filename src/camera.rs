@@ -1,4 +1,4 @@
-use nalgebra::{convert, Point3, Vector3};
+use crate::math::Vec3;
 
 use super::colour::{ColourRgbF, NamedColour};
 use super::image::ImageRgbF;
@@ -14,13 +14,12 @@ struct ImageSampler {
 
     film_width: f64,
     film_height: f64,
-
-    camera_location: Point3<f64>,
+    camera_location: Vec3,
     film_distance: f64,
 }
 
 impl ImageSampler {
-    pub fn new(width: usize, height: usize, camera_location: Point3<f64>) -> ImageSampler {
+    pub fn new(width: usize, height: usize, camera_location: Vec3) -> ImageSampler {
         let (film_width, film_height) = {
             let width = width as f64;
             let height = height as f64;
@@ -34,7 +33,7 @@ impl ImageSampler {
         ImageSampler {
             image_height_pixels: height,
             image_width_pixels: width,
-            film_distance: convert(1.0),
+            film_distance: 1.0,
             film_width,
             film_height,
             camera_location,
@@ -51,7 +50,7 @@ impl ImageSampler {
     fn ray_for_pixel(&self, row: usize, column: usize) -> Ray {
         Ray::new(
             self.camera_location,
-            Vector3::new(
+            Vec3::new(
                 Self::scale(column, self.image_width_pixels, self.film_width)
                     - self.film_width * 0.5,
                 Self::scale(row, self.image_height_pixels, self.film_height)
@@ -75,11 +74,11 @@ const RECURSION_LIMIT: u16 = 32;
 /// # Examples
 //
 /// ```
-/// # use nalgebra::Point3;
+/// # use vanrijn::math::Vec3;
 /// # use vanrijn::scene::Scene;
 /// # use vanrijn::util::TileIterator;
 /// # use vanrijn::partial_render_scene;
-/// # let scene = Scene { camera_location: Point3::new(0.0, 0.0, 0.0), objects: vec![] };
+/// # let scene = Scene { camera_location: Vec3::new(0.0, 0.0, 0.0), objects: vec![] };
 /// let image_width = 640;
 /// let image_height = 480;
 /// let time_size = 32;
@@ -99,15 +98,15 @@ pub fn partial_render_scene(scene: &Scene, tile: Tile, height: usize, width: usi
         ambient_light: ColourRgbF::from_named(NamedColour::White) * ambient_intensity,
         lights: vec![
             DirectionalLight {
-                direction: Vector3::new(convert(1.0), convert(1.0), convert(-1.0)).normalize(),
+                direction: Vec3::new(1.0, 1.0, -1.0).normalize(),
                 colour: ColourRgbF::from_named(NamedColour::White) * directional_intensity1,
             },
             DirectionalLight {
-                direction: Vector3::new(convert(-0.5), convert(2.0), convert(-0.5)).normalize(),
+                direction: Vec3::new(-0.5, 2.0, -0.5).normalize(),
                 colour: ColourRgbF::from_named(NamedColour::White) * directional_intensity2,
             },
             DirectionalLight {
-                direction: Vector3::new(convert(-3.0), convert(0.1), convert(-0.5)).normalize(),
+                direction: Vec3::new(-3.0, 0.1, -0.5).normalize(),
                 colour: ColourRgbF::from_named(NamedColour::White) * directional_intensity3,
             },
         ],
@@ -154,10 +153,10 @@ mod tests {
 
         #[test]
         fn ray_for_pixel_returns_value_that_intersects_film_plane_at_expected_location() {
-            let target = ImageSampler::new(800, 600, Point3::new(0.0, 0.0, 0.0));
+            let target = ImageSampler::new(800, 600, Vec3::new(0.0, 0.0, 0.0));
             let ray = target.ray_for_pixel(100, 200);
             let film_plane = Plane::new(
-                Vector3::new(0.0, 0.0, 1.0),
+                Vec3::new(0.0, 0.0, 1.0),
                 target.film_distance,
                 Arc::new(LambertianMaterial::new_dummy()),
             );
@@ -175,11 +174,10 @@ mod tests {
             };
             let expected_x: f64 =
                 ImageSampler::scale(200, 800, target.film_width) - target.film_width * 0.5;
-            print!("{}, {}", expected_x, point_on_film_plane);
-            assert!((point_on_film_plane.x - expected_x).abs() < 0.0000000001);
+            assert!((point_on_film_plane.x() - expected_x).abs() < 0.0000000001);
             let expected_y =
                 ImageSampler::scale(100, 600, target.film_height) - target.film_height * 0.5;
-            assert!((point_on_film_plane.y - expected_y).abs() < 0.0000000001);
+            assert!((point_on_film_plane.y() - expected_y).abs() < 0.0000000001);
         }
     }
 }

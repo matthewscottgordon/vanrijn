@@ -1,16 +1,16 @@
-use nalgebra::Vector3;
+use crate::math::Vec3;
 
 use std::ops::{Add, Mul};
 
 #[derive(Copy, Clone, Debug)]
 pub struct ColourRgbF {
-    values: Vector3<f64>,
+    values: Vec3,
 }
 
 impl ColourRgbF {
     pub fn new(red: f64, green: f64, blue: f64) -> ColourRgbF {
         ColourRgbF {
-            values: Vector3::new(red, green, blue),
+            values: Vec3::new(red, green, blue),
         }
     }
 
@@ -34,23 +34,23 @@ impl ColourRgbF {
         }
     }
 
-    pub fn from_vector3(v: &Vector3<f64>) -> ColourRgbF {
+    pub fn from_vec3(v: &Vec3) -> ColourRgbF {
         ColourRgbF { values: *v }
     }
 
     pub fn red(&self) -> f64 {
-        self.values[0]
+        self.values.x()
     }
 
     pub fn green(&self) -> f64 {
-        self.values[1]
+        self.values.y()
     }
 
     pub fn blue(&self) -> f64 {
-        self.values[2]
+        self.values.z()
     }
 
-    pub fn as_vector3(&self) -> &Vector3<f64> {
+    pub fn as_vec3(&self) -> &Vec3 {
         &self.values
     }
 }
@@ -114,7 +114,7 @@ mod tests {
         use quickcheck_macros::quickcheck;
         impl Arbitrary for ColourRgbF {
             fn arbitrary<G: Gen>(g: &mut G) -> ColourRgbF {
-                let values = <Vector3<f64> as Arbitrary>::arbitrary(g);
+                let values = <Vec3 as Arbitrary>::arbitrary(g);
                 ColourRgbF { values }
             }
         }
@@ -130,8 +130,8 @@ mod tests {
         #[test]
         fn as_vector3_returns_expected_vector() {
             let target = ColourRgbF::new(1.0, 2.0, 3.0);
-            let result = target.as_vector3();
-            assert!(result.x == 1.0);
+            let result = target.as_vec3();
+            assert!(result.x() == 1.0);
         }
 
         #[quickcheck]

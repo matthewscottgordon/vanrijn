@@ -9,9 +9,11 @@ pub use crate::util::axis_aligned_bounding_box::BoundingBox;
 impl IntersectP for BoundingBox {
     fn intersect(&self, ray: &Ray) -> bool {
         let mut t_interval_in_bounds = Interval::infinite();
-        for (&ray_origin, &ray_direction, bounds) in
-            izip!(ray.origin.iter(), ray.direction.iter(), self.bounds.iter())
-        {
+        for (&ray_origin, &ray_direction, bounds) in izip!(
+            ray.origin.coords.iter(),
+            ray.direction.coords.iter(),
+            self.bounds.iter()
+        ) {
             t_interval_in_bounds = t_interval_in_bounds.intersection(Interval::new(
                 (bounds.get_min() - ray_origin) / ray_direction,
                 (bounds.get_max() - ray_origin) / ray_direction,
@@ -28,10 +30,10 @@ impl IntersectP for BoundingBox {
 mod tests {
     use super::*;
 
+    use crate::math::Vec3;
+
     use quickcheck::TestResult;
     use quickcheck_macros::quickcheck;
-
-    use nalgebra::{Point3, Vector3};
 
     fn wrap_value_in_interval(value: f64, interval: Interval) -> f64 {
         let distance_from_start = (value - interval.get_min()).abs();
@@ -46,21 +48,20 @@ mod tests {
         interval.contains_value(wrap_value_in_interval(v, interval))
     }
 
-    fn wrap_point_into_bounding_box(point: Point3<f64>, bounds: &BoundingBox) -> Point3<f64> {
-        Point3::from(Vector3::from_iterator(
-            point
-                .iter()
-                .zip(bounds.bounds.iter())
-                .map(|(&value, &interval)| wrap_value_in_interval(value, interval)),
-        ))
+    fn wrap_point_into_bounding_box(point: Vec3, bounds: &BoundingBox) -> Vec3 {
+        let mut coords = [0.0; 3];
+        for i in 0..3 {
+            coords[i] = wrap_value_in_interval(point[i], bounds.bounds[i]);
+        }
+        Vec3 { coords }
     }
 
     #[quickcheck]
     fn correctly_detects_intersections(
-        ray_origin: Point3<f64>,
-        corner1: Point3<f64>,
-        corner2: Point3<f64>,
-        random_point: Point3<f64>,
+        ray_origin: Vec3,
+        corner1: Vec3,
+        corner2: Vec3,
+        random_point: Vec3,
     ) -> bool {
         let bounds = BoundingBox::from_corners(corner1, corner2);
         let point_in_bounds = wrap_point_into_bounding_box(random_point, &bounds);
@@ -70,10 +71,10 @@ mod tests {
 
     #[quickcheck]
     fn intersect_always_true_when_ray_origin_is_inside_bounds(
-        ray_origin: Point3<f64>,
-        corner1: Point3<f64>,
-        corner2: Point3<f64>,
-        random_point: Point3<f64>,
+        ray_origin: Vec3,
+        corner1: Vec3,
+        corner2: Vec3,
+        random_point: Vec3,
     ) -> TestResult {
         let bounds = BoundingBox::from_corners(corner1, corner2);
         let ray_origin = wrap_point_into_bounding_box(ray_origin, &bounds);
@@ -83,10 +84,10 @@ mod tests {
 
     #[quickcheck]
     fn no_intersection_when_behind_ray(
-        ray_origin: Point3<f64>,
-        corner1: Point3<f64>,
-        corner2: Point3<f64>,
-        random_point: Point3<f64>,
+        ray_origin: Vec3,
+        corner1: Vec3,
+        corner2: Vec3,
+        random_point: Vec3,
     ) -> TestResult {
         let bounds = BoundingBox::from_corners(corner1, corner2);
         if bounds.contains_point(ray_origin) {
@@ -100,24 +101,24 @@ mod tests {
     #[test]
     fn intersection_detected_when_ray_parallel_to_axis() {
         let target =
-            BoundingBox::from_corners(Point3::new(1.0f64, 2.0, 3.0), Point3::new(4.0, 5.0, 6.0));
-        let x_ray = Ray::new(Point3::new(0.0, 3.0, 4.0), Vector3::new(1.0, 0.0, 0.0));
+            BoundingBox::from_corners(Vec3::new(1.0f64, 2.0, 3.0), Vec3::new(4.0, 5.0, 6.0));
+        let x_ray = Ray::new(Vec3::new(0.0, 3.0, 4.0), Vec3::new(1.0, 0.0, 0.0));
         assert!(target.intersect(&x_ray));
-        let y_ray = Ray::new(Point3::new(2.0, 0.0, 4.0), Vector3::new(0.0, 1.0, 0.0));
+        let y_ray = Ray::new(Vec3::new(2.0, 0.0, 4.0), Vec3::new(0.0, 1.0, 0.0));
         assert!(target.intersect(&y_ray));
-        let z_ray = Ray::new(Point3::new(2.0, 3.0, 0.0), Vector3::new(0.0, 0.0, 1.0));
+        let z_ray = Ray::new(Vec3::new(2.0, 3.0, 0.0), Vec3::new(0.0, 0.0, 1.0));
         assert!(target.intersect(&z_ray));
     }
 
     #[test]
     fn intersection_missed_when_ray_parallel_to_axis() {
         let target =
-            BoundingBox::from_corners(Point3::new(1.0f64, 2.0, 3.0), Point3::new(4.0, 5.0, 6.0));
-        let x_ray = Ray::new(Point3::new(0.0, 0.0, 0.0), Vector3::new(1.0, 0.0, 0.0));
+            BoundingBox::from_corners(Vec3::new(1.0f64, 2.0, 3.0), Vec3::new(4.0, 5.0, 6.0));
+        let x_ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 0.0, 0.0));
         assert!(!target.intersect(&x_ray));
-        let y_ray = Ray::new(Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 1.0, 0.0));
+        let y_ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 1.0, 0.0));
         assert!(!target.intersect(&y_ray));
-        let z_ray = Ray::new(Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 1.0));
+        let z_ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0));
         assert!(!target.intersect(&z_ray));
     }
 }

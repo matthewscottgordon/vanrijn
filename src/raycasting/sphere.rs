@@ -1,20 +1,19 @@
-use nalgebra::{Affine3, Point3, Vector3};
-
 use crate::materials::Material;
+use crate::math::Vec3;
 
-use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray, Transform};
+use super::{BoundingBox, HasBoundingBox, Intersect, IntersectionInfo, Primitive, Ray};
 
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub struct Sphere {
-    centre: Point3<f64>,
+    centre: Vec3,
     radius: f64,
     material: Arc<dyn Material>,
 }
 
 impl Sphere {
-    pub fn new(centre: Point3<f64>, radius: f64, material: Arc<dyn Material>) -> Sphere {
+    pub fn new(centre: Vec3, radius: f64, material: Arc<dyn Material>) -> Sphere {
         Sphere {
             centre,
             radius,
@@ -23,7 +22,7 @@ impl Sphere {
     }
 }
 
-impl Transform for Sphere {
+/*impl Transform for Sphere {
     fn transform(&self, transformation: &Affine3<f64>) -> Self {
         Sphere {
             centre: transformation.transform_point(&self.centre),
@@ -35,23 +34,26 @@ impl Transform for Sphere {
             material: Arc::clone(&self.material),
         }
     }
-}
+}*/
 
 impl Intersect for Sphere {
     fn intersect<'a>(&'a self, ray: &Ray) -> Option<IntersectionInfo> {
-        let r_o = ray.origin.coords;
-        let centre_coords = self.centre.coords;
+        let r_o = ray.origin;
+        let centre_coords = self.centre;
         let a = ray
             .direction
             .component_mul(&ray.direction)
+            .coords
             .iter()
             .fold(0.0, |a, b| a + *b);
         let b = ((r_o.component_mul(&ray.direction) - centre_coords.component_mul(&ray.direction))
             * 2.0)
+            .coords
             .iter()
             .fold(0.0, |a, b| a + *b);
         let c = (r_o.component_mul(&r_o) + centre_coords.component_mul(&centre_coords)
             - centre_coords.component_mul(&r_o) * 2.0)
+            .coords
             .iter()
             .fold(0.0, |a, b| a + *b)
             - self.radius * self.radius;
@@ -73,7 +75,7 @@ impl Intersect for Sphere {
             } else {
                 let location = ray.point_at(distance);
                 let normal = (location - self.centre).normalize();
-                let tangent = normal.cross(&Vector3::z_axis()).normalize();
+                let tangent = normal.cross(&Vec3::unit_z()).normalize();
                 let cotangent = normal.cross(&tangent);
                 let retro = -ray.direction;
                 Some(IntersectionInfo {
@@ -92,7 +94,7 @@ impl Intersect for Sphere {
 
 impl HasBoundingBox for Sphere {
     fn bounding_box(&self) -> BoundingBox {
-        let radius_xyz = Vector3::new(self.radius, self.radius, self.radius);
+        let radius_xyz = Vec3::new(self.radius, self.radius, self.radius);
         BoundingBox::from_corners(self.centre + radius_xyz, self.centre - radius_xyz)
     }
 }
@@ -104,16 +106,14 @@ mod tests {
     use quickcheck::TestResult;
     use quickcheck_macros::quickcheck;
 
-    use nalgebra::{Rotation3, Translation3};
-
     use super::*;
     use crate::materials::LambertianMaterial;
 
     #[test]
     fn ray_intersects_sphere() {
-        let r = Ray::new(Point3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
+        let r = Ray::new(Vec3::new(1.0, 2.0, 3.0), Vec3::new(0.0, 0.0, 1.0));
         let s = Sphere::new(
-            Point3::new(1.5, 1.5, 15.0),
+            Vec3::new(1.5, 1.5, 15.0),
             5.0,
             Arc::new(LambertianMaterial::new_dummy()),
         );
@@ -124,9 +124,9 @@ mod tests {
 
     #[test]
     fn ray_does_not_intersect_sphere_when_sphere_is_in_front() {
-        let r = Ray::new(Point3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
+        let r = Ray::new(Vec3::new(1.0, 2.0, 3.0), Vec3::new(0.0, 0.0, 1.0));
         let s = Sphere::new(
-            Point3::new(-5.0, 1.5, 15.0),
+            Vec3::new(-5.0, 1.5, 15.0),
             5.0,
             Arc::new(LambertianMaterial::new_dummy()),
         );
@@ -137,9 +137,9 @@ mod tests {
 
     #[test]
     fn ray_does_not_intersect_sphere_when_sphere_is_behind() {
-        let r = Ray::new(Point3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
+        let r = Ray::new(Vec3::new(1.0, 2.0, 3.0), Vec3::new(0.0, 0.0, 1.0));
         let s = Sphere::new(
-            Point3::new(1.5, 1.5, -15.0),
+            Vec3::new(1.5, 1.5, -15.0),
             5.0,
             Arc::new(LambertianMaterial::new_dummy()),
         );
@@ -150,9 +150,9 @@ mod tests {
 
     #[test]
     fn ray_intersects_sphere_when_origin_is_inside() {
-        let r = Ray::new(Point3::new(1.0, 2.0, 3.0), Vector3::new(0.0, 0.0, 1.0));
+        let r = Ray::new(Vec3::new(1.0, 2.0, 3.0), Vec3::new(0.0, 0.0, 1.0));
         let s = Sphere::new(
-            Point3::new(1.5, 1.5, 2.0),
+            Vec3::new(1.5, 1.5, 2.0),
             5.0,
             Arc::new(LambertianMaterial::new_dummy()),
         );
@@ -163,8 +163,8 @@ mod tests {
 
     #[quickcheck]
     fn ray_intersects_sphere_centre_at_correct_distance(
-        ray_origin: Point3<f64>,
-        sphere_centre: Point3<f64>,
+        ray_origin: Vec3,
+        sphere_centre: Vec3,
         radius: f64,
     ) -> TestResult {
         if radius <= 0.0 || radius + 0.000001 >= (ray_origin - sphere_centre).norm() {
@@ -184,10 +184,7 @@ mod tests {
     }
 
     #[quickcheck]
-    fn all_points_on_sphere_are_in_bounding_box(
-        sphere_centre: Point3<f64>,
-        radius_vector: Vector3<f64>,
-    ) -> bool {
+    fn all_points_on_sphere_are_in_bounding_box(sphere_centre: Vec3, radius_vector: Vec3) -> bool {
         let target_sphere = Sphere::new(
             sphere_centre,
             radius_vector.norm(),
@@ -197,11 +194,11 @@ mod tests {
         bounding_box.contains_point(sphere_centre + radius_vector)
     }
 
-    #[quickcheck]
+    /*#[quickcheck]
     fn translation_moves_centre(
-        sphere_centre: Point3<f64>,
+        sphere_centre: Vec3,
         radius: f64,
-        translation_vector: Vector3<f64>,
+        translation_vector: Vec3,
     ) -> TestResult {
         if radius <= 0.0 {
             return TestResult::discard();
@@ -220,9 +217,9 @@ mod tests {
 
     #[quickcheck]
     fn translation_does_not_change_radius(
-        sphere_centre: Point3<f64>,
+        sphere_centre: Vec3,
         radius: f64,
-        translation_vector: Vector3<f64>,
+        translation_vector: Vec3,
     ) -> TestResult {
         if radius <= 0.0 {
             return TestResult::discard();
@@ -241,9 +238,9 @@ mod tests {
 
     #[quickcheck]
     fn rotation_about_centre_does_not_move_centre(
-        sphere_centre: Point3<f64>,
+        sphere_centre: Vec3,
         radius: f64,
-        rotation_vector: Vector3<f64>,
+        rotation_vector: Vec3,
     ) -> TestResult {
         if radius <= 0.0 {
             return TestResult::discard();
@@ -259,6 +256,6 @@ mod tests {
             * Rotation3::new(rotation_vector)
             * Translation3::from(-sphere.centre.coords);
         let sphere = sphere.transform(&transformation);
-        TestResult::from_bool(dbg!((expected_centre - sphere.centre).norm() < 0.000000001))
-    }
+        TestResult::from_bool((expected_centre - sphere.centre).norm() < 0.000000001)
+    }*/
 }

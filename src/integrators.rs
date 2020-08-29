@@ -1,4 +1,4 @@
-use nalgebra::{convert, Vector3};
+use crate::math::Vec3;
 
 use super::colour::ColourRgbF;
 use super::raycasting::{IntersectionInfo, Ray};
@@ -15,7 +15,7 @@ pub trait Integrator {
 }
 
 pub struct DirectionalLight {
-    pub direction: Vector3<f64>,
+    pub direction: Vec3,
     pub colour: ColourRgbF,
 }
 
@@ -42,9 +42,7 @@ impl Integrator for WhittedIntegrator {
         self.lights
             .iter()
             .map(|light| {
-                match sampler
-                    .sample(&Ray::new(info.location, light.direction).bias(convert(0.000_000_1)))
-                {
+                match sampler.sample(&Ray::new(info.location, light.direction).bias(0.000_000_1)) {
                     Some(_) => self.ambient_light,
                     None => {
                         info.material.bsdf()(
@@ -62,8 +60,7 @@ impl Integrator for WhittedIntegrator {
                     .map(|direction| {
                         let world_space_direction = bsdf_to_world_space * direction;
                         match sampler.sample(
-                            &Ray::new(info.location, world_space_direction)
-                                .bias(convert(0.000_000_1)),
+                            &Ray::new(info.location, world_space_direction).bias(0.000_000_1),
                         ) {
                             Some(recursive_hit) => {
                                 if recursion_limit > 0 {

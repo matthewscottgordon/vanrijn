@@ -1,6 +1,5 @@
-use nalgebra::Vector3;
-
 use crate::colour::{ColourRgbF, NamedColour};
+use crate::math::Vec3;
 
 use std::fmt::Debug;
 
@@ -19,18 +18,16 @@ impl Material for PhongMaterial {
         let smoothness = self.smoothness;
         let specular_strength = self.specular_strength;
         let colour = self.colour * self.diffuse_strength;
-        Box::new(
-            move |w_o: Vector3<f64>, w_i: Vector3<f64>, colour_in: ColourRgbF| {
-                if w_i.z < 0.0 || w_o.z < 0.0 {
-                    ColourRgbF::from_vector3(&Vector3::zeros())
-                } else {
-                    let reflection_vector = Vector3::new(-w_i.x, -w_i.y, w_i.z);
-                    colour * colour_in
-                        + ColourRgbF::from_named(NamedColour::White)
-                            * w_o.dot(&reflection_vector).abs().powf(smoothness)
-                            * (specular_strength / w_i.dot(&Vector3::z_axis()))
-                }
-            },
-        )
+        Box::new(move |w_o: Vec3, w_i: Vec3, colour_in: ColourRgbF| {
+            if w_i.z() < 0.0 || w_o.z() < 0.0 {
+                ColourRgbF::from_vec3(&Vec3::zeros())
+            } else {
+                let reflection_vector = Vec3::new(-w_i.x(), -w_i.y(), w_i.z());
+                colour * colour_in
+                    + ColourRgbF::from_named(NamedColour::White)
+                        * w_o.dot(&reflection_vector).abs().powf(smoothness)
+                        * (specular_strength / w_i.dot(&Vec3::unit_z()))
+            }
+        })
     }
 }

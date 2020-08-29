@@ -1,5 +1,5 @@
+use crate::math::Vec3;
 use crate::realtype::NormalizedToU32;
-use nalgebra::Point3;
 
 fn spread_bits(v: u32) -> u32 {
     let mut result = 0;
@@ -9,10 +9,10 @@ fn spread_bits(v: u32) -> u32 {
     result
 }
 
-pub fn morton_order_value_3d(p: Point3<f64>) -> u32 {
-    let x = p.x.normalized_to_u32(10);
-    let y = p.y.normalized_to_u32(10);
-    let z = p.z.normalized_to_u32(10);
+pub fn morton_order_value_3d(p: Vec3) -> u32 {
+    let x = p.x().normalized_to_u32(10);
+    let y = p.y().normalized_to_u32(10);
+    let z = p.z().normalized_to_u32(10);
     (spread_bits(x) << 2) | (spread_bits(y) << 1) | spread_bits(z)
 }
 

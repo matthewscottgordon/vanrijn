@@ -1,10 +1,9 @@
 /// Load a model from a Wavefront .obj file
 mod wavefront_obj {
     use crate::materials::Material;
-
+    use crate::math::Vec3;
     use crate::raycasting::{Primitive, Triangle};
 
-    use nalgebra::{convert, Point3, Vector3};
     use obj::{IndexTuple, Obj, SimplePolygon};
 
     use std::io::Result;
@@ -15,14 +14,29 @@ mod wavefront_obj {
         index_tuple: &IndexTuple,
         vertex_positions: &[[f32; 3]],
         normal_positions: &[[f32; 3]],
-    ) -> (Point3<f64>, Vector3<f64>) {
+    ) -> (Vec3, Vec3) {
         let &IndexTuple(vertex_index, _, maybe_normal_index) = index_tuple;
-        let vertex = convert(Point3::from_slice(&vertex_positions[vertex_index]));
-        let normal = match maybe_normal_index {
-            Some(normal_index) => convert(Vector3::from_row_slice(&normal_positions[normal_index])),
-            None => Vector3::zeros(),
-        };
-        (vertex, normal.normalize())
+        (
+            {
+                let vertex_coords = &vertex_positions[vertex_index];
+                Vec3::new(
+                    vertex_coords[0] as f64,
+                    vertex_coords[1] as f64,
+                    vertex_coords[2] as f64,
+                )
+            },
+            match maybe_normal_index {
+                Some(normal_index) => {
+                    let normal_coords = &normal_positions[normal_index];
+                    Vec3::new(
+                        normal_coords[0] as f64,
+                        normal_coords[1] as f64,
+                        normal_coords[2] as f64,
+                    )
+                }
+                None => Vec3::zeros(),
+            },
+        )
     }
 
     fn get_triangles(

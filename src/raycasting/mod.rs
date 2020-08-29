@@ -1,4 +1,4 @@
-use nalgebra::{Affine3, Point3, Vector3};
+use crate::math::Vec3;
 
 use super::materials::Material;
 
@@ -28,17 +28,17 @@ pub mod vec_aggregate;
 #[derive(Clone, Debug)]
 pub struct Ray {
     /// The start point of the ray
-    pub origin: Point3<f64>,
+    pub origin: Vec3,
 
     /// The direction the ray goes in.
     ///
     /// This vector should always be kept normalized
-    pub direction: Vector3<f64>,
+    pub direction: Vec3,
 }
 
 impl Ray {
     /// Create a new ray
-    pub fn new(origin: Point3<f64>, direction: Vector3<f64>) -> Ray {
+    pub fn new(origin: Vec3, direction: Vec3) -> Ray {
         Ray {
             origin,
             direction: direction.normalize(),
@@ -46,7 +46,7 @@ impl Ray {
     }
 
     /// Return the point on the ray that is `t` units from the start
-    pub fn point_at(&self, t: f64) -> Point3<f64> {
+    pub fn point_at(&self, t: f64) -> Vec3 {
         self.origin + self.direction * t
     }
 
@@ -70,26 +70,26 @@ pub struct IntersectionInfo {
     pub distance: f64,
 
     /// The intersection point
-    pub location: Point3<f64>,
+    pub location: Vec3,
 
     /// The surface normal at the intersection point
-    pub normal: Vector3<f64>,
+    pub normal: Vec3,
 
     /// The surface tangent at the intersection point
     ///
     /// Which surface tangent direction returned is dependent on the [Primitive](Primitive)
     /// but should generally be smooth over any given surface
-    pub tangent: Vector3<f64>,
+    pub tangent: Vec3,
 
     /// Another surface tangent, perpendicular to `tangent`
     ///
     /// The cross product or `normal` and `tangent`
-    pub cotangent: Vector3<f64>,
+    pub cotangent: Vec3,
 
     /// The direction from the intersection point back towards the ray
     ///
     /// Equal to `-ray.direction`
-    pub retro: Vector3<f64>,
+    pub retro: Vec3,
 
     /// The [Material](crate::materials::Material) which describes the optical
     /// properties of the intersected surface
@@ -124,10 +124,10 @@ pub trait HasBoundingBox: Send + Sync {
 /// Any geometric object which can have an affine transformation applied to it
 ///
 /// Used for moving, rotating or scaling primitives
-pub trait Transform {
+/*pub trait Transform {
     /// Create a new object by applying the transformation to this object.
     fn transform(&self, transformation: &Affine3<f64>) -> Self;
-}
+}*/
 
 /// A basic geometric primitive such as a sphere or a triangle
 pub trait Primitive: Intersect + HasBoundingBox {
@@ -146,8 +146,8 @@ mod tests {
     use quickcheck::{Arbitrary, Gen};
     impl Arbitrary for Ray {
         fn arbitrary<G: Gen>(g: &mut G) -> Ray {
-            let origin = <Point3<f64> as Arbitrary>::arbitrary(g);
-            let direction = <Vector3<f64> as Arbitrary>::arbitrary(g);
+            let origin = <Vec3 as Arbitrary>::arbitrary(g);
+            let direction = <Vec3 as Arbitrary>::arbitrary(g);
             return Ray::new(origin, direction);
         }
     }

@@ -1,6 +1,5 @@
-use nalgebra::Vector3;
-
 use crate::colour::ColourRgbF;
+use crate::math::Vec3;
 
 use super::{Bsdf, Material};
 
@@ -24,8 +23,6 @@ impl LambertianMaterial {
 impl Material for LambertianMaterial {
     fn bsdf(&self) -> Bsdf {
         let colour = self.colour * self.diffuse_strength;
-        Box::new(
-            move |_w_o: Vector3<f64>, _w_i: Vector3<f64>, colour_in: ColourRgbF| colour * colour_in,
-        )
+        Box::new(move |_w_o: Vec3, _w_i: Vec3, colour_in: ColourRgbF| colour * colour_in)
     }
 }

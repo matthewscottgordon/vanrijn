@@ -1,7 +1,7 @@
 use super::axis_aligned_bounding_box::BoundingBox;
 use super::Interval;
 
-use nalgebra::{clamp, Point3};
+use crate::math::Vec3;
 
 use itertools::izip;
 
@@ -23,7 +23,7 @@ impl RealNormalizer {
     }
 
     pub fn normalize_and_clamp(&self, value: f64) -> f64 {
-        clamp((value - self.min) / self.range, 0.0, 1.0)
+        ((value - self.min) / self.range).clamp(0.0, 1.0)
     }
 }
 
@@ -47,11 +47,11 @@ impl Point3Normalizer {
         normalizer
     }
 
-    pub fn normalize(&self, point: Point3<f64>) -> Point3<f64> {
-        let mut result = Point3::new(0.0, 0.0, 0.0);
+    pub fn normalize(&self, point: Vec3) -> Vec3 {
+        let mut result = Vec3::new(0.0, 0.0, 0.0);
         for (value_out, &value_in, normalizer) in izip!(
-            result.iter_mut(),
-            point.iter(),
+            result.coords.iter_mut(),
+            point.coords.iter(),
             self.dimension_normalizers.iter()
         ) {
             *value_out = normalizer.normalize(value_in);
@@ -59,11 +59,11 @@ impl Point3Normalizer {
         result
     }
 
-    pub fn normalize_and_clamp(&self, point: Point3<f64>) -> Point3<f64> {
-        let mut result = Point3::new(0.0, 0.0, 0.0);
+    pub fn normalize_and_clamp(&self, point: Vec3) -> Vec3 {
+        let mut result = Vec3::new(0.0, 0.0, 0.0);
         for (value_out, &value_in, normalizer) in izip!(
-            result.iter_mut(),
-            point.iter(),
+            result.coords.iter_mut(),
+            point.coords.iter(),
             self.dimension_normalizers.iter()
         ) {
             *value_out = normalizer.normalize_and_clamp(value_in);
@@ -145,34 +145,30 @@ mod test {
     }
 
     #[quickcheck]
-    fn normalize_point3_is_the_same_as_normalize_each_dimension(
-        a: Point3<f64>,
-        b: Point3<f64>,
-        c: Point3<f64>,
-    ) -> bool {
-        let x_normalizer = RealNormalizer::new(Interval::new(a.x.min(b.x), a.x.max(b.x)));
-        let y_normalizer = RealNormalizer::new(Interval::new(a.y.min(b.y), a.y.max(b.y)));
-        let z_normalizer = RealNormalizer::new(Interval::new(a.z.min(b.z), a.z.max(b.z)));
+    fn normalize_point3_is_the_same_as_normalize_each_dimension(a: Vec3, b: Vec3, c: Vec3) -> bool {
+        let x_normalizer = RealNormalizer::new(Interval::new(a.x().min(b.x()), a.x().max(b.x())));
+        let y_normalizer = RealNormalizer::new(Interval::new(a.y().min(b.y()), a.y().max(b.y())));
+        let z_normalizer = RealNormalizer::new(Interval::new(a.z().min(b.z()), a.z().max(b.z())));
         let xyz_normalizer = Point3Normalizer::new(BoundingBox::from_corners(a, b));
         let normalized_point = xyz_normalizer.normalize(c);
-        x_normalizer.normalize(c.x) == normalized_point.x
-            && y_normalizer.normalize(c.y) == normalized_point.y
-            && z_normalizer.normalize(c.z) == normalized_point.z
+        x_normalizer.normalize(c.x()) == normalized_point.x()
+            && y_normalizer.normalize(c.y()) == normalized_point.y()
+            && z_normalizer.normalize(c.z()) == normalized_point.z()
     }
 
     #[quickcheck]
     fn normalize_and_clamp_point3_is_the_same_as_normalize_and_clamp_each_dimension(
-        a: Point3<f64>,
-        b: Point3<f64>,
-        c: Point3<f64>,
+        a: Vec3,
+        b: Vec3,
+        c: Vec3,
     ) -> bool {
-        let x_normalizer = RealNormalizer::new(Interval::new(a.x.min(b.x), a.x.max(b.x)));
-        let y_normalizer = RealNormalizer::new(Interval::new(a.y.min(b.y), a.y.max(b.y)));
-        let z_normalizer = RealNormalizer::new(Interval::new(a.z.min(b.z), a.z.max(b.z)));
-        let xyz_normalizer = dbg!(Point3Normalizer::new(BoundingBox::from_corners(a, b)));
+        let x_normalizer = RealNormalizer::new(Interval::new(a.x().min(b.x()), a.x().max(b.x())));
+        let y_normalizer = RealNormalizer::new(Interval::new(a.y().min(b.y()), a.y().max(b.y())));
+        let z_normalizer = RealNormalizer::new(Interval::new(a.z().min(b.z()), a.z().max(b.z())));
+        let xyz_normalizer = Point3Normalizer::new(BoundingBox::from_corners(a, b));
         let normalized_point = xyz_normalizer.normalize_and_clamp(c);
-        x_normalizer.normalize_and_clamp(c.x) == normalized_point.x
-            && y_normalizer.normalize_and_clamp(c.y) == normalized_point.y
-            && z_normalizer.normalize_and_clamp(c.z) == normalized_point.z
+        x_normalizer.normalize_and_clamp(c.x()) == normalized_point.x()
+            && y_normalizer.normalize_and_clamp(c.y()) == normalized_point.y()
+            && z_normalizer.normalize_and_clamp(c.z()) == normalized_point.z()
     }
 }
