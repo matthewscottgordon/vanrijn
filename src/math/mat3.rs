@@ -1,8 +1,7 @@
+use super::Mat2;
 use super::Vec3;
 
 use std::ops::{Mul, MulAssign};
-
-use nalgebra::Matrix3;
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Mat3 {
@@ -60,38 +59,62 @@ impl Mat3 {
         Vec3 { coords }
     }
 
-    fn from_nalgebra(m: &Matrix3<f64>) -> Mat3 {
-        Mat3::new(
-            *m.get((0, 0)).unwrap(),
-            *m.get((0, 1)).unwrap(),
-            *m.get((0, 2)).unwrap(),
-            *m.get((1, 0)).unwrap(),
-            *m.get((1, 1)).unwrap(),
-            *m.get((1, 2)).unwrap(),
-            *m.get((2, 0)).unwrap(),
-            *m.get((2, 1)).unwrap(),
-            *m.get((2, 2)).unwrap(),
-        )
+    pub fn transpose(&self) -> Mat3 {
+        let mut elements = [[0.0; 3]; 3];
+        for i in 0..3 {
+            for j in 0..3 {
+                elements[i][j] = self.elements[j][i];
+            }
+        }
+        Mat3 { elements }
     }
 
-    fn to_nalgebra(&self) -> Matrix3<f64> {
-        Matrix3::new(
-            self.elements[0][0],
-            self.elements[0][1],
-            self.elements[0][2],
-            self.elements[1][0],
-            self.elements[1][1],
-            self.elements[1][2],
-            self.elements[2][0],
-            self.elements[2][1],
-            self.elements[2][2],
-        )
+    pub fn first_minor(&self, row: usize, column: usize) -> f64 {
+        let mut elements = [[0.0; 2]; 2];
+        let mut i_dst = 0;
+        let mut j_dst = 0;
+        for i_src in 0..3 {
+            if i_src != row {
+                for j_src in 0..3 {
+                    if j_src != column {
+                        elements[i_dst][j_dst] = self.get_element(i_src, j_src);
+                        j_dst += 1;
+                    }
+                }
+                i_dst += 1;
+                j_dst = 0;
+            }
+        }
+        let minor_matrix = Mat2 { elements };
+        minor_matrix.determinant()
     }
 
-    pub fn try_inverse(&self) -> Option<Self> {
-        self.to_nalgebra()
-            .try_inverse()
-            .map(|elem| Self::from_nalgebra(&elem))
+    pub fn cofactor(&self, row: usize, column: usize) -> f64 {
+        ((-1i64).pow((row + column) as u32) as f64) * self.first_minor(row, column)
+    }
+
+    pub fn cofactor_matrix(&self) -> Mat3 {
+        let mut elements = [[0.0; 3]; 3];
+        for i in 0..3 {
+            for j in 0..3 {
+                elements[i][j] = self.cofactor(i, j);
+            }
+        }
+        Mat3 { elements }
+    }
+
+    pub fn determinant(&self) -> f64 {
+        self.elements[0][0] * self.first_minor(0, 0) - self.elements[0][1] * self.first_minor(0, 1)
+            + self.elements[0][2] * self.first_minor(0, 2)
+    }
+
+    pub fn try_inverse(&self) -> Option<Mat3> {
+        let determinant = self.determinant();
+        if determinant == 0.0 {
+            None
+        } else {
+            Some(self.cofactor_matrix().transpose() * determinant)
+        }
     }
 }
 
@@ -145,6 +168,20 @@ impl Mul<&Vec3> for Mat3 {
     }
 }
 
+impl Mul<f64> for Mat3 {
+    type Output = Mat3;
+
+    fn mul(self, rhs: f64) -> Mat3 {
+        let mut elements = [[0.0; 3]; 3];
+        for i in 0..3 {
+            for j in 0..3 {
+                elements[i][j] = self.elements[i][j] * rhs;
+            }
+        }
+        Mat3 { elements }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -191,6 +228,77 @@ mod tests {
         assert!(target.get_column(0) == Vec3::new(1.0, 4.0, 7.0));
         assert!(target.get_column(1) == Vec3::new(2.0, 5.0, 8.0));
         assert!(target.get_column(2) == Vec3::new(3.0, 6.0, 9.0));
+    }
+
+    #[test]
+    fn transpose_returns_expected_result() {
+        let target = Mat3::from_rows(
+            &Vec3::new(1.0, 2.0, 3.0),
+            &Vec3::new(4.0, 5.0, 6.0),
+            &Vec3::new(7.0, 8.0, 9.0),
+        );
+        let expected = Mat3::from_rows(
+            &Vec3::new(1.0, 4.0, 7.0),
+            &Vec3::new(2.0, 5.0, 8.0),
+            &Vec3::new(3.0, 6.0, 9.0),
+        );
+        assert!(target.transpose() == expected);
+    }
+
+    #[test]
+    fn cofactor_matrix_returns_expected_result() {
+        let target = Mat3::from_rows(
+            &Vec3::new(1.0, 2.0, 3.0),
+            &Vec3::new(4.0, 5.0, 6.0),
+            &Vec3::new(7.0, 8.0, 9.0),
+        );
+        let expected = Mat3::from_rows(
+            &Vec3::new(-3.0, 6.0, -3.0),
+            &Vec3::new(6.0, -12.0, 6.0),
+            &Vec3::new(-3.0, 6.0, -3.0),
+        );
+        assert!(target.cofactor_matrix() == expected);
+    }
+
+    #[test]
+    fn determinant_returns_expected_result() {
+        let target = Mat3::from_rows(
+            &Vec3::new(1.0, 3.0, 2.0),
+            &Vec3::new(4.0, 5.0, 6.0),
+            &Vec3::new(7.0, 8.0, 9.0),
+        );
+        assert!(target.determinant() == 9.0);
+    }
+
+    #[test]
+    fn inverse_of_singular_matrix_is_none_result() {
+        let target = Mat3::from_rows(
+            &Vec3::new(1.0, 2.0, 3.0),
+            &Vec3::new(4.0, 5.0, 6.0),
+            &Vec3::new(7.0, 8.0, 9.0),
+        );
+        let expected = None;
+        assert!(target.try_inverse() == expected);
+    }
+
+    #[test]
+    fn inverse_of_identity_is_identity() {
+        assert!(Mat3::identity().try_inverse() == Some(Mat3::identity()));
+    }
+
+    #[test]
+    fn inverse_returns_expected_result() {
+        let target = Mat3::from_rows(
+            &Vec3::new(4.0, -5.0, -2.0),
+            &Vec3::new(5.0, -6.0, -2.0),
+            &Vec3::new(-8.0, 9.0, 3.0),
+        );
+        let expected = Some(Mat3::from_rows(
+            &Vec3::new(0.0, -3.0, -2.0),
+            &Vec3::new(1.0, -4.0, -2.0),
+            &Vec3::new(-3.0, 4.0, 1.0),
+        ));
+        assert!(target.try_inverse() == expected);
     }
 
     #[test]

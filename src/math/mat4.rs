@@ -2,8 +2,6 @@ use super::Vec4;
 
 use std::ops::{Mul, MulAssign};
 
-use nalgebra::Matrix4;
-
 #[derive(PartialEq, Debug)]
 pub struct Mat4 {
     elements: [[f64; 4]; 4],
@@ -64,54 +62,6 @@ impl Mat4 {
             *coord = row[column];
         }
         Vec4 { coords }
-    }
-
-    fn from_nalgebra(m: &Matrix4<f64>) -> Mat4 {
-        Mat4::new(
-            *m.get((0, 0)).unwrap(),
-            *m.get((0, 1)).unwrap(),
-            *m.get((0, 2)).unwrap(),
-            *m.get((0, 3)).unwrap(),
-            *m.get((1, 0)).unwrap(),
-            *m.get((1, 1)).unwrap(),
-            *m.get((1, 2)).unwrap(),
-            *m.get((1, 3)).unwrap(),
-            *m.get((2, 0)).unwrap(),
-            *m.get((2, 1)).unwrap(),
-            *m.get((2, 2)).unwrap(),
-            *m.get((2, 3)).unwrap(),
-            *m.get((3, 0)).unwrap(),
-            *m.get((3, 1)).unwrap(),
-            *m.get((3, 2)).unwrap(),
-            *m.get((3, 3)).unwrap(),
-        )
-    }
-
-    fn to_nalgebra(&self) -> Matrix4<f64> {
-        Matrix4::new(
-            self.elements[0][0],
-            self.elements[0][1],
-            self.elements[0][2],
-            self.elements[0][3],
-            self.elements[1][0],
-            self.elements[1][1],
-            self.elements[1][2],
-            self.elements[1][3],
-            self.elements[2][0],
-            self.elements[2][1],
-            self.elements[2][2],
-            self.elements[2][3],
-            self.elements[3][0],
-            self.elements[3][1],
-            self.elements[3][2],
-            self.elements[3][3],
-        )
-    }
-
-    pub fn try_inverse(&self) -> Option<Self> {
-        self.to_nalgebra()
-            .try_inverse()
-            .map(|mat| Self::from_nalgebra(&mat))
     }
 }
 

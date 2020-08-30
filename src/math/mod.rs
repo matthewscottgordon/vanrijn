@@ -7,6 +7,9 @@ pub use vec3::*;
 mod vec4;
 pub use vec4::*;
 
+mod mat2;
+pub use mat2::*;
+
 mod mat3;
 pub use mat3::*;
 

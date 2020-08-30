@@ -5,21 +5,15 @@ authors = ["Matthew Gordon <matthew.scott.gordon@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-alga = "0.9"
 itertools = "0.9"
 obj = "0.9"
 quickcheck = "0.9"
 quickcheck_macros = "0.9"
 rayon = "1.3"
 sdl2 = "0.32"
-simba = "0.1.2"
 csv = "1.1.3"
 clap = "2.33"
 png = "0.16"
-
-[dependencies.nalgebra]
-version = "0.21"
-features = ["arbitrary"]
 
 [dev-dependencies]
 criterion = "0.3"
