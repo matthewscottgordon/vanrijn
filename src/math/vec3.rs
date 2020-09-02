@@ -4,7 +4,7 @@ use itertools::izip;
 
 use std::ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct Vec3 {
     pub coords: [f64; 3],
 }

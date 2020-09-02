@@ -4,7 +4,6 @@ use std::io::BufWriter;
 use std::path::Path;
 
 use crate::colour::{ColourRgbF, ColourRgbU8};
-use crate::math::Vec3;
 use crate::util::Array2D;
 
 pub struct ImageRgbU8 {
@@ -68,58 +67,38 @@ impl ImageRgbU8 {
 }
 
 pub struct ImageRgbF {
-    pixel_data: Vec<f64>,
-    width: usize,
-    height: usize,
+    data: Array2D<ColourRgbF>,
 }
 
 impl ImageRgbF {
     pub fn new(width: usize, height: usize) -> ImageRgbF {
         ImageRgbF {
-            width,
-            height,
-            pixel_data: vec![0.0; width * height * 3 as usize],
+            data: Array2D::new(height, width),
         }
     }
 
-    pub fn clear(&mut self) -> &mut ImageRgbF {
-        for elem in self.pixel_data.iter_mut() {
-            *elem = 0.0;
-        }
-        self
+    pub fn clear(&mut self) {
+        self.data.clear();
     }
 
     pub fn get_colour(&self, row: usize, column: usize) -> ColourRgbF {
-        assert!(row < self.height && column < self.width);
-        let index = self.calculate_index(row, column);
-        ColourRgbF::from_vec3(&Vec3::from_slice(&self.pixel_data[index..index + 3]))
+        self.data[row][column]
     }
 
     pub fn set_colour(&mut self, row: usize, column: usize, colour: ColourRgbF) {
-        assert!(row < self.height && column < self.width);
-        let index = self.calculate_index(row, column);
-        self.pixel_data[index..index + 3].copy_from_slice(&colour.as_vec3().as_slice());
-    }
-
-    pub fn get_pixel_data(&self) -> &Vec<f64> {
-        &self.pixel_data
+        self.data[row][column] = colour;
     }
 
     pub fn get_width(&self) -> usize {
-        self.width
+        self.data.get_width()
     }
 
     pub fn get_height(&self) -> usize {
-        self.height
+        self.data.get_height()
     }
 
     pub fn num_channels() -> usize {
         3
-    }
-
-    fn calculate_index(&self, row: usize, column: usize) -> usize {
-        assert!(row < self.height && column < self.width);
-        (((self.height - (row + 1)) * self.width + column) * Self::num_channels()) as usize
     }
 }
 

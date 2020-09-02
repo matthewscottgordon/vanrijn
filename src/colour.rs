@@ -2,7 +2,7 @@ use crate::math::Vec3;
 
 use std::ops::{Add, Mul};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct ColourRgbF {
     values: Vec3,
 }
