@@ -67,7 +67,7 @@ impl ImageRgbU8 {
 }
 
 pub struct ImageRgbF {
-    data: Array2D<ColourRgbF>,
+    pub data: Array2D<ColourRgbF>,
 }
 
 impl ImageRgbF {
@@ -127,8 +127,8 @@ impl NormalizedAsByte for f64 {
     }
 }
 
-pub trait ToneMapper {
-    fn apply_tone_mapping(&self, image_in: &ImageRgbF, image_out: &mut ImageRgbU8);
+pub trait ToneMapper<SourceType> {
+    fn apply_tone_mapping(&self, image_in: &Array2D<SourceType>, image_out: &mut ImageRgbU8);
 }
 
 #[derive(Default)]
@@ -140,13 +140,13 @@ impl ClampingToneMapper {
     }
 }
 
-impl ToneMapper for ClampingToneMapper {
-    fn apply_tone_mapping(&self, image_in: &ImageRgbF, image_out: &mut ImageRgbU8) {
+impl ToneMapper<ColourRgbF> for ClampingToneMapper {
+    fn apply_tone_mapping(&self, image_in: &Array2D<ColourRgbF>, image_out: &mut ImageRgbU8) {
         assert!(image_in.get_width() == image_out.get_width());
         assert!(image_in.get_height() == image_out.get_height());
         for column in 0..image_in.get_width() {
             for row in 0..image_in.get_height() {
-                let colour = image_in.get_colour(row, column);
+                let colour = image_in[row][column];
                 image_out.set_colour(
                     row,
                     column,
@@ -264,7 +264,7 @@ mod tests {
             let mut image_in = ImageRgbF::new(1, 1);
             let mut image_out = ImageRgbU8::new(1, 1);
             image_in.set_colour(0, 0, ColourRgbF::new(0.0, 0.0, 0.0));
-            target.apply_tone_mapping(&image_in, &mut image_out);
+            target.apply_tone_mapping(&image_in.data, &mut image_out);
             assert!(image_out.get_colour(0, 0).values == [0, 0, 0]);
         }
 
@@ -274,7 +274,7 @@ mod tests {
             let mut image_in = ImageRgbF::new(1, 1);
             let mut image_out = ImageRgbU8::new(1, 1);
             image_in.set_colour(0, 0, ColourRgbF::new(1.0, 1.0, 1.0));
-            target.apply_tone_mapping(&image_in, &mut image_out);
+            target.apply_tone_mapping(&image_in.data, &mut image_out);
             assert!(image_out.get_colour(0, 0).values == [0xff, 0xff, 0xff]);
         }
 
@@ -284,7 +284,7 @@ mod tests {
             let mut image_in = ImageRgbF::new(1, 1);
             let mut image_out = ImageRgbU8::new(1, 1);
             image_in.set_colour(0, 0, ColourRgbF::new(2.0, 2.0, 2.0));
-            target.apply_tone_mapping(&image_in, &mut image_out);
+            target.apply_tone_mapping(&image_in.data, &mut image_out);
             assert!(image_out.get_colour(0, 0).values == [0xff, 0xff, 0xff]);
         }
 
@@ -294,7 +294,7 @@ mod tests {
             let mut image_in = ImageRgbF::new(1, 1);
             let mut image_out = ImageRgbU8::new(1, 1);
             image_in.set_colour(0, 0, ColourRgbF::new(0.0, 2.0, 0.0));
-            target.apply_tone_mapping(&image_in, &mut image_out);
+            target.apply_tone_mapping(&image_in.data, &mut image_out);
             assert!(image_out.get_colour(0, 0).values == [0x0, 0xff, 0x0]);
         }
 
@@ -304,7 +304,7 @@ mod tests {
             let mut image_in = ImageRgbF::new(1, 1);
             let mut image_out = ImageRgbU8::new(1, 1);
             image_in.set_colour(0, 0, ColourRgbF::new(0.5, 0.0, 0.0));
-            target.apply_tone_mapping(&image_in, &mut image_out);
+            target.apply_tone_mapping(&image_in.data, &mut image_out);
             assert!(image_out.get_colour(0, 0).values == [0x7f, 0x0, 0x0]);
         }
     }

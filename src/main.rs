@@ -211,7 +211,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             for message in tile_rx.try_iter() {
                 if let Some((tile, tile_image)) = message {
                     let mut tile_image_rgbu8 = ImageRgbU8::new(tile.width(), tile.height());
-                    ClampingToneMapper {}.apply_tone_mapping(&tile_image, &mut tile_image_rgbu8);
+                    ClampingToneMapper {}
+                        .apply_tone_mapping(&tile_image.data, &mut tile_image_rgbu8);
                     update_texture(&tile, &tile_image_rgbu8, &mut rendered_image_texture);
                     update_image(&tile, &tile_image_rgbu8, &mut rendered_image);
                     canvas.copy(&rendered_image_texture, None, None).unwrap();
