@@ -1,6 +1,7 @@
 #![feature(external_doc, clamp)]
 #![doc(include = "../README.md")]
 
+pub mod accumulation_buffer;
 mod camera;
 pub mod colour;
 pub mod image;
