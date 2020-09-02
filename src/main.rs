@@ -78,11 +78,11 @@ fn update_texture(tile: &Tile, image: &ImageRgbU8, texture: &mut Texture) {
         .update(
             Rect::new(
                 tile.start_column as i32,
-                texture.query().height as i32 - (tile.start_row as i32 + tile.height() as i32),
+                tile.start_row as i32,
                 tile.width() as u32,
                 tile.height() as u32,
             ),
-            image.get_pixel_data().as_slice(),
+            image.get_pixel_data(),
             (image.get_width() * ImageRgbU8::num_channels()) as usize,
         )
         .expect("Couldn't update texture.");

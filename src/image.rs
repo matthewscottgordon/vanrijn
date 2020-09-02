@@ -5,55 +5,41 @@ use std::path::Path;
 
 use crate::colour::{ColourRgbF, ColourRgbU8};
 use crate::math::Vec3;
+use crate::util::Array2D;
 
 pub struct ImageRgbU8 {
-    pixel_data: Vec<u8>,
-    width: usize,
-    height: usize,
+    data: Array2D<[u8; 3]>,
 }
 
 impl ImageRgbU8 {
     pub fn new(width: usize, height: usize) -> ImageRgbU8 {
         ImageRgbU8 {
-            width,
-            height,
-            pixel_data: vec![0; (width * height * 3) as usize],
+            data: Array2D::new(height, width),
         }
-    }
-
-    pub fn clear(&mut self) -> &mut ImageRgbU8 {
-        for byte in self.pixel_data.iter_mut() {
-            *byte = 0u8;
-        }
-        self
     }
 
     pub fn get_colour(&self, row: usize, column: usize) -> ColourRgbU8 {
-        assert!(row < self.height && column < self.width);
-        let index = self.calculate_index(row, column);
         ColourRgbU8 {
-            values: self.pixel_data[index..index + 3]
-                .try_into()
-                .expect("Wrong length."),
+            values: self.data[row][column].try_into().expect("Wrong length."),
         }
     }
 
     pub fn set_colour(&mut self, row: usize, column: usize, colour: ColourRgbU8) {
-        assert!(row < self.height && column < self.width);
-        let index = self.calculate_index(row, column);
-        self.pixel_data[index..index + 3].copy_from_slice(&colour.values[..]);
+        let slice = &mut self.data[row][column];
+        slice.copy_from_slice(&colour.values[..]);
     }
 
-    pub fn get_pixel_data(&self) -> &Vec<u8> {
-        &self.pixel_data
+    pub fn get_pixel_data(&self) -> &[u8] {
+        let data = self.data.as_slice();
+        unsafe { std::slice::from_raw_parts(data[0].as_ptr(), data.len() * 3) }
     }
 
     pub fn get_width(&self) -> usize {
-        self.width
+        self.data.get_width()
     }
 
     pub fn get_height(&self) -> usize {
-        self.height
+        self.data.get_height()
     }
 
     pub fn num_channels() -> usize {
@@ -61,34 +47,23 @@ impl ImageRgbU8 {
     }
 
     pub fn update(&mut self, start_row: usize, start_column: usize, image: &ImageRgbU8) {
-        assert!(start_column + image.width <= self.width);
-        assert!(start_row + image.height <= self.height);
-        for row in 0..image.height {
-            let source_start = image.calculate_index(row, 0);
-            let source_end = image.calculate_index(row, image.width - 1) + 3;
-            let destination_start = self.calculate_index(start_row + row, start_column);
-            let destination_end =
-                self.calculate_index(start_row + row, start_column + image.width - 1) + 3;
-            self.pixel_data[destination_start..destination_end]
-                .copy_from_slice(&image.pixel_data[source_start..source_end]);
-        }
+        self.data.update_block(start_row, start_column, &image.data);
     }
 
     pub fn write_png(&self, filename: &Path) -> Result<(), std::io::Error> {
         let file = File::create(filename)?;
         let ref mut file_buffer = BufWriter::new(file);
 
-        let mut encoder = png::Encoder::new(file_buffer, self.width as u32, self.height as u32);
+        let mut encoder = png::Encoder::new(
+            file_buffer,
+            self.get_width() as u32,
+            self.get_height() as u32,
+        );
         encoder.set_color(png::ColorType::RGB);
         encoder.set_depth(png::BitDepth::Eight);
         let mut writer = encoder.write_header()?;
-        writer.write_image_data(self.pixel_data.as_slice())?;
+        writer.write_image_data(self.get_pixel_data())?;
         Ok(())
-    }
-
-    fn calculate_index(&self, row: usize, column: usize) -> usize {
-        assert!(row < self.height && column < self.width);
-        (((self.height - (row + 1)) * self.width + column) * Self::num_channels()) as usize
     }
 }
 
@@ -212,6 +187,30 @@ impl ToneMapper for ClampingToneMapper {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn get_pixel_data_returns_correct_values() {
+        let mut target = ImageRgbU8::new(4, 3);
+        for i in 0..3 {
+            for j in 0..4 {
+                target.set_colour(
+                    i,
+                    j,
+                    ColourRgbU8 {
+                        values: [i as u8, j as u8, i as u8],
+                    },
+                )
+            }
+        }
+        for i in 0..3 {
+            for j in 0..4 {
+                let index = (i * 4 + j) * 3;
+                assert!(target.get_pixel_data()[index] == i as u8);
+                assert!(target.get_pixel_data()[index + 1] == j as u8);
+                assert!(target.get_pixel_data()[index + 2] == i as u8);
+            }
+        }
+    }
 
     mod normalized_as_byte {
         use super::*;

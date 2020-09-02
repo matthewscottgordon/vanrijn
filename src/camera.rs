@@ -53,8 +53,11 @@ impl ImageSampler {
             Vec3::new(
                 Self::scale(column, self.image_width_pixels, self.film_width)
                     - self.film_width * 0.5,
-                Self::scale(row, self.image_height_pixels, self.film_height)
-                    - self.film_height * 0.5,
+                Self::scale(
+                    self.image_height_pixels - (row + 1),
+                    self.image_height_pixels,
+                    self.film_height,
+                ) - self.film_height * 0.5,
                 self.film_distance,
             ),
         )
@@ -176,7 +179,7 @@ mod tests {
                 ImageSampler::scale(200, 800, target.film_width) - target.film_width * 0.5;
             assert!((point_on_film_plane.x() - expected_x).abs() < 0.0000000001);
             let expected_y =
-                ImageSampler::scale(100, 600, target.film_height) - target.film_height * 0.5;
+                -ImageSampler::scale(100, 600, target.film_height) + target.film_height * 0.5;
             assert!((point_on_film_plane.y() - expected_y).abs() < 0.0000000001);
         }
     }
