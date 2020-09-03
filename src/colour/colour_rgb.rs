@@ -4,7 +4,7 @@ use std::ops::{Add, Mul};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct ColourRgbF {
-    values: Vec3,
+    pub values: Vec3,
 }
 
 impl ColourRgbF {
