@@ -3,7 +3,7 @@ use crate::math::{Mat3, Vec3};
 use super::ColourRgbF;
 
 /// A CIE XYZ Colour Value
-#[derive(Default, Clone, Copy, Debug)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct ColourXyz {
     pub values: Vec3,
 }
