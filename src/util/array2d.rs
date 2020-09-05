@@ -1,7 +1,7 @@
 use std::ops::{Index, IndexMut};
 
 /// 3D row-major dynamic array
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Array2D<T> {
     data: Vec<T>,
     height: usize,
