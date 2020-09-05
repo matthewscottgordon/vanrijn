@@ -1,4 +1,5 @@
 /// A quantum of light with a given wavelength and intensity
+#[derive(Clone, Default, Debug)]
 pub struct Photon {
     /// The wavelength in nanometres
     pub wavelength: f64,
