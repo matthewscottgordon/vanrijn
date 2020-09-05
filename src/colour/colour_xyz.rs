@@ -1,6 +1,6 @@
 use crate::math::{Mat3, Vec3};
 
-use super::ColourRgbF;
+use super::{ColourRgbF, Photon};
 
 /// A CIE XYZ Colour Value
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -26,6 +26,12 @@ impl ColourXyz {
             colour_matching_function_z(wavelength),
         );
         ColourXyz { values }
+    }
+
+    pub fn from_photon(photon: &Photon) -> ColourXyz {
+        let mut result = Self::for_wavelength(photon.wavelength);
+        result.values *= photon.intensity;
+        result
     }
 
     pub fn x(&self) -> f64 {
