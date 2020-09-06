@@ -13,15 +13,16 @@ use std::path::{Path, PathBuf};
 use std::sync::{mpsc, Arc};
 use std::time::Duration;
 
-use vanrijn::colour::{ColourRgbF, NamedColour};
-use vanrijn::image::{ClampingToneMapper, ImageRgbU8, ToneMapper};
+use vanrijn::accumulation_buffer::AccumulationBuffer;
+use vanrijn::colour::{ColourRgbF, NamedColour, Spectrum};
+use vanrijn::image::{ClampingToneMapper, ImageRgbU8};
 use vanrijn::materials::{LambertianMaterial, PhongMaterial, ReflectiveMaterial};
 use vanrijn::math::Vec3;
 use vanrijn::mesh::load_obj;
 use vanrijn::partial_render_scene;
 use vanrijn::raycasting::{Aggregate, BoundingVolumeHierarchy, Plane, Primitive, Sphere};
 use vanrijn::scene::Scene;
-use vanrijn::util::{Tile, TileIterator};
+use vanrijn::util::TileIterator;
 
 #[derive(Debug)]
 struct CommandLineParameters {
@@ -73,23 +74,14 @@ fn parse_args() -> CommandLineParameters {
     }
 }
 
-fn update_texture(tile: &Tile, image: &ImageRgbU8, texture: &mut Texture) {
+fn update_texture(image: &ImageRgbU8, texture: &mut Texture) {
     texture
         .update(
-            Rect::new(
-                tile.start_column as i32,
-                tile.start_row as i32,
-                tile.width() as u32,
-                tile.height() as u32,
-            ),
+            Rect::new(0, 0, image.get_width() as u32, image.get_height() as u32),
             image.get_pixel_data(),
             (image.get_width() * ImageRgbU8::num_channels()) as usize,
         )
         .expect("Couldn't update texture.");
-}
-
-fn update_image(tile: &Tile, tile_image: &ImageRgbU8, image: &mut ImageRgbU8) {
-    image.update(tile.start_row, tile.start_column, tile_image);
 }
 
 fn init_canvas(
@@ -114,7 +106,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let image_width = parameters.width;
     let image_height = parameters.height;
 
-    let mut rendered_image = ImageRgbU8::new(image_width, image_height);
+    let mut rendered_image = AccumulationBuffer::new(image_width, image_height);
 
     let (sdl_context, mut canvas) = init_canvas(image_width, image_height)?;
 
@@ -131,7 +123,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut model_object = load_obj(
         &model_file_path,
         Arc::new(ReflectiveMaterial {
-            colour: ColourRgbF::from_named(NamedColour::Yellow),
+            colour: Spectrum::from_linear_rgb(&ColourRgbF::from_named(NamedColour::Yellow)),
             diffuse_strength: 0.05,
             reflection_strength: 0.9,
         }),
@@ -149,7 +141,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Vec3::new(0.0, 1.0, 0.0),
                     -2.0,
                     Arc::new(LambertianMaterial {
-                        colour: ColourRgbF::new(0.55, 0.27, 0.04),
+                        colour: Spectrum::from_linear_rgb(&ColourRgbF::new(0.55, 0.27, 0.04)),
                         diffuse_strength: 0.1,
                     }),
                 )) as Box<dyn Primitive>,
@@ -157,7 +149,9 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Vec3::new(-6.25, -0.5, 1.0),
                     1.0,
                     Arc::new(LambertianMaterial {
-                        colour: ColourRgbF::from_named(NamedColour::Green),
+                        colour: Spectrum::from_linear_rgb(&ColourRgbF::from_named(
+                            NamedColour::Green,
+                        )),
                         diffuse_strength: 0.1,
                     }),
                 )),
@@ -165,7 +159,9 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Vec3::new(-4.25, -0.5, 2.0),
                     1.0,
                     Arc::new(ReflectiveMaterial {
-                        colour: ColourRgbF::from_named(NamedColour::Blue),
+                        colour: Spectrum::from_linear_rgb(&ColourRgbF::from_named(
+                            NamedColour::Blue,
+                        )),
                         diffuse_strength: 0.01,
                         reflection_strength: 0.99,
                     }),
@@ -174,7 +170,9 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Vec3::new(-5.0, 1.5, 1.0),
                     1.0,
                     Arc::new(PhongMaterial {
-                        colour: ColourRgbF::from_named(NamedColour::Red),
+                        colour: Spectrum::from_linear_rgb(&ColourRgbF::from_named(
+                            NamedColour::Red,
+                        )),
                         diffuse_strength: 0.05,
                         smoothness: 100.0,
                         specular_strength: 1.0,
@@ -193,7 +191,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let worker_boss = std::thread::spawn(move || {
         let end_tx = tile_tx.clone();
-        TileIterator::new(image_width as usize, image_height as usize, 32)
+        TileIterator::new(image_width as usize, image_height as usize, 256)
             .map(move |tile| (tile, tile_tx.clone()))
             .par_bridge()
             .try_for_each(|(tile, tx)| {
@@ -209,16 +207,16 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     'running: loop {
         if let Some(ref tile_rx) = tile_rx {
             for message in tile_rx.try_iter() {
-                if let Some((tile, tile_image)) = message {
-                    let mut tile_image_rgbu8 = ImageRgbU8::new(tile.width(), tile.height());
-                    ClampingToneMapper {}
-                        .apply_tone_mapping(&tile_image.data, &mut tile_image_rgbu8);
-                    update_texture(&tile, &tile_image_rgbu8, &mut rendered_image_texture);
-                    update_image(&tile, &tile_image_rgbu8, &mut rendered_image);
+                if let Some((tile, tile_accumulation_buffer)) = message {
+                    rendered_image.merge_tile(&tile, &tile_accumulation_buffer);
+                    let rgb_image = rendered_image.to_image_rgb_u8(&ClampingToneMapper {});
+                    update_texture(&rgb_image, &mut rendered_image_texture);
                     canvas.copy(&rendered_image_texture, None, None).unwrap();
                     canvas.present();
                 } else if let Some(image_filename) = parameters.output_file {
-                    rendered_image.write_png(&image_filename)?;
+                    rendered_image
+                        .to_image_rgb_u8(&ClampingToneMapper {})
+                        .write_png(&image_filename)?;
                     break 'running;
                 }
             }

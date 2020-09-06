@@ -2,7 +2,7 @@ use crate::colour::{ColourXyz, Photon};
 use crate::image::{ImageRgbU8, ToneMapper};
 use crate::util::{Array2D, Tile};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AccumulationBuffer {
     colour_buffer: Array2D<ColourXyz>,
     weight_buffer: Array2D<f64>,

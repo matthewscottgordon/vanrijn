@@ -1,7 +1,10 @@
 use crate::math::Vec3;
 
-use super::colour::{ColourRgbF, NamedColour};
-use super::image::ImageRgbF;
+use super::accumulation_buffer::AccumulationBuffer;
+use super::colour::{
+    ColourRgbF, NamedColour, Photon, Spectrum, LONGEST_VISIBLE_WAVELENGTH,
+    SHORTEST_VISIBLE_WAVELENGTH,
+};
 use super::integrators::{DirectionalLight, Integrator, WhittedIntegrator};
 use super::raycasting::Ray;
 use super::sampler::Sampler;
@@ -90,42 +93,70 @@ const RECURSION_LIMIT: u16 = 32;
 ///     // display and/or save tile_image
 /// }
 /// ```
-pub fn partial_render_scene(scene: &Scene, tile: Tile, height: usize, width: usize) -> ImageRgbF {
-    let mut output_image_tile = ImageRgbF::new(tile.width(), tile.height());
+pub fn partial_render_scene(
+    scene: &Scene,
+    tile: Tile,
+    height: usize,
+    width: usize,
+) -> AccumulationBuffer {
+    let mut output_image_tile = AccumulationBuffer::new(tile.width(), tile.height());
     let image_sampler = ImageSampler::new(width, height, scene.camera_location);
     let ambient_intensity = 0.0;
     let directional_intensity1 = 7.0;
     let directional_intensity2 = 3.0;
     let directional_intensity3 = 2.0;
     let integrator = WhittedIntegrator {
-        ambient_light: ColourRgbF::from_named(NamedColour::White) * ambient_intensity,
+        ambient_light: Spectrum::from_linear_rgb(
+            &(ColourRgbF::from_named(NamedColour::White) * ambient_intensity),
+        ),
         lights: vec![
             DirectionalLight {
                 direction: Vec3::new(1.0, 1.0, -1.0).normalize(),
-                colour: ColourRgbF::from_named(NamedColour::White) * directional_intensity1,
+                spectrum: Spectrum::from_linear_rgb(
+                    &(ColourRgbF::from_named(NamedColour::White) * directional_intensity1),
+                ),
             },
             DirectionalLight {
                 direction: Vec3::new(-0.5, 2.0, -0.5).normalize(),
-                colour: ColourRgbF::from_named(NamedColour::White) * directional_intensity2,
+                spectrum: Spectrum::from_linear_rgb(
+                    &(ColourRgbF::from_named(NamedColour::White) * directional_intensity2),
+                ),
             },
             DirectionalLight {
                 direction: Vec3::new(-3.0, 0.1, -0.5).normalize(),
-                colour: ColourRgbF::from_named(NamedColour::White) * directional_intensity3,
+                spectrum: Spectrum::from_linear_rgb(
+                    &(ColourRgbF::from_named(NamedColour::White) * directional_intensity3),
+                ),
             },
         ],
     };
     let sampler = Sampler { scene: &scene };
     for column in 0..tile.width() {
         for row in 0..tile.height() {
-            let ray = image_sampler.ray_for_pixel(tile.start_row + row, tile.start_column + column);
-            let hit = sampler.sample(&ray);
-            let colour = match hit {
-                None => ColourRgbF::from_named(NamedColour::Black),
-                Some(intersection_info) => {
-                    integrator.integrate(&sampler, &intersection_info, RECURSION_LIMIT)
-                }
-            };
-            output_image_tile.set_colour(row, column, colour);
+            for wavelength_number in 0..8 {
+                let wavelength_ratio = wavelength_number as f64 / 8.0;
+                let wavelength = SHORTEST_VISIBLE_WAVELENGTH
+                    + wavelength_ratio * (LONGEST_VISIBLE_WAVELENGTH - SHORTEST_VISIBLE_WAVELENGTH);
+                let ray =
+                    image_sampler.ray_for_pixel(tile.start_row + row, tile.start_column + column);
+                let hit = sampler.sample(&ray);
+                let photon = match hit {
+                    None => Photon {
+                        wavelength: 0.0,
+                        intensity: 0.0,
+                    },
+                    Some(intersection_info) => integrator.integrate(
+                        &sampler,
+                        &intersection_info,
+                        &Photon {
+                            wavelength,
+                            intensity: 0.0,
+                        },
+                        RECURSION_LIMIT,
+                    ),
+                };
+                output_image_tile.update_pixel(row, column, &photon, 1.0);
+            }
         }
     }
     output_image_tile

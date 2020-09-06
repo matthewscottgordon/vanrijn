@@ -3,9 +3,10 @@ use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
 
-use crate::colour::{ColourRgbF, ColourRgbU8};
+use crate::colour::{ColourRgbF, ColourRgbU8, ColourXyz};
 use crate::util::Array2D;
 
+#[derive(Debug)]
 pub struct ImageRgbU8 {
     data: Array2D<[u8; 3]>,
 }
@@ -147,6 +148,29 @@ impl ToneMapper<ColourRgbF> for ClampingToneMapper {
         for column in 0..image_in.get_width() {
             for row in 0..image_in.get_height() {
                 let colour = image_in[row][column];
+                image_out.set_colour(
+                    row,
+                    column,
+                    ColourRgbU8 {
+                        values: [
+                            Self::clamp(&colour.red()),
+                            Self::clamp(&colour.green()),
+                            Self::clamp(&colour.blue()),
+                        ],
+                    },
+                );
+            }
+        }
+    }
+}
+
+impl ToneMapper<ColourXyz> for ClampingToneMapper {
+    fn apply_tone_mapping(&self, image_in: &Array2D<ColourXyz>, image_out: &mut ImageRgbU8) {
+        assert!(image_in.get_width() == image_out.get_width());
+        assert!(image_in.get_height() == image_out.get_height());
+        for column in 0..image_in.get_width() {
+            for row in 0..image_in.get_height() {
+                let colour = image_in[row][column].to_linear_rgb();
                 image_out.set_colour(
                     row,
                     column,

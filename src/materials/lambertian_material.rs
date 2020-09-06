@@ -1,28 +1,31 @@
-use crate::colour::ColourRgbF;
+use crate::colour::{Photon, Spectrum};
 use crate::math::Vec3;
 
-use super::{Bsdf, Material};
+use super::Material;
 
 use std::fmt::Debug;
 
 #[derive(Debug)]
 pub struct LambertianMaterial {
-    pub colour: ColourRgbF,
+    pub colour: Spectrum,
     pub diffuse_strength: f64,
 }
 
 impl LambertianMaterial {
     pub fn new_dummy() -> LambertianMaterial {
         LambertianMaterial {
-            colour: ColourRgbF::new(1.0, 1.0, 1.0),
+            colour: Spectrum {},
             diffuse_strength: 1.0,
         }
     }
 }
 
 impl Material for LambertianMaterial {
-    fn bsdf(&self) -> Bsdf {
-        let colour = self.colour * self.diffuse_strength;
-        Box::new(move |_w_o: Vec3, _w_i: Vec3, colour_in: ColourRgbF| colour * colour_in)
+    fn bsdf<'a>(&'a self) -> Box<dyn Fn(&Vec3, &Vec3, &Photon) -> Photon + 'a> {
+        Box::new(move |_w_o: &Vec3, _w_i: &Vec3, photon_in: &Photon| {
+            let mut result = self.colour.scale_photon(photon_in);
+            result.intensity *= self.diffuse_strength;
+            result
+        })
     }
 }
