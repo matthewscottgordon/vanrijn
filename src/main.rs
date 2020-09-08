@@ -123,7 +123,9 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut model_object = load_obj(
         &model_file_path,
         Arc::new(ReflectiveMaterial {
-            colour: Spectrum::from_linear_rgb(&ColourRgbF::from_named(NamedColour::Yellow)),
+            colour: Spectrum::reflection_from_linear_rgb(&ColourRgbF::from_named(
+                NamedColour::Yellow,
+            )),
             diffuse_strength: 0.05,
             reflection_strength: 0.9,
         }),
@@ -141,7 +143,9 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Vec3::new(0.0, 1.0, 0.0),
                     -2.0,
                     Arc::new(LambertianMaterial {
-                        colour: Spectrum::from_linear_rgb(&ColourRgbF::new(0.55, 0.27, 0.04)),
+                        colour: Spectrum::reflection_from_linear_rgb(&ColourRgbF::new(
+                            0.55, 0.27, 0.04,
+                        )),
                         diffuse_strength: 0.1,
                     }),
                 )) as Box<dyn Primitive>,
@@ -149,7 +153,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Vec3::new(-6.25, -0.5, 1.0),
                     1.0,
                     Arc::new(LambertianMaterial {
-                        colour: Spectrum::from_linear_rgb(&ColourRgbF::from_named(
+                        colour: Spectrum::reflection_from_linear_rgb(&ColourRgbF::from_named(
                             NamedColour::Green,
                         )),
                         diffuse_strength: 0.1,
@@ -159,7 +163,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Vec3::new(-4.25, -0.5, 2.0),
                     1.0,
                     Arc::new(ReflectiveMaterial {
-                        colour: Spectrum::from_linear_rgb(&ColourRgbF::from_named(
+                        colour: Spectrum::reflection_from_linear_rgb(&ColourRgbF::from_named(
                             NamedColour::Blue,
                         )),
                         diffuse_strength: 0.01,
@@ -170,7 +174,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Vec3::new(-5.0, 1.5, 1.0),
                     1.0,
                     Arc::new(PhongMaterial {
-                        colour: Spectrum::from_linear_rgb(&ColourRgbF::from_named(
+                        colour: Spectrum::reflection_from_linear_rgb(&ColourRgbF::from_named(
                             NamedColour::Red,
                         )),
                         diffuse_strength: 0.05,

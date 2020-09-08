@@ -106,25 +106,25 @@ pub fn partial_render_scene(
     let directional_intensity2 = 3.0;
     let directional_intensity3 = 2.0;
     let integrator = WhittedIntegrator {
-        ambient_light: Spectrum::from_linear_rgb(
+        ambient_light: Spectrum::reflection_from_linear_rgb(
             &(ColourRgbF::from_named(NamedColour::White) * ambient_intensity),
         ),
         lights: vec![
             DirectionalLight {
                 direction: Vec3::new(1.0, 1.0, -1.0).normalize(),
-                spectrum: Spectrum::from_linear_rgb(
+                spectrum: Spectrum::reflection_from_linear_rgb(
                     &(ColourRgbF::from_named(NamedColour::White) * directional_intensity1),
                 ),
             },
             DirectionalLight {
                 direction: Vec3::new(-0.5, 2.0, -0.5).normalize(),
-                spectrum: Spectrum::from_linear_rgb(
+                spectrum: Spectrum::reflection_from_linear_rgb(
                     &(ColourRgbF::from_named(NamedColour::White) * directional_intensity2),
                 ),
             },
             DirectionalLight {
                 direction: Vec3::new(-3.0, 0.1, -0.5).normalize(),
-                spectrum: Spectrum::from_linear_rgb(
+                spectrum: Spectrum::reflection_from_linear_rgb(
                     &(ColourRgbF::from_named(NamedColour::White) * directional_intensity3),
                 ),
             },

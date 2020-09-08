@@ -14,7 +14,7 @@ pub struct LambertianMaterial {
 impl LambertianMaterial {
     pub fn new_dummy() -> LambertianMaterial {
         LambertianMaterial {
-            colour: Spectrum {},
+            colour: Spectrum::black(),
             diffuse_strength: 1.0,
         }
     }
