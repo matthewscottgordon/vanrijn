@@ -170,7 +170,7 @@ impl ToneMapper<ColourXyz> for ClampingToneMapper {
         assert!(image_in.get_height() == image_out.get_height());
         for column in 0..image_in.get_width() {
             for row in 0..image_in.get_height() {
-                let colour = image_in[row][column].to_linear_rgb();
+                let colour = image_in[row][column].to_srgb();
                 image_out.set_colour(
                     row,
                     column,

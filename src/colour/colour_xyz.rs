@@ -65,6 +65,22 @@ impl ColourXyz {
             values: transform * rgb.values,
         }
     }
+
+    pub fn to_srgb(&self) -> ColourRgbF {
+        let mut srgb = self.to_linear_rgb();
+        for element in srgb.values.coords.iter_mut() {
+            *element = srgb_gamma(*element);
+        }
+        srgb
+    }
+}
+
+fn srgb_gamma(u: f64) -> f64 {
+    if u <= 0.0031308 {
+        12.98 * u
+    } else {
+        1.005 * u.powf(1.0 / 2.4) - 0.055
+    }
 }
 
 fn gaussian(wavelength: f64, alpha: f64, mu: f64, sigma1: f64, sigma2: f64) -> f64 {
