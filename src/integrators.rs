@@ -55,8 +55,7 @@ impl Integrator for WhittedIntegrator {
                 }
             })
             .chain(
-                info.material
-                    .sample(&(world_to_bsdf_space * info.retro))
+                [info.material.sample(&(world_to_bsdf_space * info.retro))]
                     .iter()
                     .map(|direction| {
                         let world_space_direction = bsdf_to_world_space * direction;
@@ -91,5 +90,43 @@ impl Integrator for WhittedIntegrator {
                 result.intensity += b.intensity;
                 result
             })
+    }
+}
+
+pub struct SimpleRandomIntegrator {}
+
+impl Integrator for SimpleRandomIntegrator {
+    fn integrate(
+        &self,
+        sampler: &Sampler,
+        info: &IntersectionInfo,
+        photon: &Photon,
+        recursion_limit: u16,
+    ) -> Photon {
+        if recursion_limit == 0 {
+            return Photon {
+                wavelength: 0.0,
+                intensity: 0.0,
+            };
+        }
+        let world_to_bsdf_space =
+            try_change_of_basis_matrix(&info.tangent, &info.cotangent, &info.normal)
+                .expect("Normal, tangent and cotangent don't form a valid basis.");
+        let bsdf_to_world_space = world_to_bsdf_space
+            .try_inverse()
+            .expect("Expected matrix to be invertable.");
+        let w_i = info.material.sample(&(world_to_bsdf_space * info.retro));
+        let world_space_w_i = bsdf_to_world_space * w_i;
+        info.material.bsdf()(
+            &(world_to_bsdf_space * info.retro),
+            &w_i,
+            &match sampler.sample(&Ray::new(info.location, world_space_w_i).bias(0.000_000_1)) {
+                None => photon.set_intensity(world_space_w_i.y()),
+                Some(recursive_hit) => {
+                    self.integrate(&sampler, &recursive_hit, &photon, recursion_limit - 1)
+                }
+            }
+            .scale_intensity(world_space_w_i.dot(&info.normal).abs()),
+        )
     }
 }

@@ -1,3 +1,7 @@
+use crate::colour::{LONGEST_VISIBLE_WAVELENGTH, SHORTEST_VISIBLE_WAVELENGTH};
+
+use rand::random;
+
 /// A quantum of light with a given wavelength and intensity
 #[derive(Clone, Default, Debug)]
 pub struct Photon {
@@ -11,6 +15,18 @@ pub struct Photon {
 }
 
 impl Photon {
+    pub fn random_wavelength() -> Photon {
+        Photon {
+            wavelength: SHORTEST_VISIBLE_WAVELENGTH
+                + (LONGEST_VISIBLE_WAVELENGTH - SHORTEST_VISIBLE_WAVELENGTH) * random::<f64>(),
+            intensity: 0.0,
+        }
+    }
+
+    pub fn random_wavelength_pdf(_wavelength: f64) -> f64 {
+        LONGEST_VISIBLE_WAVELENGTH - SHORTEST_VISIBLE_WAVELENGTH
+    }
+
     pub fn scale_intensity(&self, scale_factor: f64) -> Photon {
         Photon {
             wavelength: self.wavelength,

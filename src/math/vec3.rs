@@ -302,6 +302,14 @@ impl MulAssign<Mat3> for Vec3 {
     }
 }
 
+impl Mul<Vec3> for f64 {
+    type Output = Vec3;
+
+    fn mul(self, rhs: Vec3) -> Vec3 {
+        rhs * self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

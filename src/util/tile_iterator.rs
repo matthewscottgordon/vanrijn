@@ -15,6 +15,7 @@ impl Tile {
     }
 }
 
+#[derive(Clone)]
 pub struct TileIterator {
     tile_size: usize,
     total_height: usize,

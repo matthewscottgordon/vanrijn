@@ -1,11 +1,8 @@
 use crate::math::Vec3;
 
 use super::accumulation_buffer::AccumulationBuffer;
-use super::colour::{
-    ColourRgbF, NamedColour, Photon, Spectrum, LONGEST_VISIBLE_WAVELENGTH,
-    SHORTEST_VISIBLE_WAVELENGTH,
-};
-use super::integrators::{DirectionalLight, Integrator, WhittedIntegrator};
+use super::colour::Photon;
+use super::integrators::{Integrator, SimpleRandomIntegrator};
 use super::raycasting::Ray;
 use super::sampler::Sampler;
 use super::scene::Scene;
@@ -67,7 +64,7 @@ impl ImageSampler {
     }
 }
 
-const RECURSION_LIMIT: u16 = 32;
+const RECURSION_LIMIT: u16 = 128;
 
 /// Render a rectangular section of the image.
 ///
@@ -101,62 +98,30 @@ pub fn partial_render_scene(
 ) -> AccumulationBuffer {
     let mut output_image_tile = AccumulationBuffer::new(tile.width(), tile.height());
     let image_sampler = ImageSampler::new(width, height, scene.camera_location);
-    let ambient_intensity = 0.0;
-    let directional_intensity1 = 7.0;
-    let directional_intensity2 = 3.0;
-    let directional_intensity3 = 2.0;
-    let integrator = WhittedIntegrator {
-        ambient_light: Spectrum::reflection_from_linear_rgb(
-            &(ColourRgbF::from_named(NamedColour::White) * ambient_intensity),
-        ),
-        lights: vec![
-            DirectionalLight {
-                direction: Vec3::new(1.0, 1.0, -1.0).normalize(),
-                spectrum: Spectrum::reflection_from_linear_rgb(
-                    &(ColourRgbF::from_named(NamedColour::White) * directional_intensity1),
-                ),
-            },
-            DirectionalLight {
-                direction: Vec3::new(-0.5, 2.0, -0.5).normalize(),
-                spectrum: Spectrum::reflection_from_linear_rgb(
-                    &(ColourRgbF::from_named(NamedColour::White) * directional_intensity2),
-                ),
-            },
-            DirectionalLight {
-                direction: Vec3::new(-3.0, 0.1, -0.5).normalize(),
-                spectrum: Spectrum::reflection_from_linear_rgb(
-                    &(ColourRgbF::from_named(NamedColour::White) * directional_intensity3),
-                ),
-            },
-        ],
-    };
+    let integrator = SimpleRandomIntegrator {};
     let sampler = Sampler { scene: &scene };
     for column in 0..tile.width() {
         for row in 0..tile.height() {
-            for wavelength_number in 0..8 {
-                let wavelength_ratio = wavelength_number as f64 / 8.0;
-                let wavelength = SHORTEST_VISIBLE_WAVELENGTH
-                    + wavelength_ratio * (LONGEST_VISIBLE_WAVELENGTH - SHORTEST_VISIBLE_WAVELENGTH);
-                let ray =
-                    image_sampler.ray_for_pixel(tile.start_row + row, tile.start_column + column);
-                let hit = sampler.sample(&ray);
-                let photon = match hit {
-                    None => Photon {
-                        wavelength: 0.0,
-                        intensity: 0.0,
-                    },
-                    Some(intersection_info) => integrator.integrate(
-                        &sampler,
-                        &intersection_info,
-                        &Photon {
-                            wavelength,
-                            intensity: 0.0,
-                        },
-                        RECURSION_LIMIT,
-                    ),
-                };
-                output_image_tile.update_pixel(row, column, &photon, 1.0);
-            }
+            let ray = image_sampler.ray_for_pixel(tile.start_row + row, tile.start_column + column);
+            let hit = sampler.sample(&ray);
+            let photon = match hit {
+                None => Photon {
+                    wavelength: 0.0,
+                    intensity: 0.0,
+                },
+                Some(intersection_info) => integrator.integrate(
+                    &sampler,
+                    &intersection_info,
+                    &Photon::random_wavelength(),
+                    RECURSION_LIMIT,
+                ),
+            };
+            output_image_tile.update_pixel(
+                row,
+                column,
+                &photon.scale_intensity(Photon::random_wavelength_pdf(photon.wavelength)),
+                1.0,
+            );
         }
     }
     output_image_tile

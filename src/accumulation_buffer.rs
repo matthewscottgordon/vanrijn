@@ -5,16 +5,25 @@ use crate::util::{Array2D, Tile};
 #[derive(Clone, Debug)]
 pub struct AccumulationBuffer {
     colour_buffer: Array2D<ColourXyz>,
+    colour_sum_buffer: Array2D<ColourXyz>,
+    colour_bias_buffer: Array2D<ColourXyz>,
     weight_buffer: Array2D<f64>,
+    weight_bias_buffer: Array2D<f64>,
 }
 
 impl AccumulationBuffer {
     pub fn new(height: usize, width: usize) -> AccumulationBuffer {
         let colour_buffer = Array2D::new(width, height);
+        let colour_sum_buffer = Array2D::new(width, height);
+        let colour_bias_buffer = Array2D::new(width, height);
         let weight_buffer = Array2D::new(width, height);
+        let weight_bias_buffer = Array2D::new(width, height);
         AccumulationBuffer {
             colour_buffer,
+            colour_sum_buffer,
+            colour_bias_buffer,
             weight_buffer,
+            weight_bias_buffer,
         }
     }
 
@@ -34,15 +43,20 @@ impl AccumulationBuffer {
 
     pub fn update_pixel(&mut self, row: usize, column: usize, photon: &Photon, weight: f64) {
         let buffer_colour = &mut self.colour_buffer[row][column];
+        let buffer_colour_sum = &mut self.colour_sum_buffer[row][column];
+        let buffer_colour_bias = &mut self.colour_bias_buffer[row][column];
         let buffer_weight = &mut self.weight_buffer[row][column];
-
-        *buffer_colour = blend(
-            buffer_colour,
-            *buffer_weight,
-            &ColourXyz::from_photon(&photon),
-            weight,
-        );
-        *buffer_weight += weight;
+        let buffer_weight_bias = &mut self.weight_bias_buffer[row][column];
+        let photon_colour = ColourXyz::from_photon(&photon);
+        let weight_sum_y = weight - *buffer_weight_bias;
+        let weight_sum_t = *buffer_weight + weight_sum_y;
+        *buffer_weight_bias = (weight_sum_t - *buffer_weight) - weight_sum_y;
+        *buffer_weight = weight_sum_t;
+        let colour_sum_y = photon_colour.values * weight - buffer_colour_bias.values;
+        let colour_sum_t = buffer_colour_sum.values + colour_sum_y;
+        buffer_colour_bias.values = (colour_sum_t - buffer_colour_sum.values) - colour_sum_y;
+        buffer_colour_sum.values = colour_sum_t;
+        buffer_colour.values = buffer_colour_sum.values * (1.0 / *buffer_weight);
     }
 
     pub fn merge_tile(&mut self, tile: &Tile, src: &AccumulationBuffer) {

@@ -16,7 +16,7 @@ use std::time::Duration;
 use vanrijn::accumulation_buffer::AccumulationBuffer;
 use vanrijn::colour::{ColourRgbF, NamedColour, Spectrum};
 use vanrijn::image::{ClampingToneMapper, ImageRgbU8};
-use vanrijn::materials::{LambertianMaterial, PhongMaterial, ReflectiveMaterial};
+use vanrijn::materials::LambertianMaterial;
 use vanrijn::math::Vec3;
 use vanrijn::mesh::load_obj;
 use vanrijn::partial_render_scene;
@@ -122,12 +122,12 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Loading object...");
     let mut model_object = load_obj(
         &model_file_path,
-        Arc::new(ReflectiveMaterial {
+        Arc::new(LambertianMaterial {
             colour: Spectrum::reflection_from_linear_rgb(&ColourRgbF::from_named(
                 NamedColour::Yellow,
             )),
             diffuse_strength: 0.05,
-            reflection_strength: 0.9,
+            //reflection_strength: 0.9,
         }),
     )?;
     println!("Building BVH...");
@@ -162,24 +162,25 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Box::new(Sphere::new(
                     Vec3::new(-4.25, -0.5, 2.0),
                     1.0,
-                    Arc::new(ReflectiveMaterial {
+                    Arc::new(LambertianMaterial {
                         colour: Spectrum::reflection_from_linear_rgb(&ColourRgbF::from_named(
                             NamedColour::Blue,
                         )),
-                        diffuse_strength: 0.01,
-                        reflection_strength: 0.99,
+                        diffuse_strength: 0.1,
+                        //                        diffuse_strength: 0.01,
+                        //                        reflection_strength: 0.99,
                     }),
                 )),
                 Box::new(Sphere::new(
                     Vec3::new(-5.0, 1.5, 1.0),
                     1.0,
-                    Arc::new(PhongMaterial {
+                    Arc::new(LambertianMaterial {
                         colour: Spectrum::reflection_from_linear_rgb(&ColourRgbF::from_named(
                             NamedColour::Red,
                         )),
                         diffuse_strength: 0.05,
-                        smoothness: 100.0,
-                        specular_strength: 1.0,
+                        //smoothness: 100.0,
+                        //specular_strength: 1.0,
                     }),
                 )),
             ]) as Box<dyn Aggregate>,
@@ -195,7 +196,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let worker_boss = std::thread::spawn(move || {
         let end_tx = tile_tx.clone();
-        TileIterator::new(image_width as usize, image_height as usize, 256)
+        TileIterator::new(image_width as usize, image_height as usize, 2048)
+            .cycle()
             .map(move |tile| (tile, tile_tx.clone()))
             .par_bridge()
             .try_for_each(|(tile, tx)| {
