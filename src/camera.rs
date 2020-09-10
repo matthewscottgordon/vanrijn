@@ -8,6 +8,8 @@ use super::sampler::Sampler;
 use super::scene::Scene;
 use super::util::Tile;
 
+use rand::random;
+
 struct ImageSampler {
     image_height_pixels: usize,
     image_width_pixels: usize,
@@ -44,7 +46,7 @@ impl ImageSampler {
         let n = n as f64;
         let i = i as f64;
         let pixel_size = l * (1.0 / n);
-        (i + 0.5) * pixel_size
+        (i + random::<f64>()) * pixel_size
     }
 
     fn ray_for_pixel(&self, row: usize, column: usize) -> Ray {
@@ -141,13 +143,13 @@ mod tests {
         #[test]
         fn scale_returns_correct_value_for_zero() {
             let correct_value = (3.0 / 10.0) / 2.0;
-            assert!((ImageSampler::scale(0, 10, 3.0f64) - correct_value).abs() < 0.0000000001)
+            assert!((ImageSampler::scale(0, 10, 3.0f64) - correct_value).abs() < 0.5)
         }
 
         #[test]
         fn scale_returns_correct_value_for_last_pixel() {
             let correct_value = 3.0 - (3.0 / 10.0) / 2.0;
-            assert!((ImageSampler::scale(9, 10, 3.0f64) - correct_value).abs() < 0.0000000001)
+            assert!((ImageSampler::scale(9, 10, 3.0f64) - correct_value).abs() < 0.5)
         }
 
         #[test]
@@ -173,10 +175,10 @@ mod tests {
             };
             let expected_x: f64 =
                 ImageSampler::scale(200, 800, target.film_width) - target.film_width * 0.5;
-            assert!((point_on_film_plane.x() - expected_x).abs() < 0.0000000001);
+            assert!((point_on_film_plane.x() - expected_x).abs() < 0.5 / 200.0);
             let expected_y =
                 -ImageSampler::scale(100, 600, target.film_height) + target.film_height * 0.5;
-            assert!((point_on_film_plane.y() - expected_y).abs() < 0.0000000001);
+            assert!((point_on_film_plane.y() - expected_y).abs() < 0.5 / 800.0);
         }
     }
 }
