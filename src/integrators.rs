@@ -1,6 +1,6 @@
 use crate::math::Vec3;
 
-use super::colour::{Photon, Spectrum};
+use super::colour::{ColourRgbF, Photon, Spectrum};
 use super::raycasting::{IntersectionInfo, Ray};
 use super::sampler::Sampler;
 use super::util::algebra_utils::try_change_of_basis_matrix;
@@ -134,5 +134,15 @@ impl Integrator for SimpleRandomIntegrator {
             }
             .scale_intensity(world_space_w_o.dot(&info.normal).abs()),
         )
+    }
+}
+
+pub fn test_lighting_environment(w_o: &Vec3, wavelength: f64) -> f64 {
+    let sun_direction = Vec3::new(1.0, 1.0, -1.0).normalize();
+    if w_o.dot(&sun_direction) >= 0.99 {
+        300.0
+    } else {
+        let sky_colour = ColourRgbF::new(w_o.y(), w_o.y(), 1.0) * 0.1;
+        Spectrum::reflection_from_linear_rgb(&sky_colour).intensity_at_wavelength(wavelength)
     }
 }
