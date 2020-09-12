@@ -3,7 +3,7 @@ use crate::math::Vec3;
 
 use std::fmt::Debug;
 
-use super::Material;
+use super::{Material, MaterialSampleResult};
 
 #[derive(Debug)]
 pub struct ReflectiveMaterial {
@@ -39,7 +39,10 @@ impl Material for ReflectiveMaterial {
         })
     }
 
-    fn sample(&self, w_o: &Vec3, _photon: &Photon) -> Vec3 {
-        Vec3::new(-w_o.x(), -w_o.y(), w_o.z())
+    fn sample(&self, w_o: &Vec3, _photon: &Photon) -> MaterialSampleResult {
+        MaterialSampleResult {
+            direction: Vec3::new(-w_o.x(), -w_o.y(), w_o.z()),
+            pdf: 1.0,
+        }
     }
 }

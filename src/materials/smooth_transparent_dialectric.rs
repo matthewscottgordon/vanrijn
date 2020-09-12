@@ -1,5 +1,5 @@
 use crate::colour::{Photon, Spectrum};
-use crate::materials::Material;
+use crate::materials::{Material, MaterialSampleResult};
 use crate::math::Vec3;
 
 use rand::random;
@@ -83,17 +83,12 @@ impl Material for SmoothTransparentDialectric {
             } else if (*w_o - fresnel.transmission_direction).norm_squared() < 0.0000000001 {
                 photon_in.scale_intensity(fresnel.transmission_strength)
             } else {
-                /*dbg!(
-                    w_o,
-                    fresnel.reflection_direction,
-                    fresnel.transmission_direction
-                );*/
                 photon_in.set_intensity(0.0)
             }
         })
     }
 
-    fn sample(&self, w_i: &Vec3, photon: &Photon) -> Vec3 {
+    fn sample(&self, w_i: &Vec3, photon: &Photon) -> MaterialSampleResult {
         let (eta1, eta2) = if w_i.z() >= 0.0 {
             (1.0, self.eta.intensity_at_wavelength(photon.wavelength))
         } else {
@@ -101,15 +96,20 @@ impl Material for SmoothTransparentDialectric {
         };
         let fresnel = fresnel(w_i, eta1, eta2);
         if fresnel.transmission_strength <= 0.0000000001 {
-            fresnel.reflection_direction
+            MaterialSampleResult {
+                direction: fresnel.reflection_direction,
+                pdf: 0.5,
+            }
         } else if fresnel.reflection_strength <= 0.0000000001 || random() {
-            fresnel.transmission_direction
+            MaterialSampleResult {
+                direction: fresnel.transmission_direction,
+                pdf: 0.5,
+            }
         } else {
-            fresnel.reflection_direction
+            MaterialSampleResult {
+                direction: fresnel.reflection_direction,
+                pdf: 0.5,
+            }
         }
-    }
-
-    fn pdf(&self, _w_i: &Vec3, _w_o: &Vec3) -> f64 {
-        0.0
     }
 }

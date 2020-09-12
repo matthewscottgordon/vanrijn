@@ -1,6 +1,7 @@
 use crate::math::Vec3;
 
 use super::colour::{ColourRgbF, Photon, Spectrum};
+use super::materials::MaterialSampleResult;
 use super::raycasting::{IntersectionInfo, Ray};
 use super::sampler::Sampler;
 use super::util::algebra_utils::try_change_of_basis_matrix;
@@ -59,7 +60,7 @@ impl Integrator for WhittedIntegrator {
                     .material
                     .sample(&(world_to_bsdf_space * info.retro), &photon)]
                 .iter()
-                .map(|direction| {
+                .map(|MaterialSampleResult { direction, pdf: _ }| {
                     let world_space_direction = bsdf_to_world_space * direction;
                     match sampler
                         .sample(&Ray::new(info.location, world_space_direction).bias(0.000_000_1))
@@ -118,11 +119,14 @@ impl Integrator for SimpleRandomIntegrator {
             .expect("Expected matrix to be invertable.");
         let world_space_w_i = info.retro;
         let w_i = world_to_bsdf_space * world_space_w_i;
-        let w_o = info.material.sample(&w_i, &photon);
+        let MaterialSampleResult {
+            direction: w_o,
+            pdf: w_o_pdf,
+        } = info.material.sample(&w_i, &photon);
         let world_space_w_o = bsdf_to_world_space * w_o;
         info.material.bsdf()(
-            &w_o.normalize(),
-            &w_i.normalize(),
+            &w_o,
+            &w_i,
             &match sampler.sample(&Ray::new(info.location, world_space_w_o).bias(0.000_000_1)) {
                 None => photon.set_intensity(test_lighting_environment(
                     &world_space_w_o,
@@ -132,6 +136,7 @@ impl Integrator for SimpleRandomIntegrator {
                     self.integrate(&sampler, &recursive_hit, &photon, recursion_limit - 1)
                 }
             }
+            .scale_intensity(w_o_pdf)
             .scale_intensity(world_space_w_o.dot(&info.normal).abs()),
         )
     }
@@ -142,7 +147,7 @@ pub fn test_lighting_environment(w_o: &Vec3, wavelength: f64) -> f64 {
     if w_o.dot(&sun_direction) >= 0.99 {
         300.0
     } else {
-        let sky_colour = ColourRgbF::new(w_o.y(), w_o.y(), 1.0) * 0.1;
+        let sky_colour = ColourRgbF::new(w_o.y(), w_o.y(), 1.0);
         Spectrum::reflection_from_linear_rgb(&sky_colour).intensity_at_wavelength(wavelength)
     }
 }
