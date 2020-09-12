@@ -26,6 +26,27 @@ impl Spectrum {
         }
     }
 
+    pub fn diamond_index_of_refraction() -> Spectrum {
+        Spectrum {
+            shortest_wavelength: 326.27,
+            longest_wavelength: 774.9,
+            samples: vec![
+                2.505813241,
+                2.487866556,
+                2.473323675,
+                2.464986815,
+                2.455051934,
+                2.441251728,
+                2.431478974,
+                2.427076431,
+                2.420857286,
+                2.411429037,
+                2.406543164,
+                2.406202402,
+            ],
+        }
+    }
+
     fn wavelength_range(&self) -> f64 {
         self.longest_wavelength - self.shortest_wavelength
     }
