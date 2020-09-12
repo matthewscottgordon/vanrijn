@@ -39,7 +39,7 @@ impl Material for ReflectiveMaterial {
         })
     }
 
-    fn sample(&self, w_o: &Vec3) -> Vec3 {
+    fn sample(&self, w_o: &Vec3, _photon: &Photon) -> Vec3 {
         Vec3::new(-w_o.x(), -w_o.y(), w_o.z())
     }
 }

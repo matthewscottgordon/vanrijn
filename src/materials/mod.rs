@@ -18,7 +18,7 @@ pub use reflective_material::ReflectiveMaterial;
 pub trait Material: Debug + Sync + Send {
     fn bsdf<'a>(&'a self) -> Box<dyn Fn(&Vec3, &Vec3, &Photon) -> Photon + 'a>;
 
-    fn sample(&self, _w_i: &Vec3) -> Vec3 {
+    fn sample(&self, _w_i: &Vec3, _photon: &Photon) -> Vec3 {
         let mut rng = thread_rng();
         let mut w_o = Vec3::new(
             2.0 * rng.sample::<f64, _>(Open01) - 1.0,
