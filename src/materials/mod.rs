@@ -15,6 +15,9 @@ pub use phong_material::PhongMaterial;
 pub mod reflective_material;
 pub use reflective_material::ReflectiveMaterial;
 
+pub mod smooth_transparent_dialectric;
+pub use smooth_transparent_dialectric::SmoothTransparentDialectric;
+
 pub trait Material: Debug + Sync + Send {
     fn bsdf<'a>(&'a self) -> Box<dyn Fn(&Vec3, &Vec3, &Photon) -> Photon + 'a>;
 
