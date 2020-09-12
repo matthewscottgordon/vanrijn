@@ -2,7 +2,7 @@ use itertools::izip;
 
 use crate::materials::Material;
 use crate::math::Vec3;
-use crate::raycasting::Triangle;
+use crate::raycasting::{Primitive, Triangle};
 
 use std::sync::Arc;
 
@@ -10,14 +10,16 @@ pub fn triangulate_polygon(
     vertices: &Vec<Vec3>,
     normal: &Vec3,
     material: Arc<dyn Material>,
-) -> Vec<Triangle> {
+) -> Vec<Arc<dyn Primitive>> {
     assert!(vertices.len() >= 3);
     let hinge = vertices[0];
     izip!(vertices.iter().skip(1), vertices.iter().skip(2))
-        .map(|(a, b)| Triangle {
-            vertices: [hinge, *a, *b],
-            normals: [*normal, *normal, *normal],
-            material: Arc::clone(&material),
+        .map(|(a, b)| {
+            Arc::new(Triangle {
+                vertices: [hinge, *a, *b],
+                normals: [*normal, *normal, *normal],
+                material: Arc::clone(&material),
+            }) as Arc<dyn Primitive>
         })
         .collect()
 }
@@ -26,7 +28,7 @@ pub fn generate_dodecahedron(
     centre: Vec3,
     size: f64,
     material: Arc<dyn Material>,
-) -> Vec<Triangle> {
+) -> Vec<Arc<dyn Primitive>> {
     let phi = (1.0 + (5.0_f64).sqrt()) / 2.0;
     let phi_inv = 1.0 / phi;
 
