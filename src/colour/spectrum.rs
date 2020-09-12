@@ -18,6 +18,14 @@ impl Spectrum {
         }
     }
 
+    pub fn grey(brightness: f64) -> Spectrum {
+        Spectrum {
+            shortest_wavelength: SHORTEST_VISIBLE_WAVELENGTH,
+            longest_wavelength: LONGEST_VISIBLE_WAVELENGTH,
+            samples: vec![brightness; 2],
+        }
+    }
+
     fn wavelength_range(&self) -> f64 {
         self.longest_wavelength - self.shortest_wavelength
     }
