@@ -2,7 +2,9 @@
 
 # Vanrijn
 
-Vanrijn is a [physically based](https://en.wikipedia.org/wiki/Physically_based_rendering)
+This project is very much a work-in-progress and at this point.
+
+Vanrijn is (or at least will be) a [physically based](https://en.wikipedia.org/wiki/Physically_based_rendering)
 [ray tracer](https://en.wikipedia.org/wiki/Ray_tracing_(graphics)). Many thanks to the
 authors of the book
 ["Physically Based Rendering: From Theory to Implementation](https://www.pbrt.org/) from
@@ -17,5 +19,6 @@ On Ubuntu 19.04, if you have the libsdl2-dev package installed you should be abl
 run "cargo run" and see a window with a test scene rendered into it. In theory it should
 work on any platform with SDL2 installed but I've only tested it on Ubuntu Linux.
 
+![](.github/output3.png?raw=true "Test Image 3")
 ![](.github/output.png?raw=true "Test Image 1")
 ![](.github/output2.png?raw=true "Test Image")
