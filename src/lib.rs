@@ -1,5 +1,4 @@
-#![feature(external_doc, clamp)]
-#![doc(include = "../README.md")]
+#![doc = include_str!("../README.md")]
 
 pub mod accumulation_buffer;
 mod camera;
