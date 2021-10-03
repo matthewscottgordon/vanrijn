@@ -11,6 +11,12 @@ pub struct UniformSquare {
     size: f64,
 }
 
+impl UniformSquare {
+    pub fn new(corner: Vec2, size: f64) -> UniformSquare {
+        UniformSquare { corner, size }
+    }
+}
+
 impl RandomDistribution<Vec2> for UniformSquare {
     fn value(&self) -> Vec2 {
         let mut rng = thread_rng();
