@@ -8,6 +8,7 @@ pub mod integrators;
 pub mod materials;
 pub mod math;
 pub mod mesh;
+pub mod random_distributions;
 pub mod raycasting;
 pub mod realtype;
 pub mod sampler;
