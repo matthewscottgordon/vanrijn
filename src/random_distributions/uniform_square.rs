@@ -30,6 +30,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore]
     fn print_values() {
         let target = UniformSquare {
             corner: Vec2::new(1.5, -2.5),

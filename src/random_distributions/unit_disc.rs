@@ -39,6 +39,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore]
     fn print_values() {
         let target = UnitDisc::new();
         for _ in 0..1000 {
