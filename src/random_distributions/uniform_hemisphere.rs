@@ -1,3 +1,5 @@
+use std::f64::consts::PI;
+
 use rand::distributions::{Open01, OpenClosed01};
 use rand::{thread_rng, Rng};
 
@@ -30,6 +32,10 @@ impl RandomDistribution<Vec3> for UniformHemisphere {
         }
         result.normalize()
     }
+
+    fn pdf(&self, _: Vec3) -> f64 {
+        1.0 / (2.0 * PI)
+    }
 }
 
 #[cfg(test)]
@@ -44,5 +50,17 @@ mod tests {
             let value = target.value();
             println!("{}, {}, {}", value.x(), value.y(), value.z());
         }
+    }
+
+    #[test]
+    #[ignore]
+    fn integral_is_near_area() {
+        let target = UniformHemisphere::new();
+        let integral = (0..1000)
+            .map(|_| target.value())
+            .map(|value| 1.0 / target.pdf(value))
+            .sum::<f64>()
+            / 1000.0;
+        println!("Area: {}\nIntegral: {}", 2.0 * PI, integral);
     }
 }

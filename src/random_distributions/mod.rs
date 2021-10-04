@@ -9,4 +9,5 @@ pub use uniform_hemisphere::UniformHemisphere;
 
 pub trait RandomDistribution<T> {
     fn value(&self) -> T;
+    fn pdf(&self, value: T) -> f64;
 }

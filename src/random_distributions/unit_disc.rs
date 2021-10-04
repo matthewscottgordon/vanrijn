@@ -32,6 +32,10 @@ impl RandomDistribution<Vec2> for UnitDisc {
             Vec2::new(angle.cos(), angle.sin()) * radius
         }
     }
+
+    fn pdf(&self, _: Vec2) -> f64 {
+        1.0 / PI
+    }
 }
 
 #[cfg(test)]
@@ -46,5 +50,17 @@ mod tests {
             let value = target.value();
             println!("{}, {}", value.x(), value.y());
         }
+    }
+
+    #[test]
+    #[ignore]
+    fn integral_is_near_area() {
+        let target = UnitDisc::new();
+        let integral = (0..1000)
+            .map(|_| target.value())
+            .map(|value| 1.0 / target.pdf(value))
+            .sum::<f64>()
+            / 1000.0;
+        println!("Area: {}\nIntegral: {}", PI, integral);
     }
 }

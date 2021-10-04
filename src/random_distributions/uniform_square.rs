@@ -23,6 +23,10 @@ impl RandomDistribution<Vec2> for UniformSquare {
         self.corner
             + Vec2::new(rng.sample::<f64, _>(Open01), rng.sample::<f64, _>(Open01)) * self.size
     }
+
+    fn pdf(&self, _value: Vec2) -> f64 {
+        1.0 / (self.size * self.size)
+    }
 }
 
 #[cfg(test)]
@@ -40,5 +44,20 @@ mod tests {
             let value = target.value();
             println!("{}, {}", value.x(), value.y());
         }
+    }
+
+    #[test]
+    #[ignore]
+    fn integral_is_near_area() {
+        let target = UniformSquare {
+            corner: Vec2::new(1.5, -2.5),
+            size: 3.0,
+        };
+        let integral = (0..1000)
+            .map(|_| target.value())
+            .map(|value| 1.0 / target.pdf(value))
+            .sum::<f64>()
+            / 1000.0;
+        println!("Area: {}\nIntegral: {}", 3.0 * 3.0, integral);
     }
 }
