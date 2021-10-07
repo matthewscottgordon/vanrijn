@@ -1,6 +1,6 @@
-use crate::math::Vec3;
 use crate::colour::{Photon, Spectrum};
 use crate::materials::MaterialSampleResult;
+use crate::math::Vec3;
 use crate::raycasting::{IntersectionInfo, Ray};
 use crate::sampler::Sampler;
 use crate::util::algebra_utils::try_change_of_basis_matrix;

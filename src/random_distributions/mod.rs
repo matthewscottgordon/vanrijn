@@ -10,6 +10,9 @@ pub use uniform_hemisphere::UniformHemisphere;
 mod cosine_weighted_hemisphere;
 pub use cosine_weighted_hemisphere::CosineWeightedHemisphere;
 
+mod linear_weighted;
+pub use linear_weighted::LinearWeighted;
+
 pub trait RandomDistribution<T> {
     fn value(&self) -> T;
     fn pdf(&self, value: T) -> f64;
