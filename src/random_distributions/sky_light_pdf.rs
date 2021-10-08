@@ -18,6 +18,12 @@ impl SkyLightPdf {
     }
 }
 
+impl Default for SkyLightPdf {
+    fn default() -> SkyLightPdf {
+        SkyLightPdf::new()
+    }
+}
+
 impl RandomDistribution<Vec3> for SkyLightPdf {
     fn value(&self) -> Vec3 {
         let mut rng = thread_rng();

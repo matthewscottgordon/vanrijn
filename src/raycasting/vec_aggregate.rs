@@ -9,9 +9,9 @@ impl HasBoundingBox for Vec<Box<dyn Primitive>> {
 }
 
 impl Intersect for Vec<Box<dyn Primitive>> {
-    fn intersect<'a>(&'a self, ray: &Ray) -> Option<IntersectionInfo> {
+    fn intersect(&self, ray: &Ray) -> Option<IntersectionInfo> {
         self.iter()
-            .flat_map(|primitive| primitive.intersect(&ray))
+            .flat_map(|primitive| primitive.intersect(ray))
             .min_by(
                 |a, b| match PartialOrd::partial_cmp(&a.distance, &b.distance) {
                     None => std::cmp::Ordering::Less,
@@ -32,9 +32,9 @@ impl HasBoundingBox for Vec<Box<dyn Aggregate>> {
 }
 
 impl Intersect for Vec<Box<dyn Aggregate>> {
-    fn intersect<'a>(&'a self, ray: &Ray) -> Option<IntersectionInfo> {
+    fn intersect(&self, ray: &Ray) -> Option<IntersectionInfo> {
         self.iter()
-            .flat_map(|aggregate| aggregate.intersect(&ray))
+            .flat_map(|aggregate| aggregate.intersect(ray))
             .min_by(
                 |a, b| match PartialOrd::partial_cmp(&a.distance, &b.distance) {
                     None => std::cmp::Ordering::Less,

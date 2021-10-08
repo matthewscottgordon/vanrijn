@@ -46,7 +46,7 @@ impl Plane {
 }*/
 
 impl Intersect for Plane {
-    fn intersect<'a>(&'a self, ray: &Ray) -> Option<IntersectionInfo> {
+    fn intersect(&self, ray: &Ray) -> Option<IntersectionInfo> {
         let ray_direction_dot_plane_normal = ray.direction.dot(&self.normal);
         let point_on_plane = self.normal * self.distance_from_origin;
         let point_on_plane_minus_ray_origin_dot_normal =

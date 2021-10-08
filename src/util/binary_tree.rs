@@ -1,5 +1,4 @@
-pub enum BinaryTree<Value, LeafValue>
-{
+pub enum BinaryTree<Value, LeafValue> {
     Branch {
         value: Value,
         left: Box<Self>,
@@ -11,8 +10,7 @@ pub enum BinaryTree<Value, LeafValue>
     None,
 }
 
-impl<Value, LeafValue> BinaryTree<Value, LeafValue>
-{
+impl<Value, LeafValue> BinaryTree<Value, LeafValue> {
     pub fn count_leaves(&self) -> usize {
         match self {
             Self::Branch {

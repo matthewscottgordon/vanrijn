@@ -9,6 +9,12 @@ pub struct UnitDisc {
     square_distribution: UniformSquare,
 }
 
+impl Default for UnitDisc {
+    fn default() -> UnitDisc {
+        UnitDisc::new()
+    }
+}
+
 impl UnitDisc {
     pub fn new() -> UnitDisc {
         let square_distribution = UniformSquare::new(Vec2::new(-1.0, -1.0), 2.0);

@@ -37,7 +37,7 @@ impl Photon {
     pub fn set_intensity(&self, intensity: f64) -> Photon {
         Photon {
             wavelength: self.wavelength,
-            intensity: intensity,
+            intensity,
         }
     }
 }

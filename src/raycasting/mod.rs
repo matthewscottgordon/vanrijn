@@ -100,7 +100,7 @@ pub struct IntersectionInfo {
 /// intersected with a [Ray](Ray)
 pub trait Intersect: Send + Sync {
     /// Test if the ray intersects the object, and return information about the object and intersection.
-    fn intersect<'a>(&'a self, ray: &Ray) -> Option<IntersectionInfo>;
+    fn intersect(&self, ray: &Ray) -> Option<IntersectionInfo>;
 }
 
 /// A geometric object that can be intersected with a ray

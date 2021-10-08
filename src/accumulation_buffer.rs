@@ -47,7 +47,7 @@ impl AccumulationBuffer {
         let buffer_colour_bias = &mut self.colour_bias_buffer[row][column];
         let buffer_weight = &mut self.weight_buffer[row][column];
         let buffer_weight_bias = &mut self.weight_bias_buffer[row][column];
-        let photon_colour = ColourXyz::from_photon(&photon);
+        let photon_colour = ColourXyz::from_photon(photon);
         let weight_sum_y = weight - *buffer_weight_bias;
         let weight_sum_t = *buffer_weight + weight_sum_y;
         *buffer_weight_bias = (weight_sum_t - *buffer_weight) - weight_sum_y;

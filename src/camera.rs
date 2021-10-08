@@ -101,7 +101,7 @@ pub fn partial_render_scene(
     let mut output_image_tile = AccumulationBuffer::new(tile.width(), tile.height());
     let image_sampler = ImageSampler::new(width, height, scene.camera_location);
     let integrator = SimpleRandomIntegrator {};
-    let sampler = Sampler { scene: &scene };
+    let sampler = Sampler { scene };
     for column in 0..tile.width() {
         for row in 0..tile.height() {
             let ray = image_sampler.ray_for_pixel(tile.start_row + row, tile.start_column + column);

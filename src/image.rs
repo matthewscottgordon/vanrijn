@@ -1,4 +1,3 @@
-use std::convert::TryInto;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
@@ -20,7 +19,7 @@ impl ImageRgbU8 {
 
     pub fn get_colour(&self, row: usize, column: usize) -> ColourRgbU8 {
         ColourRgbU8 {
-            values: self.data[row][column].try_into().expect("Wrong length."),
+            values: self.data[row][column],
         }
     }
 
@@ -52,7 +51,7 @@ impl ImageRgbU8 {
 
     pub fn write_png(&self, filename: &Path) -> Result<(), std::io::Error> {
         let file = File::create(filename)?;
-        let ref mut file_buffer = BufWriter::new(file);
+        let file_buffer = &mut BufWriter::new(file);
 
         let mut encoder = png::Encoder::new(
             file_buffer,

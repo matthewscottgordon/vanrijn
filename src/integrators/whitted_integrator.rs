@@ -35,13 +35,13 @@ impl Integrator for WhittedIntegrator {
             .iter()
             .map(|light| {
                 match sampler.sample(&Ray::new(info.location, light.direction).bias(0.000_000_1)) {
-                    Some(_) => self.ambient_light.emit_photon(&photon),
+                    Some(_) => self.ambient_light.emit_photon(photon),
                     None => info.material.bsdf()(
                         &(world_to_bsdf_space * info.retro),
                         &(world_to_bsdf_space * light.direction),
                         &light
                             .spectrum
-                            .emit_photon(&photon)
+                            .emit_photon(photon)
                             .scale_intensity(light.direction.dot(&info.normal).abs()),
                     ),
                 }
@@ -49,7 +49,7 @@ impl Integrator for WhittedIntegrator {
             .chain(
                 [info
                     .material
-                    .sample(&(world_to_bsdf_space * info.retro), &photon)]
+                    .sample(&(world_to_bsdf_space * info.retro), photon)]
                 .iter()
                 .map(|MaterialSampleResult { direction, pdf: _ }| {
                     let world_space_direction = bsdf_to_world_space * direction;
@@ -62,9 +62,9 @@ impl Integrator for WhittedIntegrator {
                                     &(world_to_bsdf_space * info.retro),
                                     direction,
                                     &self.integrate(
-                                        &sampler,
+                                        sampler,
                                         &recursive_hit,
-                                        &photon,
+                                        photon,
                                         recursion_limit - 1,
                                     ),
                                 );

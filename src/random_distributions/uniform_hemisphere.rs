@@ -7,6 +7,7 @@ use crate::math::Vec3;
 
 use super::RandomDistribution;
 
+#[derive(Default)]
 pub struct UniformHemisphere {}
 
 impl UniformHemisphere {

@@ -34,7 +34,7 @@ impl Integrator for SimpleRandomIntegrator {
         let MaterialSampleResult {
             direction: w_o,
             pdf: w_o_pdf,
-        } = info.material.sample(&w_i, &photon);
+        } = info.material.sample(&w_i, photon);
         let world_space_w_o = bsdf_to_world_space * w_o;
         info.material.bsdf()(
             &w_o,
@@ -45,7 +45,7 @@ impl Integrator for SimpleRandomIntegrator {
                     photon.wavelength,
                 )),
                 Some(recursive_hit) => {
-                    self.integrate(&sampler, &recursive_hit, &photon, recursion_limit - 1)
+                    self.integrate(sampler, &recursive_hit, photon, recursion_limit - 1)
                 }
             }
             .scale_intensity(w_o_pdf)

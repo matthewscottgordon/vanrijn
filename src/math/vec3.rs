@@ -93,7 +93,7 @@ impl Vec3 {
     }
 
     pub fn norm_squared(&self) -> f64 {
-        self.dot(&self)
+        self.dot(self)
     }
 
     pub fn norm(&self) -> f64 {
@@ -119,12 +119,10 @@ impl Vec3 {
             } else {
                 2
             }
+        } else if y < z {
+            1
         } else {
-            if y < z {
-                1
-            } else {
-                2
-            }
+            2
         }
     }
 

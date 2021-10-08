@@ -33,7 +33,7 @@ pub struct Triangle {
 }*/
 
 impl Intersect for Triangle {
-    fn intersect<'a>(&'a self, ray: &Ray) -> Option<IntersectionInfo> {
+    fn intersect(&self, ray: &Ray) -> Option<IntersectionInfo> {
         let translation = -ray.origin;
         let indices = indices_with_index_of_largest_element_last(&ray.direction);
         let permuted_ray_direction = permute_vector_elements(&ray.direction, &indices);
@@ -126,7 +126,7 @@ fn is_valid_permutation(indices: &[usize; 3]) -> bool {
 }
 
 fn permute_vector_elements(v: &Vec3, indices: &[usize; 3]) -> Vec3 {
-    debug_assert!(is_valid_permutation(&indices));
+    debug_assert!(is_valid_permutation(indices));
     Vec3::new(v[indices[0]], v[indices[1]], v[indices[2]])
 }
 

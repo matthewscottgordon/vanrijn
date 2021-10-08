@@ -92,24 +92,24 @@ fn closest_intersection(
 }
 
 impl Intersect for BoundingVolumeHierarchy {
-    fn intersect<'a>(&'a self, ray: &Ray) -> Option<IntersectionInfo> {
+    fn intersect(&self, ray: &Ray) -> Option<IntersectionInfo> {
         match self {
             BoundingVolumeHierarchy::Node {
                 bounds,
                 left,
                 right,
             } => {
-                if bounds.intersect(&ray) {
-                    closest_intersection(left.intersect(&ray), right.intersect(&ray))
+                if bounds.intersect(ray) {
+                    closest_intersection(left.intersect(ray), right.intersect(ray))
                 } else {
                     None
                 }
             }
             BoundingVolumeHierarchy::Leaf { bounds, primitives } => {
-                if bounds.intersect(&ray) {
+                if bounds.intersect(ray) {
                     primitives
                         .iter()
-                        .map(|elem| elem.intersect(&ray))
+                        .map(|elem| elem.intersect(ray))
                         .fold(None, closest_intersection)
                 } else {
                     None

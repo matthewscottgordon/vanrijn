@@ -47,16 +47,16 @@ mod wavefront_obj {
     ) -> Vec<Triangle> {
         if let Some(v0_index) = polygon.iter().next() {
             let (v0_vertex, v0_normal) =
-                get_vertex_and_normal(v0_index, &vertex_positions, &normal_positions);
+                get_vertex_and_normal(v0_index, &vertex_positions, normal_positions);
             polygon
                 .iter()
                 .skip(1)
                 .zip(polygon.iter().skip(2))
                 .map(|(v1_index, v2_index)| {
                     let (v1_vertex, v1_normal) =
-                        get_vertex_and_normal(v1_index, &vertex_positions, &normal_positions);
+                        get_vertex_and_normal(v1_index, vertex_positions, normal_positions);
                     let (v2_vertex, v2_normal) =
-                        get_vertex_and_normal(v2_index, &vertex_positions, &normal_positions);
+                        get_vertex_and_normal(v2_index, vertex_positions, normal_positions);
                     let vertices = [v0_vertex, v1_vertex, v2_vertex];
                     let normals = [v0_normal, v1_normal, v2_normal];
                     Triangle {

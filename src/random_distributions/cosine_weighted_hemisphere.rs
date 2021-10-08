@@ -4,6 +4,7 @@ use crate::math::Vec3;
 
 use super::{RandomDistribution, UnitDisc};
 
+#[derive(Default)]
 pub struct CosineWeightedHemisphere {
     unit_disc: UnitDisc,
 }

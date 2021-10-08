@@ -7,7 +7,7 @@ use crate::raycasting::{Primitive, Triangle};
 use std::sync::Arc;
 
 pub fn triangulate_polygon(
-    vertices: &Vec<Vec3>,
+    vertices: &[Vec3],
     normal: &Vec3,
     material: Arc<dyn Material>,
 ) -> Vec<Arc<dyn Primitive>> {
@@ -124,7 +124,7 @@ pub fn generate_dodecahedron(
         .iter()
         .flat_map(|face| {
             let normal = (face[1] - face[0]).cross(&(face[2] - face[1]));
-            let transformed_face = face.iter().map(|v| centre + v * scale).collect();
+            let transformed_face: Vec<_> = face.iter().map(|v| centre + v * scale).collect();
             triangulate_polygon(&transformed_face, &normal, Arc::clone(&material))
         })
         .collect()

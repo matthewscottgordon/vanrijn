@@ -10,7 +10,7 @@ impl<'a> Sampler<'a> {
         self.scene
             .objects
             .iter()
-            .flat_map(|object| object.intersect(&ray))
+            .flat_map(|object| object.intersect(ray))
             .min_by(
                 |a, b| match PartialOrd::partial_cmp(&a.distance, &b.distance) {
                     None => std::cmp::Ordering::Less,

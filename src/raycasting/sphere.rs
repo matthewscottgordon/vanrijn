@@ -37,7 +37,7 @@ impl Sphere {
 }*/
 
 impl Intersect for Sphere {
-    fn intersect<'a>(&'a self, ray: &Ray) -> Option<IntersectionInfo> {
+    fn intersect<'a>(&'_ self, ray: &Ray) -> Option<IntersectionInfo> {
         let r_o = ray.origin;
         let centre_coords = self.centre;
         let a = ray
