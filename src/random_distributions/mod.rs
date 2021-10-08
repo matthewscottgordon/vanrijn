@@ -13,6 +13,9 @@ pub use cosine_weighted_hemisphere::CosineWeightedHemisphere;
 mod linear_weighted;
 pub use linear_weighted::LinearWeighted;
 
+mod sky_light_pdf;
+pub use sky_light_pdf::SkyLightPdf;
+
 pub trait RandomDistribution<T> {
     fn value(&self) -> T;
     fn pdf(&self, value: T) -> f64;
