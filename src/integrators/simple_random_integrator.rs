@@ -55,11 +55,11 @@ impl Integrator for SimpleRandomIntegrator {
 }
 
 pub fn test_lighting_environment(w_o: &Vec3, wavelength: f64) -> f64 {
-    let sun_direction = Vec3::new(1.0, 1.0, -1.0).normalize();
-    if w_o.dot(&sun_direction) >= 0.99 {
-        300.0
-    } else {
-        let sky_colour = ColourRgbF::new(w_o.y(), w_o.y(), 1.0);
-        Spectrum::reflection_from_linear_rgb(&sky_colour).intensity_at_wavelength(wavelength)
-    }
+    //let sun_direction = Vec3::new(1.0, 1.0, -1.0).normalize();
+    //if w_o.dot(&sun_direction) >= 0.99 {
+    //    300.0
+    //} else {
+    let sky_colour = ColourRgbF::new(w_o.y(), w_o.y(), 1.0);
+    Spectrum::reflection_from_linear_rgb(&sky_colour).intensity_at_wavelength(wavelength)
+    //}
 }
