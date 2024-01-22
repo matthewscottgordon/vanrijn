@@ -1,3 +1,5 @@
+***Development has moved to [https://git.gordon.earth/matthew/vanrijn](https://git.gordon.earth/matthew/vanrijn).***
+
 ![](https://github.com/matthewscottgordon/vanrijn/workflows/Rust/badge.svg)
 
 # Vanrijn
